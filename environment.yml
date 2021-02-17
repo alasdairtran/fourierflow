@@ -33,5 +33,7 @@ dependencies:
       - seaborn
       - tensorboard
       - torchdiffeq==0.2.1
+      - torchdyn==0.2.2.1
+      - git+https://github.com/google-research/torchsde.git
       - tqdm
       - wget
