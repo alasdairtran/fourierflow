@@ -18,7 +18,7 @@ dependencies:
   - pyyaml
   - torchvision
   - pip:
-      - allennlp==1.3.0
+      - allennlp==1.4.1
       - docopt
       - einops
       - ipywidgets
