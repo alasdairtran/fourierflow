@@ -32,5 +32,6 @@ dependencies:
       - schema
       - seaborn
       - tensorboard
+      - torchdiffeq==0.2.1
       - tqdm
       - wget
