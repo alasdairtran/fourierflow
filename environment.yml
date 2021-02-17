@@ -28,6 +28,7 @@ dependencies:
       - ptvsd
       - pudb
       - pymongo
+      - pytorch-lightning==1.1.8
       - schema
       - seaborn
       - tensorboard
