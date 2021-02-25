@@ -296,7 +296,7 @@ class TimeSeriesODE(pl.LightningModule):
                  forecast_length=7,
                  backcast_length=42,
                  thetas_dims=128,
-                 hidden_size=128,
+                 hidden_size=256,
                  share_weights_in_stack=False,
                  dropout=0.1):
         super().__init__()
