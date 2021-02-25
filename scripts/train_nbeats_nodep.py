@@ -271,10 +271,10 @@ class TimeSeriesODE(pl.LightningModule):
         x_context = x_target[:, :S]
         # x_context.shape == [batch_size, backcast_len]
 
-        y_target = batch / 10
+        y_target = batch
         # y_target.shape == [batch_size, total_len]
 
-        y_context = batch[:, :S] / 10
+        y_context = batch[:, :S]
         # y_context.shape == [batch_size, backcast_len]
 
         return x_context, y_context, x_target, y_target
@@ -301,7 +301,7 @@ class TimeSeriesODE(pl.LightningModule):
         loss = self.get_loss(py_pred, y_target, q_target, q_context)
 
         # Calculate SMAPE
-        forecasts = torch.exp(y_pred_mu * 10) - 1
+        forecasts = torch.exp(y_pred_mu) - 1
         targets = torch.exp(batch) - 1
         smape = self.get_smape(forecasts, targets)
 
@@ -356,7 +356,7 @@ class TimeSeriesODE(pl.LightningModule):
         y_pred_mu, _ = self.xz_to_y(x_target, z_sample)
 
         # Calculate SMAPE
-        forecasts = torch.exp(y_pred_mu[:, -self.forecast_length:] * 10) - 1
+        forecasts = torch.exp(y_pred_mu[:, -self.forecast_length:]) - 1
         targets = torch.exp(batch[:, -self.forecast_length:]) - 1
         smape = self.get_smape(forecasts, targets) * len(batch)
 
@@ -381,7 +381,7 @@ class TimeSeriesODE(pl.LightningModule):
     #     self.log('test_loss', loss)
 
     def configure_optimizers(self):
-        opt = torch.optim.AdamW(self.parameters(), lr=1e-3, weight_decay=1e-3)
+        opt = torch.optim.AdamW(self.parameters(), lr=1e-4, weight_decay=1e-4)
 
         num_warmup_steps = 500
         num_training_steps = 950 * 40  # 215 * 40
