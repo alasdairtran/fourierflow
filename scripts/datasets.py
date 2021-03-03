@@ -105,20 +105,23 @@ class SineData(Dataset):
         self.x_dim = 1  # x and y dim are fixed for this dataset.
         self.y_dim = 1
 
+        rs = np.random.RandomState(5124)
+
         # Generate data
         self.data = []
         a_min, a_max = amplitude_range
         b_min, b_max = shift_range
         for i in range(num_samples):
             # Sample random amplitude
-            a = (a_max - a_min) * np.random.rand() + a_min
+            a = (a_max - a_min) * rs.rand() + a_min
             # Sample random shift
-            b = (b_max - b_min) * np.random.rand() + b_min
+            b = (b_max - b_min) * rs.rand() + b_min
             # Shape (num_points, x_dim)
             x = torch.linspace(-pi, pi, num_points).unsqueeze(1)
             # Shape (num_points, y_dim)
-            y = a * torch.sin(x - b)
-            self.data.append((x, y))
+            mu = a * torch.sin(x - b)
+            y = mu + 0.2 * rs.randn(*mu.shape).astype(np.float32)
+            self.data.append((x, y, mu))
 
     def __getitem__(self, index):
         return self.data[index]

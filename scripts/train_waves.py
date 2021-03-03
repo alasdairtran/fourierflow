@@ -4,6 +4,7 @@ import pickle
 
 import comet_ml
 import h5py
+import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -17,6 +18,7 @@ from torch.distributions.kl import kl_divergence
 from torch.utils.data import DataLoader, Dataset
 from torchdiffeq import odeint
 from torchdyn.models import NeuralDE
+from viz import plot_sines
 
 
 class TimeSeriesODE(pl.LightningModule):
@@ -49,9 +51,17 @@ class TimeSeriesODE(pl.LightningModule):
         self.test_context_size = testing_context_size
         self.rs = np.random.RandomState(1242)
 
-        initial_x = torch.tensor(initial_x).view(1, 1, 1)
+        initial_x = torch.FloatTensor([initial_x]).view(1, 1, 1)
         self.nodep = NeuralODEProcess(
             x_dim, y_dim, r_dim, z_dim, h_dim, L_dim, initial_x)
+
+        # Fix a random datapoint for plotting
+        dataset = SineData(amplitude_range=(0.7, 0.9),
+                           shift_range=(0.0, 0.1),
+                           num_samples=1)
+        self.t = dataset[0][0]
+        self.y = dataset[0][1]
+        self.mu = dataset[0][2]
 
     def forward(self, x):
         # in lightning, forward defines the prediction/inference actions
@@ -59,7 +69,7 @@ class TimeSeriesODE(pl.LightningModule):
         return embedding
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, mu = batch
 
         # Sample number of context and target points
         num_context = self.rs.randint(*self.num_context_range)
@@ -104,7 +114,7 @@ class TimeSeriesODE(pl.LightningModule):
         return -log_likelihood + kl
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, mu = batch
         x_context, y_context, x_target, y_target = \
             context_target_split(x, y, self.test_context_size, 0)
 
@@ -118,6 +128,11 @@ class TimeSeriesODE(pl.LightningModule):
 
         self.log('valid_mse', epoch_mse_loss)
         self.log('valid_logp', epoch_logp_loss)
+
+    def validation_epoch_end(self, outputs):
+        device = next(self.parameters()).device
+        plot_sines(device, self.t, self.y, self.mu,
+                   self.nodep, self.logger.experiment)
 
     def configure_optimizers(self):
         opt = torch.optim.RMSprop(self.parameters(), lr=1e-3)
@@ -164,9 +179,11 @@ def main():
                        shift_range=(-.5, .5),
                        num_samples=500)
     train_loader = DataLoader(dataset[:int(len(dataset)-test_set_size)],
-                              batch_size=batch_size, shuffle=True)
+                              batch_size=batch_size, shuffle=True,
+                              num_workers=4)
     test_loader = DataLoader(dataset[int(len(dataset)-test_set_size):],
-                             batch_size=test_set_size, shuffle=False)
+                             batch_size=test_set_size, shuffle=False,
+                             num_workers=4)
 
     comet_logger = CometLogger(
         api_key=os.environ.get('COMET_API_KEY'),
