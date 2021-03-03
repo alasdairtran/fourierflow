@@ -19,6 +19,7 @@ dependencies:
   - torchvision
   - pip:
       - allennlp==1.4.1
+      - comet_ml
       - docopt
       - einops
       - hickle
