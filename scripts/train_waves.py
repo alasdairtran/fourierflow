@@ -1,6 +1,8 @@
 import math
+import os
 import pickle
 
+import comet_ml
 import h5py
 import numpy as np
 import pytorch_lightning as pl
@@ -9,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from datasets import SineData
 from models import NeuralODEProcess
+from pytorch_lightning.loggers import CometLogger
 from torch.distributions import Normal
 from torch.distributions.kl import kl_divergence
 from torch.utils.data import DataLoader, Dataset
@@ -165,8 +168,18 @@ def main():
     test_loader = DataLoader(dataset[int(len(dataset)-test_set_size):],
                              batch_size=test_set_size, shuffle=False)
 
+    comet_logger = CometLogger(
+        api_key=os.environ.get('COMET_API_KEY'),
+        workspace=os.environ.get('COMET_WORKSPACE'),
+        save_dir='expt',
+        project_name='neural-ode',
+        rest_api_key=os.environ.get('COMET_REST_API_KEY'),
+        experiment_name=os.environ.get('COMET_EXPERIMENT_KEY', 'nodep_1')
+    )
+
     ts_ode = TimeSeriesODE()
-    trainer = pl.Trainer(gpus=1, max_epochs=40, gradient_clip_val=0.1)
+    trainer = pl.Trainer(gpus=1, max_epochs=40, gradient_clip_val=0.1,
+                         logger=comet_logger)
     trainer.fit(ts_ode, train_loader, test_loader)
 
     # result = trainer.test(ts_ode, test_loader)
