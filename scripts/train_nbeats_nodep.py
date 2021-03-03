@@ -358,21 +358,10 @@ class TimeSeriesODE(pl.LightningModule):
         # Calculate SMAPE
         forecasts = torch.exp(y_pred_mu[:, -self.forecast_length:]) - 1
         targets = torch.exp(batch[:, -self.forecast_length:]) - 1
-        smape = self.get_smape(forecasts, targets) * len(batch)
+        smape = self.get_smape(forecasts, targets)
 
-        return {'val_smape': smape, 'batch_size': len(batch)}
-
-    def validation_epoch_end(self, outputs):
-        val_smape_mean = 0
-        count = 0
-
-        for output in outputs:
-            val_smape = output['val_smape']
-            val_smape_mean += val_smape
-            count += output['batch_size']
-        val_smape_mean /= (count)
-        print('test smape', val_smape_mean)
-        self.log('val_smape', val_smape_mean)
+        # Pytorch Lightning correctly computes the mean SMAPE, weighted by batch size
+        self.log('val_smape', smape)
 
     # def test_step(self, batch, batch_idx):
     #     x, y = batch

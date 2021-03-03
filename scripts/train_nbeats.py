@@ -357,21 +357,8 @@ class TimeSeriesODE(pl.LightningModule):
         smape = 200 * torch.abs(forecasts - targets) / denominator
         smape = smape.clamp(0, 200)
         # smape = torch.nan_to_num(smape, nan=200, posinf=200, neginf=200)
-        smape = smape[~torch.isnan(smape)].sum()
-
-        return {'val_smape': smape, 'batch_size': len(batch)}
-
-    def validation_epoch_end(self, outputs):
-        val_smape_mean = 0
-        count = 0
-
-        for output in outputs:
-            val_smape = output['val_smape']
-            val_smape_mean += val_smape
-            count += output['batch_size']
-        val_smape_mean /= (count * 7)
-        print('test smape', val_smape_mean)
-        self.log('val_smape', val_smape_mean)
+        smape = smape[~torch.isnan(smape)].mean()
+        self.log('val_smape', smape)
 
     # def test_step(self, batch, batch_idx):
     #     x, y = batch
