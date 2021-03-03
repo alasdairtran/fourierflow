@@ -21,6 +21,7 @@ dependencies:
       - allennlp==1.4.1
       - docopt
       - einops
+      - hickle
       - ipywidgets
       - jina
       - ogb
