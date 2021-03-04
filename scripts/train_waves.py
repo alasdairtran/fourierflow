@@ -255,8 +255,8 @@ def main():
 
     test_set_size = 10
     batch_size = 5
-    dataset = SineData(amplitude_range=(-1., 1.),
-                       shift_range=(-0.5, 0.5),
+    dataset = SineData(amplitude_range=(0.5, 1.),
+                       shift_range=(0, 0),
                        freq_range=(args['fs'], args['fe']),
                        num_samples=500,
                        add_cosine=args['add_cosine'])
@@ -276,8 +276,8 @@ def main():
         experiment_name=args['expt'],
     )
 
-    test_dataset = SineData(amplitude_range=(-1, 1),
-                            shift_range=(-0.5, 0.5),
+    test_dataset = SineData(amplitude_range=(0.5, 1),
+                            shift_range=(0, 0),
                             freq_range=(args['fs'], args['fe']),
                             num_samples=1,
                             add_cosine=args['add_cosine'])
