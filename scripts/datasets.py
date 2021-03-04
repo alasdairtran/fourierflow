@@ -128,7 +128,7 @@ class SineData(Dataset):
                 b = (b_max - b_min) * rs.rand() + b_min
                 f = (f_max - f_min) * rs.rand() + f_min
                 mu += a * torch.cos(f * (x - b))
-            y = mu + 0.1 * rs.randn(*mu.shape).astype(np.float32)
+            y = mu  # + 0.1 * rs.randn(*mu.shape).astype(np.float32)
             self.data.append((x, y, mu))
 
     def __getitem__(self, index):
