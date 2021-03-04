@@ -23,7 +23,7 @@ def plot_sines(device, t, y, mu, nodep, expt):
 
     t_c.append(t[start_point])
     x_c.append(y[start_point])
-    choices = np.arange(start_point, len(y))
+    choices = np.arange(start_point, 2 * len(y) // 3)
 
     for i in range(length_context_1-1):
         choice = rs.choice(choices, replace=False)
@@ -62,7 +62,7 @@ def plot_sines(device, t, y, mu, nodep, expt):
         pred_mu = p_y_pred.loc.detach()
         ax.plot(t_target.cpu().numpy()[0], pred_mu.cpu().numpy()[0],
                 alpha=darkness, c=colour, zorder=-number_to_plot)
-    ax.set_xlim(x_min, x_max + (x_max - x_min))
+    ax.set_xlim(x_min, t[-1])
     ax.set_ylim(y_min, y_max)
     ax.set_xticks([])
     ax.plot(t1, mu, c='k', linestyle='--',
@@ -83,7 +83,7 @@ def plot_sines(device, t, y, mu, nodep, expt):
         ax.plot(t_target.cpu().numpy()[0], pred_mu.cpu().numpy()[0],
                 alpha=darkness, c=colour, zorder=-number_to_plot)
     ax.set_xlabel('t', fontsize=16)
-    ax.set_xlim(x_min, x_max + (x_max - x_min))
+    ax.set_xlim(x_min, t[-1])
     ax.set_ylim(y_min, y_max)
     ax.plot(t1, mu, c='k', linestyle='--',
             alpha=truth_darkness, zorder=1)

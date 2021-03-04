@@ -58,7 +58,7 @@ class TimeSeriesODE(pl.LightningModule):
                  latent_size=256,
                  l_size=64,
                  dropout=0.1,
-                 num_context_range=(1, 10),
+                 num_context_range=(1, 20),
                  extra_target_range=(0, 5),
                  testing_context_size=10,
                  test_dataset=None):
@@ -189,6 +189,39 @@ def context_target_split(x, y, num_context, num_extra_target, locations=None):
     y_context = y[:, locations[:num_context], :]
     x_target = x[:, locations, :]
     y_target = y[:, locations, :]
+    return x_context, y_context, x_target, y_target
+
+
+def context_target_split_full(x, y, num_context, num_extra_target, locations=None):
+    """Given inputs x and their value y, return random subsets of points for
+    context and target. Note that following conventions from "Empirical
+    Evaluation of Neural Process Objectives" the context points are chosen as a
+    subset of the target points.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+            Shape (batch_size, num_points, x_dim)
+
+    y : torch.Tensor
+            Shape (batch_size, num_points, y_dim)
+
+    num_context : int
+            Number of context points.
+
+    num_extra_target : int
+            Number of additional target points.
+    """
+    num_points = x.shape[1]
+    # Sample locations of context and target points
+    if locations is None:
+        locations = np.random.choice(2 * num_points // 3,
+                                     size=num_context,
+                                     replace=False)
+    x_context = x[:, locations, :]
+    y_context = y[:, locations, :]
+    x_target = x.clone()
+    y_target = y.clone()
     return x_context, y_context, x_target, y_target
 
 
