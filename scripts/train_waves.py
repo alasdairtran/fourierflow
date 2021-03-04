@@ -9,8 +9,8 @@ Options:
     --project PROJ      Project name.
     --expt EXPT         Experiment name.
     --add-cosine        Mix with cosines.
-    --fs                Frequency start [default: 1]
-    --fe                Frequency end [default: 1]
+    --fs FLOAT          Frequency start [default: 1]
+    --fe FLOAT          Frequency end [default: 1]
     --ptvsd PORT        Enable debug mode with ptvsd on a given port, for
                         example 5678.
 
@@ -61,7 +61,7 @@ class TimeSeriesODE(pl.LightningModule):
                  num_context_range=(1, 10),
                  extra_target_range=(0, 5),
                  testing_context_size=10,
-                 test_dataset=test_dataset):
+                 test_dataset=None):
         super().__init__()
         self.latent_size = latent_size
         self.hidden_size = hidden_size
@@ -247,7 +247,7 @@ def main():
                             shift_range=(-0.5, 0.5),
                             freq_range=(args['fs'], args['fe']),
                             num_samples=1,
-                            add_cosine=add_cosine)
+                            add_cosine=args['add_cosine'])
 
     ts_ode = TimeSeriesODE(test_dataset=test_dataset)
     trainer = pl.Trainer(gpus=1, max_epochs=40, gradient_clip_val=0.1,
