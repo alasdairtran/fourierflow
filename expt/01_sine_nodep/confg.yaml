@@ -1,0 +1,29 @@
+comet:
+  project_name: neural-ode
+  experiment_name: baseline-sine-nodep
+train_data_loader:
+  dataset:
+    type: sine
+    amplitude_range: [0.5, 1.0]
+    freq_range: [1, 1]
+    num_samples: 500
+    seed: 41241
+  batch_size: 32
+  shuffle: true
+  num_workers: 4
+valid_data_loader:
+  dataset:
+    type: sine
+    amplitude_range: [0.5, 1.0]
+    freq_range: [1, 1]
+    num_samples: 10
+    seed: 51343
+  batch_size: 32
+  shuffle: false
+  num_workers: 4
+system:
+  type: time_series_ode
+trainer:
+  gpus: 1
+  max_epochs: 40
+  gradient_clip_val: 0.1

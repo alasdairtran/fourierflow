@@ -4,6 +4,8 @@ from torch.distributions import Normal
 from torch.nn import functional as F
 from torchdiffeq import odeint
 
+from .base import RModel
+
 
 class Encoder(nn.Module):
     """Maps an (x_i, y_i) pair to a representation r_i.
@@ -435,7 +437,8 @@ class NeuralProcess(nn.Module):
             return p_y_pred
 
 
-class NeuralODEProcess(nn.Module):
+@RModel.register('neural_ode_process')
+class NeuralODEProcess(RModel):
     """
     Implements Neural ODE Process for functions of arbitrary dimensions, but time is one dimensional.
 

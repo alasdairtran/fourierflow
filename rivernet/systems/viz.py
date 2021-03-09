@@ -6,6 +6,9 @@ import torch
 
 
 def plot_sines(device, t, y, mu, nodep, expt):
+    t = t.cpu()
+    y = y.cpu()
+    mu = mu.cpu()
     t_c = []
     x_c = []
 
@@ -91,6 +94,8 @@ def plot_sines(device, t, y, mu, nodep, expt):
                c='k', alpha=truth_darkness, zorder=2)
     ax.scatter(t1, y, c='r', s=3, alpha=darkness, zorder=0)
     expt.log_figure(figure=fig, figure_name='many')
+
+    plt.close('all')
 
 
 def plot_rnn_sines(device, t, y, mu, rnn, out_proj, expt):
@@ -185,3 +190,5 @@ def plot_rnn_sines(device, t, y, mu, rnn, out_proj, expt):
     ax.scatter(tc2, yc2, c='k', alpha=truth_darkness, zorder=2)
     ax.scatter(t, y, c='r', s=3, alpha=darkness, zorder=0)
     expt.log_figure(figure=fig, figure_name='many')
+
+    plt.close('all')
