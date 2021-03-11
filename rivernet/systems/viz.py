@@ -49,9 +49,6 @@ def plot_sines(device, t, y, mu, nodep, expt):
         1, length_context_1+length_context_2, 1).to(device)
 
     # Extrapolate
-    t1 = t
-    t2 = t1 + (t1[-1] + (t1[1] - t1[0]))
-    t = torch.cat([t1, t2])
 
     t_target = t.reshape((1, len(t), 1)).to(device)
 
@@ -68,11 +65,11 @@ def plot_sines(device, t, y, mu, nodep, expt):
     ax.set_xlim(x_min, t[-1])
     ax.set_ylim(y_min, y_max)
     ax.set_xticks([])
-    ax.plot(t1, mu, c='k', linestyle='--',
+    ax.plot(t, mu, c='k', linestyle='--',
             alpha=truth_darkness, zorder=1)
     ax.scatter(t_context_1[0].cpu().numpy(), x_context_1[0].cpu().numpy(),
                c='k', alpha=truth_darkness, zorder=2)
-    ax.scatter(t1, y, c='r', s=3, alpha=darkness, zorder=0)
+    ax.scatter(t, y, c='r', s=3, alpha=darkness, zorder=0)
     fig.tight_layout()
     expt.log_figure(figure=fig, figure_name='one')
 
@@ -88,11 +85,11 @@ def plot_sines(device, t, y, mu, nodep, expt):
     ax.set_xlabel('t', fontsize=16)
     ax.set_xlim(x_min, t[-1])
     ax.set_ylim(y_min, y_max)
-    ax.plot(t1, mu, c='k', linestyle='--',
+    ax.plot(t, mu, c='k', linestyle='--',
             alpha=truth_darkness, zorder=1)
     ax.scatter(t_context_2[0].cpu().numpy(), x_context_2[0].cpu().numpy(),
                c='k', alpha=truth_darkness, zorder=2)
-    ax.scatter(t1, y, c='r', s=3, alpha=darkness, zorder=0)
+    ax.scatter(t, y, c='r', s=3, alpha=darkness, zorder=0)
     expt.log_figure(figure=fig, figure_name='many')
 
     plt.close('all')

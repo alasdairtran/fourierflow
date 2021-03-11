@@ -19,21 +19,13 @@ class TimeSeriesODE(System):
                  h_dim=128,
                  L_dim=32,
                  initial_x=-3.2,
-                 forecast_length=7,
-                 backcast_length=42,
-                 hidden_size=256,
-                 latent_size=256,
                  l_size=64,
                  dropout=0.1,
                  num_context_range=(1, 20),
                  extra_target_range=(0, 5),
                  testing_context_size=10):
         super().__init__()
-        self.latent_size = latent_size
-        self.hidden_size = hidden_size
         self.l_size = l_size
-        self.backcast_length = backcast_length
-        self.forecast_length = forecast_length
         self.nfe = 0
         self.num_context_range = num_context_range
         self.num_extra_target_range = extra_target_range
@@ -102,10 +94,10 @@ class TimeSeriesODE(System):
         return -log_likelihood + kl
 
     def validation_step(self, batch, batch_idx):
-        if self.t is None:
-            self.t, self.y, self.mu = batch[0][0], batch[0][1], batch[0][2]
-
         x, y, mu = batch
+        if self.t is None:
+            self.t, self.y, self.mu = x[0], y[0], mu[0]
+
         x_context, y_context, x_target, y_target = \
             context_target_split(x, y, self.test_context_size, 0)
 

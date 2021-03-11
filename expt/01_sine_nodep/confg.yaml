@@ -5,7 +5,7 @@ train_data_loader:
   dataset:
     type: sine
     amplitude_range: [0.5, 1.0]
-    freq_range: [1, 1]
+    freq_range: [6, 6]
     num_samples: 500
     seed: 41241
   batch_size: 32
@@ -15,14 +15,16 @@ valid_data_loader:
   dataset:
     type: sine
     amplitude_range: [0.5, 1.0]
-    freq_range: [1, 1]
-    num_samples: 10
+    freq_range: [6, 6]
+    num_samples: 50
     seed: 51343
   batch_size: 32
   shuffle: false
   num_workers: 4
 system:
   type: time_series_ode
+  num_context_range: [10, 50]
+  extra_target_range: [0, 10]
 trainer:
   gpus: 1
   max_epochs: 40

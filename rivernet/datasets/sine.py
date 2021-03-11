@@ -36,6 +36,7 @@ class SineData(Dataset):
     def __init__(self, amplitude_range=(-1., 1.), shift_range=(-.5, .5),
                  freq_range=(1, 1),
                  num_samples=1000, num_points=100, add_cosine=False,
+                 std=0.01,
                  seed=None):
         self.amplitude_range = amplitude_range
         self.shift_range = shift_range
@@ -43,6 +44,7 @@ class SineData(Dataset):
         self.num_points = num_points
         self.x_dim = 1  # x and y dim are fixed for this dataset.
         self.y_dim = 1
+        self.std = std
 
         rs = np.random.RandomState(seed)
 
@@ -66,7 +68,7 @@ class SineData(Dataset):
                 b = (b_max - b_min) * rs.rand() + b_min
                 f = (f_max - f_min) * rs.rand() + f_min
                 mu += a * torch.cos(f * (x - b))
-            y = mu + 0.1 * rs.randn(*mu.shape).astype(np.float32)
+            y = mu + self.std * rs.randn(*mu.shape).astype(np.float32)
             self.data.append((x, y, mu))
 
     def __getitem__(self, index):
