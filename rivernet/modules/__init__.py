@@ -1,3 +1,4 @@
 from .base import Module
-from .nodep import (Encoder, MLPDecoder, MLPODEDecoder, MuSigmaEncoder,
-                    NeuralODEProcess, NeuralProcess, ODEDecoder)
+from .decoders import MLPDecoder, ODEDecoder
+from .encoders import Encoder, MuSigmaEncoder
+from .processes import NeuralODEProcess, NeuralProcess

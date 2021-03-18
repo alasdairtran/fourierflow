@@ -37,12 +37,16 @@ system:
     h_dim: 50
     L_dim: 10
     initial_x: -3.2
-    encoder:
+    xy_encoder:
       type: encoder
       x_dim: 1
       y_dim: 1
       h_dim: 50
       r_dim: 50
+    r_encoder:
+      type: mu_sigma_encoder
+      r_dim: 50
+      z_dim: 50
     decoder:
       type: mlp_ode_decoder
       x_dim: 1
