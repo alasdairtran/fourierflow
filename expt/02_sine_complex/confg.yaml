@@ -1,12 +1,12 @@
 # Reproduce Table 1 in Norcliffe et al (2021)
 comet:
   project_name: neural-ode
-  experiment_name: baseline-sine-nodep
+  experiment_name: complex-sine
 train_data_loader:
   dataset:
     type: sine
     amplitude_range: [-1.0, 1.0]
-    freq_range: [1, 1]
+    freq_range: [5, 5]
     shift_range: [-0.5, 0.5]
     num_samples: 490
     seed: 41241
@@ -18,7 +18,7 @@ valid_data_loader:
     type: sine
     amplitude_range: [-1.0, 1.0]
     shift_range: [-0.5, 0.5]
-    freq_range: [1, 1]
+    freq_range: [5, 5]
     num_samples: 10
     seed: 51343
   batch_size: 5
@@ -26,30 +26,30 @@ valid_data_loader:
   num_workers: 4
 system:
   type: time_series_ode
-  num_context_range: [1, 10]
-  extra_target_range: [0, 5]
+  num_context_range: [20, 30]
+  extra_target_range: [10, 20]
   process:
     type: neural_ode_process
     x_dim: 1
     y_dim: 1
-    r_dim: 50
-    z_dim: 50
-    h_dim: 50
-    L_dim: 10
+    r_dim: 128
+    z_dim: 128
+    h_dim: 128
+    L_dim: 32
     initial_x: -3.2
     encoder:
       type: encoder
       x_dim: 1
       y_dim: 1
-      h_dim: 50
-      r_dim: 50
+      h_dim: 128
+      r_dim: 128
     decoder:
       type: mlp_ode_decoder
       x_dim: 1
       y_dim: 1
-      z_dim: 50
-      h_dim: 50
-      L_dim: 10
+      z_dim: 128
+      h_dim: 128
+      L_dim: 32
       initial_x: -3.2
 trainer:
   gpus: 1

@@ -14,8 +14,8 @@ def plot_sines(device, t, y, mu, nodep, expt):
 
     rs = np.random.RandomState(5214)  # always select same random targets
 
-    length_context_1 = 1
-    length_context_2 = 14
+    length_context_1 = 10  # 1
+    length_context_2 = 30  # 14
     start_point = 2  # third time step
     darkness = 0.15  # transparency of sampled path
     truth_darkness = 1  # transparency of true path
