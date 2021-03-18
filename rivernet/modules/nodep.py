@@ -103,7 +103,8 @@ class ODEDecoder(Module):
 
         self.hidden_to_mu = nn.Linear(h_dim+L_dim, y_dim)
         self.hidden_to_sigma = nn.Linear(h_dim+L_dim, y_dim)
-        self.register_buffer('initial_x', initial_x)
+        self.register_buffer(
+            'initial_x', torch.FloatTensor([initial_x]).view(1, 1, 1))
         self.nfe = 0
 
     def odefunc_batch(self, t, v):  # v = (L(x), z_)
@@ -469,7 +470,7 @@ class NeuralODEProcess(Module):
             Dimension of the latent state L.
     """
 
-    def __init__(self, x_dim, y_dim, r_dim, z_dim, h_dim, L_dim, initial_x, encoder_cls=Encoder, decoder_cls=MLPODEDecoder):
+    def __init__(self, x_dim, y_dim, r_dim, z_dim, h_dim, L_dim, initial_x, encoder: Module, decoder: Module):
         super().__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
@@ -480,10 +481,9 @@ class NeuralODEProcess(Module):
         self.initial_x = torch.FloatTensor([initial_x]).view(1, 1, 1)
 
         # Initialize networks
-        self.xy_to_r = encoder_cls(x_dim, y_dim, h_dim, r_dim)
+        self.xy_to_r = encoder
         self.r_to_mu_sigma = MuSigmaEncoder(r_dim, z_dim)
-        self.xz_to_y = decoder_cls(
-            x_dim, z_dim, h_dim, y_dim, L_dim, self.initial_x)
+        self.xz_to_y = decoder
 
     def aggregate(self, r_i):
         """
