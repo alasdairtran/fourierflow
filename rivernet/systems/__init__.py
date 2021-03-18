@@ -1,2 +1,2 @@
 from .base import System
-from .nodep import NeuralODEProcess
+from .nodep import TimeSeriesODE

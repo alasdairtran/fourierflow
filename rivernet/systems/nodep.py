@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.distributions.kl import kl_divergence
 
-from rivernet.modules import NeuralODEProcess
+from rivernet.modules import Module
 
 from .base import System
 from .viz import plot_sines
@@ -12,13 +12,7 @@ from .viz import plot_sines
 @System.register('time_series_ode')
 class TimeSeriesODE(System):
     def __init__(self,
-                 x_dim=1,
-                 y_dim=1,
-                 r_dim=128,
-                 z_dim=128,
-                 h_dim=128,
-                 L_dim=32,
-                 initial_x=-3.2,
+                 process: Module,
                  l_size=64,
                  dropout=0.1,
                  num_context_range=(1, 20),
@@ -31,10 +25,7 @@ class TimeSeriesODE(System):
         self.num_extra_target_range = extra_target_range
         self.test_context_size = testing_context_size
         self.rs = np.random.RandomState(1242)
-
-        initial_x = torch.FloatTensor([initial_x]).view(1, 1, 1)
-        self.nodep = NeuralODEProcess(
-            x_dim, y_dim, r_dim, z_dim, h_dim, L_dim, initial_x)
+        self.nodep = process
 
         # Fix a random datapoint for plotting
         self.t = None

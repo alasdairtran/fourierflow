@@ -4,10 +4,11 @@ from torch.distributions import Normal
 from torch.nn import functional as F
 from torchdiffeq import odeint
 
-from .base import RModel
+from .base import Module
 
 
-class Encoder(nn.Module):
+@Module.register('encoder')
+class Encoder(Module):
     """Maps an (x_i, y_i) pair to a representation r_i.
 
     Parameters
@@ -26,7 +27,7 @@ class Encoder(nn.Module):
     """
 
     def __init__(self, x_dim, y_dim, h_dim, r_dim):
-        super(Encoder, self).__init__()
+        super().__init__()
 
         self.x_dim = x_dim
         self.y_dim = y_dim
@@ -53,7 +54,8 @@ class Encoder(nn.Module):
         return self.input_to_hidden(input_pairs)
 
 
-class ODEDecoder(nn.Module):
+@Module.register('ode_decoder')
+class ODEDecoder(Module):
     """
     Maps target times x_target (which we call x for consistency with NPs)
     and samples z (encoding information about the context points)
@@ -80,7 +82,7 @@ class ODEDecoder(nn.Module):
     """
 
     def __init__(self, x_dim, z_dim, h_dim, y_dim, L_dim, initial_x, L_out_dim=None):
-        super(ODEDecoder, self).__init__()
+        super().__init__()
 
         self.x_dim = x_dim  # must be 1
         self.z_dim = z_dim
@@ -181,9 +183,10 @@ class ODEDecoder(nn.Module):
 
 
 # Includes batching, now includes a latent state to go through MLP to get mu/sigma
+@Module.register('mlp_ode_decoder')
 class MLPODEDecoder(ODEDecoder):
     def __init__(self, x_dim, z_dim, h_dim, y_dim, L_dim, initial_x):
-        super(MLPODEDecoder, self).__init__(
+        super().__init__(
             x_dim, z_dim, h_dim, y_dim, L_dim, initial_x)
         self.decode_layers = [nn.Linear(x_dim + z_dim, h_dim),
                               nn.ReLU(inplace=True),
@@ -194,7 +197,8 @@ class MLPODEDecoder(ODEDecoder):
         self.xlz_to_hidden = nn.Sequential(*self.decode_layers)
 
 
-class MLPDecoder(nn.Module):
+@Module.register('mlp_decoder')
+class MLPDecoder(Module):
     """
     Maps target input x_target and samples z (encoding information about the
     context points) to predictions y_target.
@@ -215,7 +219,7 @@ class MLPDecoder(nn.Module):
     """
 
     def __init__(self, x_dim, z_dim, h_dim, y_dim):
-        super(MLPDecoder, self).__init__()
+        super().__init__()
 
         self.x_dim = x_dim
         self.z_dim = z_dim
@@ -267,7 +271,8 @@ class MLPDecoder(nn.Module):
         return mu, sigma
 
 
-class MuSigmaEncoder(nn.Module):
+@Module.register('mu_sigma_encoder')
+class MuSigmaEncoder(Module):
     """
     Maps a representation r to mu and sigma which will define the normal
     distribution from which we sample the latent variable z.
@@ -282,7 +287,7 @@ class MuSigmaEncoder(nn.Module):
     """
 
     def __init__(self, r_dim, z_dim):
-        super(MuSigmaEncoder, self).__init__()
+        super().__init__()
 
         self.r_dim = r_dim
         self.z_dim = z_dim
@@ -304,7 +309,8 @@ class MuSigmaEncoder(nn.Module):
         return mu, sigma
 
 
-class NeuralProcess(nn.Module):
+@Module.register('neural_process')
+class NeuralProcess(Module):
     """
     Implements Neural Process for functions of arbitrary dimensions.
 
@@ -327,7 +333,7 @@ class NeuralProcess(nn.Module):
     """
 
     def __init__(self, x_dim, y_dim, r_dim, z_dim, h_dim, encoder_cls=Encoder, decoder_cls=MLPDecoder):
-        super(NeuralProcess, self).__init__()
+        super().__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.r_dim = r_dim
@@ -437,8 +443,8 @@ class NeuralProcess(nn.Module):
             return p_y_pred
 
 
-@RModel.register('neural_ode_process')
-class NeuralODEProcess(RModel):
+@Module.register('neural_ode_process')
+class NeuralODEProcess(Module):
     """
     Implements Neural ODE Process for functions of arbitrary dimensions, but time is one dimensional.
 
@@ -464,20 +470,20 @@ class NeuralODEProcess(RModel):
     """
 
     def __init__(self, x_dim, y_dim, r_dim, z_dim, h_dim, L_dim, initial_x, encoder_cls=Encoder, decoder_cls=MLPODEDecoder):
-        super(NeuralODEProcess, self).__init__()
+        super().__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.r_dim = r_dim
         self.z_dim = z_dim
         self.h_dim = h_dim
         self.L_dim = L_dim
-        self.initial_x = initial_x
+        self.initial_x = torch.FloatTensor([initial_x]).view(1, 1, 1)
 
         # Initialize networks
         self.xy_to_r = encoder_cls(x_dim, y_dim, h_dim, r_dim)
         self.r_to_mu_sigma = MuSigmaEncoder(r_dim, z_dim)
         self.xz_to_y = decoder_cls(
-            x_dim, z_dim, h_dim, y_dim, L_dim, initial_x)
+            x_dim, z_dim, h_dim, y_dim, L_dim, self.initial_x)
 
     def aggregate(self, r_i):
         """
