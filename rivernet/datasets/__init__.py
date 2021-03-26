@@ -8,3 +8,4 @@ from .lotka_voltera import StochasticLotkaVolteraData
 from .mnist import CustomMNISTDataset
 from .oscillation import DampOscilData
 from .sine import SineData
+from .spiral import SpirialData

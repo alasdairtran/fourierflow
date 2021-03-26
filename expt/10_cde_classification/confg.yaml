@@ -1,0 +1,28 @@
+# Reproduce Table 1 in Norcliffe et al (2021)
+comet:
+  project_name: neural-ode
+  experiment_name: cde-spiral-clf
+train_data_loader:
+  dataset:
+    type: spiral
+    n_samples: 1024
+    n_steps: 100
+    seed: 41241
+  batch_size: 32
+  shuffle: true
+  num_workers: 4
+valid_data_loader:
+  dataset:
+    type: spiral
+    n_samples: 128
+    n_steps: 100
+    seed: 21234
+  batch_size: 32
+  shuffle: false
+  num_workers: 4
+system:
+  type: cde_classification
+trainer:
+  gpus: 1
+  max_epochs: 20
+  gradient_clip_val: 0.1
