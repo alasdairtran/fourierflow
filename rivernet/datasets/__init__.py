@@ -1,5 +1,6 @@
 from .base import RDataset
 from .boucing_ball import BouncingBallDataset
+from .burgers import BurgersEquation
 from .character import CharacterTrajectoriesDataset
 from .exp import ExpData
 from .hafner import HafnerData
