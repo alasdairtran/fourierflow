@@ -5,6 +5,7 @@ from math import pi
 
 import numpy as np
 import torch
+import torchcde
 from torch.utils.data import Dataset
 
 from .base import RDataset
@@ -65,9 +66,7 @@ class SineData(Dataset):
             # Sample random shift
             b = (b_max - b_min) * rs.rand() + b_min
             f = (f_max - f_min) * rs.rand() + f_min
-            # Shape (num_points, x_dim)
-            t = torch.linspace(-pi, pi, num_points).unsqueeze(1)
-            # Shape (num_points, y_dim)
+            t = torch.linspace(-pi, pi, num_points)
             mu = a * torch.sin(f * (t - b))
             if add_cosine:
                 a = (a_max - a_min) * rs.rand() + a_min
@@ -82,7 +81,13 @@ class SineData(Dataset):
             x = process[:backcast_len]
             y = process[-forecast_len:]
 
-            self.data.append((t, mu, t_x, x, t_y, y))
+            # Turn data into continuous path.
+            # Cache the natural cubic spline coefficients.
+            x2 = np.stack([t_x, x], axis=1).astype(np.float32)
+            coeffs = torchcde.natural_cubic_coeffs(torch.from_numpy(x2))
+            # coeffs.shape == [n_steps - 1, 4 * n_channels]
+
+            self.data.append((t, mu, t_x, x, coeffs, t_y, y))
 
     def __getitem__(self, index):
         return self.data[index]

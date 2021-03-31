@@ -17,9 +17,7 @@ class NBEATSForecaster(System):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        _, _, _, x, _, y = batch
-        x = x.squeeze(-1)
-        y = y.squeeze(-1)
+        _, _, _, x, _, _, y = batch
         # x.shape == [batch_size, backcast_len]
 
         _, preds = self.model(x)
@@ -29,14 +27,12 @@ class NBEATSForecaster(System):
         return mse
 
     def validation_step(self, batch, batch_idx):
-        t, mu, t_x, x, t_y, y = batch
-        x = x.squeeze(-1)
-        y = y.squeeze(-1)
+        t, mu, t_x, x, _, t_y, y = batch
         # x.shape == [batch_size, backcast_len]
 
         _, preds = self.model(x)
         mse = F.mse_loss(preds, y, reduction='mean')
-        self.log('train_mse', mse)
+        self.log('valid_mse', mse)
 
         if batch_idx == 0:
             for i in range(self.n_plots):

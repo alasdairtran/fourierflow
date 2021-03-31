@@ -1,0 +1,42 @@
+comet:
+  project_name: neural-ode
+  experiment_name: sine-cde
+train_data_loader:
+  dataset:
+    type: sine
+    num_points: 200
+    forecast_len: 80
+    backcast_len: 120
+    amplitude_range: [-1.0, 1.0]
+    freq_range: [9, 12]
+    shift_range: [-0.5, 0.5]
+    num_samples: 2048
+    std: 0.2
+    add_cosine: true
+    seed: 41241
+  batch_size: 32
+  shuffle: true
+  num_workers: 4
+valid_data_loader:
+  dataset:
+    type: sine
+    num_points: 200
+    forecast_len: 80
+    backcast_len: 120
+    amplitude_range: [-1.0, 1.0]
+    shift_range: [-0.5, 0.5]
+    freq_range: [9, 12]
+    num_samples: 32
+    std: 0.2
+    add_cosine: true
+    seed: 51343
+  batch_size: 32
+  shuffle: false
+  num_workers: 4
+system:
+  type: cde_forecaster
+  n_plots: 4
+trainer:
+  gpus: 1
+  max_epochs: 20
+  gradient_clip_val: 1
