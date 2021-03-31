@@ -35,8 +35,11 @@ class SineData(Dataset):
 
     def __init__(self, amplitude_range=(-1., 1.), shift_range=(-.5, .5),
                  freq_range=(1, 1),
-                 num_samples=1000, num_points=100, add_cosine=False,
+                 num_samples=1000, num_points=200, add_cosine=False,
                  std=0.01,
+                 forecast_len=80,
+                 backcast_len=120,
+                 p=0.,
                  seed=None):
         self.amplitude_range = amplitude_range
         self.shift_range = shift_range
@@ -45,6 +48,9 @@ class SineData(Dataset):
         self.x_dim = 1  # x and y dim are fixed for this dataset.
         self.y_dim = 1
         self.std = std
+        self.forecast_len = forecast_len
+        self.backcast_len = backcast_len
+        self.p = p
 
         rs = np.random.RandomState(seed)
 
@@ -60,16 +66,23 @@ class SineData(Dataset):
             b = (b_max - b_min) * rs.rand() + b_min
             f = (f_max - f_min) * rs.rand() + f_min
             # Shape (num_points, x_dim)
-            x = torch.linspace(-pi, pi, num_points).unsqueeze(1)
+            t = torch.linspace(-pi, pi, num_points).unsqueeze(1)
             # Shape (num_points, y_dim)
-            mu = a * torch.sin(f * (x - b))
+            mu = a * torch.sin(f * (t - b))
             if add_cosine:
                 a = (a_max - a_min) * rs.rand() + a_min
                 b = (b_max - b_min) * rs.rand() + b_min
                 f = (f_max - f_min) * rs.rand() + f_min
-                mu += a * torch.cos(f * (x - b))
-            y = mu + self.std * rs.randn(*mu.shape).astype(np.float32)
-            self.data.append((x, y, mu))
+                mu += a * torch.cos(f * (t - b))
+            process = mu + self.std * rs.randn(*mu.shape).astype(np.float32)
+
+            t_x = t[:backcast_len]
+            t_y = t[-forecast_len:]
+
+            x = process[:backcast_len]
+            y = process[-forecast_len:]
+
+            self.data.append((t, mu, t_x, x, t_y, y))
 
     def __getitem__(self, index):
         return self.data[index]

@@ -5,6 +5,8 @@ train_data_loader:
   dataset:
     type: sine
     num_points: 200
+    forecast_len: 80
+    backcast_len: 120
     amplitude_range: [-1.0, 1.0]
     freq_range: [9, 12]
     shift_range: [-0.5, 0.5]
@@ -19,6 +21,8 @@ valid_data_loader:
   dataset:
     type: sine
     num_points: 200
+    forecast_len: 80
+    backcast_len: 120
     amplitude_range: [-1.0, 1.0]
     shift_range: [-0.5, 0.5]
     freq_range: [9, 12]
@@ -39,8 +43,6 @@ system:
     backcast_length: 120
     hidden_layer_units: 64
     dropout: 0.1
-  forecast_len: 80
-  backcast_len: 120
   n_plots: 4
 trainer:
   gpus: 1

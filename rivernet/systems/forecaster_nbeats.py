@@ -8,51 +8,41 @@ from .viz import plot_deterministic_forecasts
 
 @System.register('nbeats_forecaster')
 class NBEATSForecaster(System):
-    def __init__(self, model: Module, forecast_len, backcast_len, n_plots):
+    def __init__(self, model: Module, n_plots):
         super().__init__()
         self.model = model
-        self.forecast_len = forecast_len
-        self.backcast_len = backcast_len
         self.n_plots = n_plots
 
     def forward(self, x):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        _, series, _ = batch
-        S, L = self.backcast_len, self.forecast_len
-        T = S + L
-        series = series.squeeze(-1)[:, :T]
-        # series.shape == [batch_size, total_len]
+        _, _, _, x, _, y = batch
+        x = x.squeeze(-1)
+        y = y.squeeze(-1)
+        # x.shape == [batch_size, backcast_len]
 
-        X = series[:, :S]
-        y = series[:, -L:]
-
-        _, preds = self.model(X)
+        _, preds = self.model(x)
         mse = F.mse_loss(preds, y, reduction='mean')
         self.log('train_mse', mse)
 
         return mse
 
     def validation_step(self, batch, batch_idx):
-        t, series, mu = batch
-        S, L = self.backcast_len, self.forecast_len
-        T = S + L
-        series = series.squeeze(-1)[:, :T]
-        # series.shape == [batch_size, total_len]
+        t, mu, t_x, x, t_y, y = batch
+        x = x.squeeze(-1)
+        y = y.squeeze(-1)
+        # x.shape == [batch_size, backcast_len]
 
-        X = series[:, :S]
-        y = series[:, -L:]
-
-        _, preds = self.model(X)
+        _, preds = self.model(x)
         mse = F.mse_loss(preds, y, reduction='mean')
         self.log('train_mse', mse)
 
         if batch_idx == 0:
             for i in range(self.n_plots):
                 plot_deterministic_forecasts(
-                    self.logger.experiment, i, t[i], mu[i], t[i, :S],
-                    X[i], t[i, -L:], y[i], preds[i])
+                    self.logger.experiment, i, t[i], mu[i], t_x[i],
+                    x[i], t_y[i], y[i], preds[i])
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.parameters())
