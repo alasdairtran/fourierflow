@@ -5,6 +5,33 @@ import numpy as np
 import torch
 
 
+def plot_deterministic_forecasts(expt, name, t_mu, mu, t_x, x, t_y, y, preds):
+    fig = plt.figure(figsize=(12, 3))
+    ax = fig.add_subplot(1, 1, 1)
+    purple = '#9013FE'
+
+    t_mu = t_mu.cpu().numpy()
+    t_x = t_x.cpu().numpy()
+    t_y = t_y.cpu().numpy()
+    mu = mu.cpu().numpy()
+    x = x.cpu().numpy()
+    y = y.cpu().numpy()
+    preds = preds.cpu().numpy()
+
+    # Ground-truth process without noise
+    ax.plot(t_mu, mu, c='k', linestyle='--', alpha=1, zorder=1)
+
+    # Noisy inputs to the model
+    ax.scatter(t_x, x, s=5, c='k', alpha=1, zorder=2)
+
+    # Model predictions
+    ax.plot(t_y, preds, alpha=0.8, c=purple, zorder=3)
+
+    fig.tight_layout()
+    expt.log_figure(figure=fig, figure_name=name)
+    plt.close('all')
+
+
 def plot_sines(device, t, y, mu, nodep, expt):
     t = t.cpu()
     y = y.cpu()
