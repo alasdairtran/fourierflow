@@ -90,8 +90,10 @@ class CDEForecaster(System):
 
         if batch_idx == 0:
             for i in range(self.n_plots):
+                e = 0 if self.global_step == 0 else self.current_epoch + 1
+                name = f'e{e}-s{i}'
                 plot_deterministic_forecasts(
-                    self.logger.experiment, i, t[i], mu[i], t_x[i],
+                    self.logger.experiment, name, t[i], mu[i], t_x[i],
                     x[i], t_y[i], y[i], preds[i])
 
     def configure_optimizers(self):
