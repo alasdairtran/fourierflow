@@ -1,0 +1,40 @@
+# Reproduce Table 1 in Norcliffe et al (2021)
+comet:
+  project_name: neural-ode
+  experiment_name: sine-nbeats
+train_data_loader:
+  dataset:
+    type: sine
+    amplitude_range: [-1.0, 1.0]
+    freq_range: [5, 7]
+    shift_range: [-0.5, 0.5]
+    num_samples: 2048
+    seed: 41241
+  batch_size: 32
+  shuffle: true
+  num_workers: 4
+valid_data_loader:
+  dataset:
+    type: sine
+    amplitude_range: [-1.0, 1.0]
+    shift_range: [-0.5, 0.5]
+    freq_range: [5, 5]
+    num_samples: 32
+    seed: 51343
+  batch_size: 32
+  shuffle: false
+  num_workers: 4
+system:
+  type: nbeats_forecaster
+  model:
+    type: nbeats
+    n_stacks: 4
+    nb_blocks_per_stack: 1
+    forecast_length: 20
+    backcast_length: 80
+    hidden_layer_units: 128
+    dropout: 0.1
+trainer:
+  gpus: 1
+  max_epochs: 20
+  gradient_clip_val: 1
