@@ -27,6 +27,7 @@ dependencies:
       - netron # visualizes neural networks
       - ogb
       - overrides
+      - plotly
       - ptvsd
       - pudb
       - pymongo

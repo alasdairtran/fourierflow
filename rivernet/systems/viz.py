@@ -3,6 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import wandb
 
 
 def plot_deterministic_forecasts(expt, name, t_mu, mu, t_x, x, t_y, y, preds):
@@ -28,7 +29,8 @@ def plot_deterministic_forecasts(expt, name, t_mu, mu, t_x, x, t_y, y, preds):
     ax.plot(t_y, preds, alpha=0.8, c=purple, zorder=3)
 
     fig.tight_layout()
-    expt.log_figure(figure=fig, figure_name=name)
+    # expt.log_figure(figure=fig, figure_name=name)
+    expt.log({f'{name}': wandb.Image(fig)})
     plt.close('all')
 
 

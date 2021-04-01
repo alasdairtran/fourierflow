@@ -1,6 +1,10 @@
-comet:
-  project_name: neural-ode
-  experiment_name: sine-nbeats
+wandb:
+  project: neural-ode
+  name: sine-nbeats
+  tags:
+    - sine
+    - nbeats
+  notes: Test combination of sines and nbeats.
 train_data_loader:
   dataset:
     type: sine

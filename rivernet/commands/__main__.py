@@ -1,16 +1,17 @@
 import os
 import pathlib
+from copy import deepcopy
 
 import comet_ml  # pylint: disable=unused-import
 import ptvsd
 import pytorch_lightning as pl
 import typer
-from pytorch_lightning.loggers import CometLogger
-from torch.utils.data import DataLoader
-
+import wandb
+from pytorch_lightning.loggers import CometLogger, WandbLogger
 from rivernet.datasets import RDataset
 from rivernet.systems import System
 from rivernet.utils.parsing import yaml_to_params
+from torch.utils.data import DataLoader
 
 app = typer.Typer()
 
@@ -24,7 +25,16 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
     params = yaml_to_params(config_path, overrides)
     config_dir = os.path.dirname(config_path)
-    serialization_dir = os.path.join(config_dir, 'serialization')
+    # serialization_dir = os.path.join(config_dir, 'serialization')
+
+    wandb_opts = params.pop('wandb').as_dict()
+    wandb_logger = WandbLogger(save_dir=config_dir,
+                               mode='online',
+                               config=deepcopy(params.as_dict()),
+                               **wandb_opts)
+    code_artifact = wandb.Artifact('rivernet', type='code')
+    code_artifact.add_dir('rivernet')
+    wandb_logger.experiment.log_artifact(code_artifact)
 
     train_params = params['train_data_loader']
     train_loader = DataLoader(RDataset.from_params(train_params.pop('dataset')),
@@ -34,22 +44,22 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     valid_loader = DataLoader(RDataset.from_params(valid_params.pop('dataset')),
                               **valid_params.as_dict())
 
-    comet_logger = CometLogger(
-        api_key=os.environ.get('COMET_API_KEY'),
-        workspace=os.environ.get('COMET_WORKSPACE'),
-        save_dir=serialization_dir,
-        log_code=False,
-        **params.pop('comet').as_dict(),
-    )
+    # comet_logger = CometLogger(
+    #     api_key=os.environ.get('COMET_API_KEY'),
+    #     workspace=os.environ.get('COMET_WORKSPACE'),
+    #     save_dir=serialization_dir,
+    #     log_code=False,
+    #     **params.pop('comet').as_dict(),
+    # )
 
     # Assume the script is run from project root directory
-    comet_logger.experiment.log_code(config_path)
-    for path in pathlib.Path('rivernet').rglob('*.py'):
-        comet_logger.experiment.log_code(path)
+    # comet_logger.experiment.log_code(config_path)
+    # for path in pathlib.Path('rivernet').rglob('*.py'):
+    #     comet_logger.experiment.log_code(path)
 
     system = System.from_params(params['system'])
 
-    trainer = pl.Trainer(logger=comet_logger,
+    trainer = pl.Trainer(logger=wandb_logger,
                          **params.pop('trainer').as_dict())
     trainer.fit(system, train_loader, valid_loader)
 
