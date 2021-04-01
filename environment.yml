@@ -41,4 +41,5 @@ dependencies:
       - git+https://github.com/google-research/torchsde.git
       - tqdm
       - typer
+      - wandb
       - wget
