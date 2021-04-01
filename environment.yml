@@ -24,6 +24,7 @@ dependencies:
       - hickle
       - ipywidgets
       - jina
+      - netron # visualizes neural networks
       - ogb
       - overrides
       - ptvsd
