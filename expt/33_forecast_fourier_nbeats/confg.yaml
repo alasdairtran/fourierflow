@@ -1,6 +1,6 @@
 comet:
   project_name: neural-ode
-  experiment_name: sine-nbeats
+  experiment_name: sine-nbeats-fourier
 train_data_loader:
   dataset:
     type: sine
@@ -41,7 +41,8 @@ system:
     nb_blocks_per_stack: 1
     forecast_length: 80
     backcast_length: 120
-    hidden_layer_units: 256
+    hidden_layer_units: 64
+    block_type: fourier
     dropout: 0.1
   n_plots: 4
 trainer:
