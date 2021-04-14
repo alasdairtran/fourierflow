@@ -4,6 +4,7 @@ from copy import deepcopy
 
 import ptvsd
 import pytorch_lightning as pl
+import torch
 import typer
 import wandb
 from pytorch_lightning.loggers import WandbLogger
@@ -49,9 +50,13 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
 
 @app.command()
-def test(config_path: str, overrides: str = '', debug: bool = False):
+def test(config_path: str, model_path: str, overrides: str = '', debug: bool = False):
     """Test a model."""
-    print('test')
+    params = yaml_to_params(config_path, overrides)
+    datastore = Datastore.from_params(params['datastore'])
+    system = System.from_params(params['system'], model_path=model_path)
+    trainer = pl.Trainer(**params.pop('trainer').as_dict())
+    trainer.test(system, datamodule=datastore)
 
 
 if __name__ == "__main__":
