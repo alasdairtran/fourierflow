@@ -41,6 +41,54 @@ def compl_mul2d(a, b):
 
 
 class SpectralConv2d(nn.Module):
+    def __init__(self, in_dim, out_dim, n_modes):
+        super().__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        self.n_modes = n_modes
+
+        fourier_weight = [nn.Parameter(torch.FloatTensor(
+            in_dim, out_dim, n_modes, n_modes, 2)) for _ in range(2)]
+        self.fourier_weight = nn.ParameterList(fourier_weight)
+        for param in self.fourier_weight:
+            nn.init.xavier_normal_(param, gain=1/(in_dim*out_dim))
+
+    @staticmethod
+    def complex_matmul_2d(a, b):
+        # (batch, in_channel, x, y), (in_channel, out_channel, x, y) -> (batch, out_channel, x, y)
+        op = partial(torch.einsum, "bixy,ioxy->boxy")
+        return torch.stack([
+            op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+            op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
+        ], dim=-1)
+
+    def forward(self, x):
+        # x.shape == [batch_size, in_dim, grid_size, grid_size]
+        B, I, N, M = x.shape
+
+        x_ft = torch.fft.rfft2(x, s=(N, M), norm='ortho')
+        # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1]
+
+        x_ft = torch.stack([x_ft.real, x_ft.imag], dim=4)
+        # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
+
+        out_ft = torch.zeros(B, I, N, M // 2 + 1, 2, device=x.device)
+        # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
+
+        out_ft[:, :, :self.n_modes, :self.n_modes] = self.complex_matmul_2d(
+            x_ft[:, :, :self.n_modes, :self.n_modes], self.fourier_weight[0])
+
+        out_ft[:, :, -self.n_modes:, :self.n_modes] = self.complex_matmul_2d(
+            x_ft[:, :, -self.n_modes:, :self.n_modes], self.fourier_weight[1])
+
+        out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
+
+        x = torch.fft.irfft2(out_ft, s=(N, M), norm='ortho')
+
+        return x
+
+
+class SpectralConv2dNew(nn.Module):
     def __init__(self, in_channels, out_channels, modes1, modes2):
         super().__init__()
         self.in_channels = in_channels
@@ -142,13 +190,13 @@ class SimpleBlock2d(nn.Module):
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
         self.conv0 = SpectralConv2d(
-            self.width, self.width, self.modes1, self.modes2)
+            self.width, self.width, self.modes1)
         self.conv1 = SpectralConv2d(
-            self.width, self.width, self.modes1, self.modes2)
+            self.width, self.width, self.modes1)
         self.conv2 = SpectralConv2d(
-            self.width, self.width, self.modes1, self.modes2)
+            self.width, self.width, self.modes1)
         self.conv3 = SpectralConv2d(
-            self.width, self.width, self.modes1, self.modes2)
+            self.width, self.width, self.modes1)
         self.w0 = nn.Conv1d(self.width, self.width, 1)
         self.w1 = nn.Conv1d(self.width, self.width, 1)
         self.w2 = nn.Conv1d(self.width, self.width, 1)
