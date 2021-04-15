@@ -1,0 +1,4 @@
+[virtualenvs]
+# Needed to select poetry virtualenv in VS Code. See
+# https://github.com/microsoft/vscode-python/issues/8372
+in-project = true
