@@ -22,21 +22,63 @@ np.random.seed(0)
 # Complex multiplication
 
 
-def compl_mul2d(a, b):
+def compl_mul2d_old(a, b):
     op = partial(torch.einsum, "bctq,dctq->bdtq")
     return torch.stack([
         op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
         op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
     ], dim=-1)
 
+
+def compl_mul2d(a, b):
+    # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
+    op = partial(torch.einsum, "bixy,ioxy->boxy")
+    return op(a, b)
+
 ################################################################
 # fourier layer
 ################################################################
 
 
+class SpectralConv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, modes1, modes2):
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        # Number of Fourier modes to multiply, at most floor(N/2) + 1
+        self.modes1 = modes1
+        self.modes2 = modes2
+
+        self.scale = (1 / (in_channels * out_channels))
+        self.weights1 = nn.Parameter(
+            self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
+        self.weights2 = nn.Parameter(
+            self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
+
+    def forward(self, x, size=None):
+        if size == None:
+            size = x.size(-1)
+
+        batchsize = x.shape[0]
+        # Compute Fourier coeffcients up to factor of e^(- something constant)
+        x_ft = torch.fft.rfftn(x, dim=[2, 3], norm='ortho')
+
+        # Multiply relevant Fourier modes
+        out_ft = torch.zeros(batchsize, self.out_channels, size,
+                             size//2 + 1, device=x.device, dtype=torch.cfloat)
+        out_ft[:, :, :self.modes1, :self.modes2] = \
+            compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+        out_ft[:, :, -self.modes1:, :self.modes2] = \
+            compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+
+        # Return to physical space
+        x = torch.fft.irfftn(out_ft, s=(size, size), dim=[2, 3], norm='ortho')
+        return x
+
+
 class SpectralConv2d_fast(nn.Module):
     def __init__(self, in_channels, out_channels, modes1, modes2):
-        super(SpectralConv2d_fast, self).__init__()
+        super().__init__()
 
         """
         2D Fourier layer. It does FFT, linear transform, and Inverse FFT.
@@ -63,9 +105,11 @@ class SpectralConv2d_fast(nn.Module):
         out_ft = torch.zeros(batchsize, self.in_channels,
                              x.size(-2), x.size(-1)//2 + 1, 2, device=x.device)
         out_ft[:, :, :self.modes1, :self.modes2] = \
-            compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+            compl_mul2d_old(
+                x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
         out_ft[:, :, -self.modes1:, :self.modes2] = \
-            compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+            compl_mul2d_old(
+                x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
 
         # Return to physical space
         x = torch.irfft(out_ft, 2, normalized=True, onesided=True,
@@ -97,13 +141,13 @@ class SimpleBlock2d(nn.Module):
         self.fc0 = nn.Linear(12, self.width)
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
-        self.conv0 = SpectralConv2d_fast(
+        self.conv0 = SpectralConv2d(
             self.width, self.width, self.modes1, self.modes2)
-        self.conv1 = SpectralConv2d_fast(
+        self.conv1 = SpectralConv2d(
             self.width, self.width, self.modes1, self.modes2)
-        self.conv2 = SpectralConv2d_fast(
+        self.conv2 = SpectralConv2d(
             self.width, self.width, self.modes1, self.modes2)
-        self.conv3 = SpectralConv2d_fast(
+        self.conv3 = SpectralConv2d(
             self.width, self.width, self.modes1, self.modes2)
         self.w0 = nn.Conv1d(self.width, self.width, 1)
         self.w1 = nn.Conv1d(self.width, self.width, 1)
