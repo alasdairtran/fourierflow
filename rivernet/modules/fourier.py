@@ -5,63 +5,55 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def compl_mul1d(a, b):
-    # (batch, in_channel, x ), (in_channel, out_channel, x) -> (batch, out_channel, x)
-    op = partial(torch.einsum, "bix,iox->box")
-
-    # Recall multiplication of two complex numbers:
-    # (x + yi)(u + vi) = (xu - yv) + (xv + yu)i
-
-    return torch.stack([
-        op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
-        op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
-    ], dim=-1)
-
-
-################################################################
-#  1d fourier layer
-################################################################
 class SpectralConv1d(nn.Module):
-    def __init__(self, in_channels, out_channels, modes1):
+    def __init__(self, in_dim, out_dim, n_modes):
         super().__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        self.n_modes = n_modes
 
-        """
-        1D Fourier layer. It does FFT, linear transform, and Inverse FFT.
-        """
+        self.fourier_weight = nn.Parameter(torch.FloatTensor(
+            in_dim, out_dim, n_modes, 2))
+        nn.init.xavier_normal_(self.fourier_weight, gain=1/(in_dim*out_dim))
 
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        # Number of Fourier modes to multiply, at most floor(N/2) + 1
-        self.modes1 = modes1
+    @staticmethod
+    def complex_matmul_1d(a, b):
+        # (batch, in_channel, x), (in_channel, out_channel, x) -> (batch, out_channel, x)
+        op = partial(torch.einsum, "bix,iox->box")
 
-        self.scale = (1 / (in_channels*out_channels))
-        self.weights1 = nn.Parameter(
-            self.scale * torch.rand(in_channels, out_channels, self.modes1, 2))
+        # Recall multiplication of two complex numbers:
+        # (x + yi)(u + vi) = (xu - yv) + (xv + yu)i
+        return torch.stack([
+            op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+            op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
+        ], dim=-1)
 
     def forward(self, x):
-        # x.shape == [batch_size, n_features == 2, n_steps]
-        batchsize = x.shape[0]
+        # x.shape == [batch_size, in_dim, n_steps]
+        B, I, N = x.shape
 
         # Fourier transform in the space dimension
         # Compute Fourier coeffcients up to factor of e^(- something constant)
         # x_ft's final dimension represent complex coefficients
         # The Fourier modes are sorted from lowest frequency to highest.
-        x_ft = torch.rfft(x, 1, normalized=True, onesided=True)
-        # x_ft.shape == [batch_size, n_features == 2, n_steps // 2 + 1, 2]
+        x_ft = torch.fft.rfft(x, n=N, dim=-1, norm='ortho')
+        # x_ft.shape == [batch_size, in_dim, n_steps // 2 + 1]
+
+        x_ft = torch.stack([x_ft.real, x_ft.imag], dim=3)
+        # x_ft.shape == [batch_size, in_dim, n_steps // 2 + 1, 2]
 
         # Step 1: Zero out all modes less than top k
-        out_ft = torch.zeros(batchsize, self.in_channels,
-                             x.size(-1)//2 + 1, 2, device=x.device)
-        # out_ft.shape == x_ft.shape
+        out_ft = torch.zeros(B, I, N // 2 + 1, 2, device=x.device)
+        # out_ft.shape == [batch_size, in_dim, n_steps // 2 + 1, 2]
 
         # Multiply relevant Fourier modes
-        # For the most important modes, we multiply them by
-        out_ft[:, :, :self.modes1] = compl_mul1d(
-            x_ft[:, :, :self.modes1], self.weights1)
+        out_ft[:, :, :self.n_modes] = self.complex_matmul_1d(
+            x_ft[:, :, :self.n_modes], self.fourier_weight)
 
-        # Return to physical space
-        x = torch.irfft(out_ft, 1, normalized=True,
-                        onesided=True, signal_sizes=(x.size(-1), ))
+        out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
+
+        x = torch.fft.irfft(out_ft, n=N, dim=-1, norm='ortho')
+
         return x
 
 

@@ -3,8 +3,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from einops import rearrange, reduce, repeat
-from rivernet.modules.linear import GehringLinear
 from torch.nn import functional as F
+
+from rivernet.modules.linear import GehringLinear
 
 from .base import Module
 from .fourier import SpectralConv1d
@@ -103,16 +104,16 @@ class FourierBlock(nn.Module):
         self.fc0 = nn.Linear(2, width)
 
         self.conv0 = SpectralConv1d(width, width, n_modes)
-        self.conv1 = SpectralConv1d(width, width, n_modes)
-        self.conv2 = SpectralConv1d(width, width, n_modes)
-        self.conv3 = SpectralConv1d(width, width, n_modes)
+        # self.conv1 = SpectralConv1d(width, width, n_modes)
+        # self.conv2 = SpectralConv1d(width, width, n_modes)
+        # self.conv3 = SpectralConv1d(width, width, n_modes)
         self.w0 = nn.Conv1d(width, width, 1)
-        self.w1 = nn.Conv1d(width, width, 1)
-        self.w2 = nn.Conv1d(width, width, 1)
-        self.w3 = nn.Conv1d(width, width, 1)
+        # self.w1 = nn.Conv1d(width, width, 1)
+        # self.w2 = nn.Conv1d(width, width, 1)
+        # self.w3 = nn.Conv1d(width, width, 1)
 
-        self.fc1 = nn.Linear(width, 128)
-        self.fc2 = nn.Linear(128, 1)
+        self.fc1 = nn.Linear(width, 80)
+        self.fc2 = nn.Linear(80, 1)
 
         self.backcast_fc = GehringLinear(thetas_dim, backcast_length)
         self.forecast_fc = GehringLinear(thetas_dim, forecast_length)
@@ -135,26 +136,26 @@ class FourierBlock(nn.Module):
 
         x = self.fc0(x)
         x = rearrange(x, 'b s w -> b w s')
-        # x.shape == [batch_size, backcast_len, width]
+        # x.shape == [batch_size, width, backcast_len]
 
         x1 = self.conv0(x)
         x2 = self.w0(x)
         x = x1 + x2
         x = F.relu(x)
 
-        x1 = self.conv1(x)
-        x2 = self.w1(x)
-        x = x1 + x2
-        x = F.relu(x)
+        # x = self.conv1(x)
+        # x2 = self.w1(x)
+        # x = x + x1
+        # x = F.relu(x)
 
-        x1 = self.conv2(x)
-        x2 = self.w2(x)
-        x = x1 + x2
-        x = F.relu(x)
+        # x = self.conv2(x)
+        # x2 = self.w2(x)
+        # x = x + x1
+        # x = F.relu(x)
 
-        x1 = self.conv3(x)
-        x2 = self.w3(x)
-        x = x1 + x2
+        # x = self.conv3(x)
+        # x2 = self.w3(x)
+        # x = x + x1
 
         x = rearrange(x, 'b w s-> b s w')
 
