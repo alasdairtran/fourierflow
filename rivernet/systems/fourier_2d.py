@@ -82,8 +82,6 @@ class Fourier2DSystem(System):
         # xx.shape == [batch_size, x_dim, y_dim, in_channels]
         # yy.shape == [batch_size, x_dim, y_dim, out_channels]
 
-        # Batch norm in eval mode made things look bad :-(
-        self.conv.train()
         ticks = torch.linspace(0, 1, X).to(xx.device)
         grid_x = repeat(ticks, 'x -> b x y 1', b=B, y=Y)
         grid_y = repeat(ticks, 'y -> b x y 1', b=B, x=X)
