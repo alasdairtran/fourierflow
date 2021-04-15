@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import pl_bolts
 import torch
 import wandb
+from allennlp.training.learning_rate_schedulers import LinearWithWarmup
 from einops import repeat
 
 from rivernet.modules import Module
-from rivernet.modules.loss import LpLoss
 
 from .base import System
 
@@ -40,7 +40,7 @@ class NBEATSSystem(System):
 
         numerator = torch.abs(targets - preds)
         denominator = torch.abs(targets) + torch.abs(preds)
-        loss = 200 * numerator / denominator
+        loss = numerator / denominator
         loss[torch.isnan(loss)] = 0
         loss = loss.mean()
 
@@ -49,19 +49,22 @@ class NBEATSSystem(System):
     def training_step(self, batch, batch_idx):
         loss = self._learning_step(batch)
         self.log('train_loss', loss)
+        self.log('train_smape', 200 * loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         loss = self._learning_step(batch)
         self.log('valid_loss', loss)
+        self.log('valid_smape', 200 * loss)
 
     def test_step(self, batch, batch_idx):
         loss = self._learning_step(batch)
         self.log('test_loss', loss)
+        self.log('test_smape', 200 * loss)
 
     def configure_optimizers(self):
         opt = torch.optim.AdamW(
             self.parameters(), lr=1e-4, weight_decay=1e-4)
         scheduler = pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR(
-            opt, warmup_epochs=1, max_epochs=5)
+            opt, warmup_epochs=1, max_epochs=20)
         return [opt], [scheduler]

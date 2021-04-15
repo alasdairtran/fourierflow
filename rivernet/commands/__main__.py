@@ -48,6 +48,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     trainer = pl.Trainer(logger=wandb_logger,
                          **params.pop('trainer').as_dict())
     trainer.fit(system, datamodule=datastore)
+    trainer.test(system, datamodule=datastore)
 
 
 @app.command()

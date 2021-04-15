@@ -30,4 +30,4 @@ system:
 trainer:
   gpus: 1
   precision: 16
-  max_epochs: 5
+  max_epochs: 20

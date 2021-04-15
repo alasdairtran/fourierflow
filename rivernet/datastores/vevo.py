@@ -44,6 +44,8 @@ class VevoDatastore(Datastore):
         self.test_dataset = VevoDataset(test_views[:, 14:63])
         # train_dataset.shape == [1000, 64, 64, 10]
 
+        print('train vevo', len(self.train_dataset))
+
     def train_dataloader(self) -> DataLoader:
         loader = DataLoader(self.train_dataset,
                             batch_size=self.batch_size,
