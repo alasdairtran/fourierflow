@@ -22,7 +22,7 @@ class Fourier2DSystem(System):
         x = self.conv(x)
         return x.squeeze()
 
-    def training_step(self, batch, batch_idx):
+    def _learning_step(self, batch):
         xx, yy = batch
         B, X, Y, _ = xx.shape
         # xx.shape == [batch_size, x_dim, y_dim, in_channels]
@@ -45,60 +45,21 @@ class Fourier2DSystem(System):
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
+        return loss, loss_full
+
+    def training_step(self, batch, batch_idx):
+        loss, loss_full = self._learning_step(batch)
         self.log('train_loss', loss)
         self.log('train_loss_full', loss_full)
-
         return loss
 
     def validation_step(self, batch, batch_idx):
-        xx, yy = batch
-        B, X, Y, _ = xx.shape
-        # xx.shape == [batch_size, x_dim, y_dim, in_channels]
-        # yy.shape == [batch_size, x_dim, y_dim, out_channels]
-
-        ticks = torch.linspace(0, 1, X).to(xx.device)
-        grid_x = repeat(ticks, 'x -> b x y 1', b=B, y=Y)
-        grid_y = repeat(ticks, 'y -> b x y 1', b=B, x=X)
-
-        loss = 0
-        for t in range(self.n_steps):
-            y = yy[..., t: t+1]
-            # y.shape == [batch_size, x_dim, y_dim, 1]
-
-            im = self.conv(xx)
-            loss += self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
-            pred = im if t == 0 else torch.cat((pred, im), dim=-1)
-            xx = torch.cat((xx[..., 1: -2], im, grid_x, grid_y), dim=-1)
-
-        loss /= self.n_steps
-        loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
-
+        loss, loss_full = self._learning_step(batch)
         self.log('valid_loss', loss)
         self.log('valid_loss_full', loss_full)
 
     def test_step(self, batch, batch_idx):
-        xx, yy = batch
-        B, X, Y, _ = xx.shape
-        # xx.shape == [batch_size, x_dim, y_dim, in_channels]
-        # yy.shape == [batch_size, x_dim, y_dim, out_channels]
-
-        ticks = torch.linspace(0, 1, X).to(xx.device)
-        grid_x = repeat(ticks, 'x -> b x y 1', b=B, y=Y)
-        grid_y = repeat(ticks, 'y -> b x y 1', b=B, x=X)
-
-        loss = 0
-        for t in range(self.n_steps):
-            y = yy[..., t: t+1]
-            # y.shape == [batch_size, x_dim, y_dim, 1]
-
-            im = self.conv(xx)
-            loss += self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
-            pred = im if t == 0 else torch.cat((pred, im), dim=-1)
-            xx = torch.cat((xx[..., 1: -2], im, grid_x, grid_y), dim=-1)
-
-        loss /= self.n_steps
-        loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
-
+        loss, loss_full = self._learning_step(batch)
         self.log('test_loss', loss)
         self.log('test_loss_full', loss_full)
 
