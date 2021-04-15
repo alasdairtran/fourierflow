@@ -8,6 +8,7 @@ import torch
 import typer
 import wandb
 from pytorch_lightning.loggers import WandbLogger
+
 from rivernet.datastores import Datastore
 from rivernet.systems import System
 from rivernet.utils.parsing import yaml_to_params
@@ -50,7 +51,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
 
 @app.command()
-def test(config_path: str, model_path: str, overrides: str = '', debug: bool = False):
+def test(config_path: str, model_path: str = None, overrides: str = '', debug: bool = False):
     """Test a model."""
     params = yaml_to_params(config_path, overrides)
     datastore = Datastore.from_params(params['datastore'])

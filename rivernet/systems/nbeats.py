@@ -3,6 +3,7 @@ import pl_bolts
 import torch
 import wandb
 from einops import repeat
+
 from rivernet.modules import Module
 from rivernet.modules.loss import LpLoss
 
@@ -11,12 +12,13 @@ from .base import System
 
 @System.register('nbeats')
 class NBEATSSystem(System):
-    def __init__(self, model: Module, backcast_length: int,
-                 forecast_length: int,  model_path: str = None):
+    def __init__(self, model: Module = None, backcast_length: int = 42,
+                 forecast_length: int = 7, copying_previous_day: bool = False, model_path: str = None):
         super().__init__()
         self.model = model
         self.backcast_len = backcast_length
         self.forecast_len = forecast_length
+        self.copying_previous_day = copying_previous_day
 
     def forward(self, x):
         x = self.model(x)
@@ -29,8 +31,13 @@ class NBEATSSystem(System):
         sources = log_views[:, :self.backcast_len]
         targets = views[:, -self.forecast_len:]
 
-        _, X = self.model(sources)
-        preds = torch.exp(X)
+        if self.model:
+            _, X = self.model(sources)
+            preds = torch.exp(X)
+        elif self.copying_previous_day:
+            v = views[:, self.backcast_len - 1]
+            preds = repeat(v, 'b -> b d', d=self.forecast_len)
+
         numerator = torch.abs(targets - preds)
         denominator = torch.abs(targets) + torch.abs(preds)
         loss = 200 * numerator / denominator
