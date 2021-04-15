@@ -5,4 +5,5 @@ from .forecaster_cde_decoder import CDEDecoderForecaster
 from .forecaster_nbeats import NBEATSForecaster
 from .fourier import Fourier1D
 from .fourier_2d import Fourier2DSystem
+from .nbeats import NBEATSSystem
 from .nodep import TimeSeriesODE
