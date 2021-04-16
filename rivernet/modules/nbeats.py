@@ -84,36 +84,39 @@ class FourierBlock(nn.Module):
     def __init__(self, units, thetas_dim, backcast_length=10, forecast_length=5, share_thetas=False,
                  nb_harmonics=None, dropout=0.0):
         super().__init__()
-        self.theta_f_fc = self.theta_b_fc = GehringLinear(
-            units, thetas_dim, bias=False)
+        # self.theta_f_fc = self.theta_b_fc = GehringLinear(
+        #     units, thetas_dim, bias=False)
         if share_thetas:
             self.theta_f_fc = self.theta_b_fc = GehringLinear(
                 units, thetas_dim, bias=False)
         else:
             self.theta_b_fc = GehringLinear(
-                backcast_length, thetas_dim, bias=False)
+                thetas_dim, thetas_dim, bias=False)
             self.theta_f_fc = GehringLinear(
-                backcast_length, thetas_dim, bias=False)
+                thetas_dim, thetas_dim, bias=False)
 
         # Shortcut to create new tensors in the same device as the module
         self.register_buffer('_long', torch.LongTensor(1))
         self.register_buffer('_float', torch.FloatTensor(1))
 
         width = units
-        n_modes = 8
+        n_modes = 16
         self.fc0 = nn.Linear(2, width)
 
-        self.conv0 = SpectralConv1d(width, width, n_modes)
-        # self.conv1 = SpectralConv1d(width, width, n_modes)
-        # self.conv2 = SpectralConv1d(width, width, n_modes)
-        # self.conv3 = SpectralConv1d(width, width, n_modes)
-        self.w0 = nn.Conv1d(width, width, 1)
+        self.conv0 = SpectralConv1d(1, 1, n_modes)
+        self.conv1 = SpectralConv1d(1, 1, n_modes)
+        self.conv2 = SpectralConv1d(1, 1, n_modes)
+        self.conv3 = SpectralConv1d(1, 1, n_modes)
+        self.w0 = GehringLinear(backcast_length, backcast_length)
+        self.w1 = GehringLinear(backcast_length, backcast_length)
+        self.w2 = GehringLinear(backcast_length, backcast_length)
+        self.w3 = GehringLinear(backcast_length, backcast_length)
         # self.w1 = nn.Conv1d(width, width, 1)
         # self.w2 = nn.Conv1d(width, width, 1)
         # self.w3 = nn.Conv1d(width, width, 1)
 
-        self.fc1 = nn.Linear(width, 80)
-        self.fc2 = nn.Linear(80, 1)
+        self.fc1 = nn.Linear(backcast_length, thetas_dim)
+        # self.fc2 = nn.Linear(80, 1)
 
         self.backcast_fc = GehringLinear(thetas_dim, backcast_length)
         self.forecast_fc = GehringLinear(thetas_dim, forecast_length)
@@ -121,48 +124,51 @@ class FourierBlock(nn.Module):
     def forward(self, x):
         # x.shape == [batch_size, backcast_len]
 
-        x = x.unsqueeze(-1)
+        # x = x.unsqueeze(-1)
         # x.shape == [batch_size, backcast_len, 1]
 
         # Add positional information
-        pos = torch.linspace(0, 1, x.shape[1]).to(x.device)
+        # pos = torch.linspace(0, 1, x.shape[1]).to(x.device)
         # pos.shape == [backcast_len]
 
-        pos = repeat(pos, 's -> b s d', b=x.shape[0], d=1)
+        # pos = repeat(pos, 's -> b s d', b=x.shape[0], d=1)
         # pos.shape == [batch_size, backcast_len, 1]
 
-        x = torch.cat([x, pos], dim=-1)
+        # x = torch.cat([x, pos], dim=-1)
         # x.shape == [batch_size, backcast_len, 2]
 
-        x = self.fc0(x)
-        x = rearrange(x, 'b s w -> b w s')
-        # x.shape == [batch_size, width, backcast_len]
+        # x = self.fc0(x)
+        # x = rearrange(x, 'b s w -> b w s')
+        # x.shape == [batch_size, backcast_len]
+
+        x = rearrange(x, 'b s -> b 1 s')
 
         x1 = self.conv0(x)
         x2 = self.w0(x)
         x = x1 + x2
         x = F.relu(x)
 
-        # x = self.conv1(x)
-        # x2 = self.w1(x)
-        # x = x + x1
-        # x = F.relu(x)
+        x1 = self.conv1(x)
+        x2 = self.w1(x)
+        x = x1 + x2
+        x = F.relu(x)
 
-        # x = self.conv2(x)
-        # x2 = self.w2(x)
-        # x = x + x1
-        # x = F.relu(x)
+        x1 = self.conv1(x)
+        x2 = self.w1(x)
+        x = x1 + x2
+        x = F.relu(x)
 
-        # x = self.conv3(x)
-        # x2 = self.w3(x)
-        # x = x + x1
+        x1 = self.conv1(x)
+        x2 = self.w1(x)
+        x = x1 + x2
+        x = F.relu(x)
 
-        x = rearrange(x, 'b w s-> b s w')
+        x = rearrange(x, 'b 1 s-> b s')
 
         x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
-        x = x.squeeze(-1)
+        # x = F.relu(x)
+        # x = self.fc2(x)
+        # x = x.squeeze(-1)
         # x.shape == [batch_size, backcast_len]
 
         theta_b = F.relu(self.theta_b_fc(x))
