@@ -10,17 +10,20 @@ from functools import partial
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from einops import rearrange
 
 from .base import Module
+from .linear import GehringLinear
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes):
+    def __init__(self, in_dim, out_dim, n_modes, dropout=0.1):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
+        self.linear = GehringLinear(in_dim, out_dim)
+        self.act = nn.ReLU()
 
         fourier_weight = [nn.Parameter(torch.FloatTensor(
             in_dim, out_dim, n_modes, n_modes, 2)) for _ in range(2)]
@@ -38,10 +41,15 @@ class SpectralConv2d(nn.Module):
         ], dim=-1)
 
     def forward(self, x):
-        # x.shape == [batch_size, in_dim, grid_size, grid_size]
-        B, I, N, M = x.shape
+        # x.shape == [batch_size, grid_size, grid_size, in_dim]
+        B, M, N, I = x.shape
+        res = self.linear(x)
+        # res.shape == [batch_size, grid_size, grid_size, out_dim]
 
-        x_ft = torch.fft.rfft2(x, s=(N, M), norm='ortho')
+        x = rearrange(x, 'b m n i -> b i m n')
+        # x.shape == [batch_size, in_dim, grid_size, grid_size]
+
+        x_ft = torch.fft.rfft2(x, s=(M, N), norm='ortho')
         # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1]
 
         x_ft = torch.stack([x_ft.real, x_ft.imag], dim=4)
@@ -59,13 +67,18 @@ class SpectralConv2d(nn.Module):
         out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
 
         x = torch.fft.irfft2(out_ft, s=(N, M), norm='ortho')
+        # x.shape == [batch_size, in_dim, grid_size, grid_size]
 
+        x = rearrange(x, 'b i m n -> b m n i')
+        # x.shape == [batch_size, grid_size, grid_size, out_dim]
+
+        x = self.act(x + res)
         return x
 
 
 @Module.register('fourier_net_2d')
 class SimpleBlock2d(nn.Module):
-    def __init__(self, modes1, modes2, width):
+    def __init__(self, modes1, modes2, width, dropout=0.1, n_layers=4):
         super(SimpleBlock2d, self).__init__()
 
         """
@@ -84,54 +97,25 @@ class SimpleBlock2d(nn.Module):
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
-        self.fc0 = nn.Linear(12, self.width)
+        self.in_proj = GehringLinear(12, self.width)
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
-        self.conv0 = SpectralConv2d(
-            self.width, self.width, self.modes1)
-        self.conv1 = SpectralConv2d(
-            self.width, self.width, self.modes1)
-        self.conv2 = SpectralConv2d(
-            self.width, self.width, self.modes1)
-        self.conv3 = SpectralConv2d(
-            self.width, self.width, self.modes1)
-        self.w0 = nn.Conv1d(self.width, self.width, 1)
-        self.w1 = nn.Conv1d(self.width, self.width, 1)
-        self.w2 = nn.Conv1d(self.width, self.width, 1)
-        self.w3 = nn.Conv1d(self.width, self.width, 1)
+        self.spectral_layers = nn.ModuleList([])
+        for i in range(n_layers):
+            self.spectral_layers.append(SpectralConv2d(in_dim=width,
+                                                       out_dim=width,
+                                                       n_modes=modes1,
+                                                       dropout=dropout))
 
-        self.fc1 = nn.Linear(self.width, 128)
-        self.fc2 = nn.Linear(128, 1)
+        self.feedforward = nn.Sequential(
+            GehringLinear(self.width, 128),
+            nn.ReLU(),
+            GehringLinear(128, 1))
 
     def forward(self, x):
-        batchsize = x.shape[0]
-        size_x, size_y = x.shape[1], x.shape[2]
+        x = self.in_proj(x)
+        for layer in self.spectral_layers:
+            x = layer(x)
 
-        x = self.fc0(x)
-        x = x.permute(0, 3, 1, 2)
-
-        x1 = self.conv0(x)
-        x2 = self.w0(x.view(batchsize, self.width, -1)
-                     ).view(batchsize, self.width, size_x, size_y)
-        x = x1 + x2
-        x = F.relu(x)
-        x1 = self.conv1(x)
-        x2 = self.w1(x.view(batchsize, self.width, -1)
-                     ).view(batchsize, self.width, size_x, size_y)
-        x = x1 + x2
-        x = F.relu(x)
-        x1 = self.conv2(x)
-        x2 = self.w2(x.view(batchsize, self.width, -1)
-                     ).view(batchsize, self.width, size_x, size_y)
-        x = x1 + x2
-        x = F.relu(x)
-        x1 = self.conv3(x)
-        x2 = self.w3(x.view(batchsize, self.width, -1)
-                     ).view(batchsize, self.width, size_x, size_y)
-        x = x1 + x2
-
-        x = x.permute(0, 2, 3, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
+        x = self.feedforward(x)
         return x
