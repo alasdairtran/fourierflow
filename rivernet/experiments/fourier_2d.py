@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import torch
 import wandb
 from einops import repeat
-from rivernet.modules import Module
+from rivernet.common import Module
 from rivernet.modules.loss import LpLoss
 
-from .base import Experiment
+from rivernet.common import Experiment
 
 
 @Experiment.register('fourier_2d')

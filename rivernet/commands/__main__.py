@@ -1,16 +1,13 @@
 import os
-import pathlib
 from copy import deepcopy
 
 import ptvsd
 import pytorch_lightning as pl
-import torch
 import typer
 import wandb
 from pytorch_lightning.loggers import WandbLogger
 
-from rivernet.datastores import Datastore
-from rivernet.experiments import Experiment
+from rivernet.common import Datastore, Experiment
 from rivernet.utils.parsing import yaml_to_params
 
 app = typer.Typer()
@@ -24,7 +21,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
         ptvsd.wait_for_attach()
 
     parts = config_path.split('/')
-    i = parts.index('experiments')
+    i = parts.index('configs')
     root_dir = '.' if i == 0 else os.path.join(*parts[:i])
 
     params = yaml_to_params(config_path, overrides)

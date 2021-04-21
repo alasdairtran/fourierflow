@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchcde
-from rivernet.modules import Module
 from torchdiffeq import odeint
 
-from .base import Experiment
+from rivernet.common import Experiment, Module
+
 from .viz import plot_deterministic_forecasts
 
 

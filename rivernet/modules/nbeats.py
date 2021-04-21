@@ -7,7 +7,7 @@ from torch.nn import functional as F
 
 from rivernet.modules.linear import GehringLinear
 
-from .base import Module
+from rivernet.common import Module
 from .fourier import SpectralConv1d
 
 

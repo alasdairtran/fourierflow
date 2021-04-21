@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from .base import Module
+from rivernet.common import Module
 
 
 @Module.register('encoder')

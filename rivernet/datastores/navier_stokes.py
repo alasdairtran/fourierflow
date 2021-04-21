@@ -4,7 +4,7 @@ import torch
 from einops import repeat
 from torch.utils.data import DataLoader, Dataset
 
-from .base import Datastore
+from rivernet.common import Datastore
 
 
 @Datastore.register('navier_stokes')

@@ -19,3 +19,10 @@ pip install --no-index torch-cluster -f https://pytorch-geometric.com/whl/torch-
 pip install --no-index torch-spline-conv -f https://pytorch-geometric.com/whl/torch-${TORCH_VERSION}+${CUDA_VERSION}.html
 pip install -U torch-geometric
 ```
+
+## Training
+
+```sh
+# N-BEATS baseline
+CUDA_VISIBLE_DEVICES=0 rivernet train configs/53_nbeats_vevo_full/config.yaml
+```

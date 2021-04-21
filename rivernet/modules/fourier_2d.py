@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 
-from .base import Module
+from rivernet.common import Module
 from .linear import GehringLinear
 
 

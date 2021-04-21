@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from rivernet.modules.fourier import SimpleBlock1d
 from rivernet.modules.loss import LpLoss
 
-from .base import Experiment
+from rivernet.common import Experiment
 
 
 @Experiment.register('fourier_1d')

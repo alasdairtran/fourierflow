@@ -3,9 +3,9 @@ import numpy as np
 import torch
 from torch.distributions.kl import kl_divergence
 
-from rivernet.modules import Module
+from rivernet.common import Module
 
-from .base import Experiment
+from rivernet.common import Experiment
 from .viz import plot_sines
 
 

@@ -5,9 +5,9 @@ import wandb
 from allennlp.training.learning_rate_schedulers import LinearWithWarmup
 from einops import repeat
 
-from rivernet.modules import Module
+from rivernet.common import Module
 
-from .base import Experiment
+from rivernet.common import Experiment
 
 
 @Experiment.register('nbeats')

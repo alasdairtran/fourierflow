@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torchcde
 
-from .base import Experiment
+from rivernet.common import Experiment
 
 
 ######################

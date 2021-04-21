@@ -1,4 +1,3 @@
-from .base import Experiment
 from .cde import CDEClassification
 from .forecaster_cde import CDEForecaster
 from .forecaster_cde_decoder import CDEDecoderForecaster

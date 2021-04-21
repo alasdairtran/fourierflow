@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
-from rivernet.modules import Module
+from rivernet.common import Module
 
-from .base import Experiment
+from rivernet.common import Experiment
 from .viz import plot_deterministic_forecasts
 
 
