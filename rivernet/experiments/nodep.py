@@ -5,12 +5,12 @@ from torch.distributions.kl import kl_divergence
 
 from rivernet.modules import Module
 
-from .base import System
+from .base import Experiment
 from .viz import plot_sines
 
 
-@System.register('time_series_ode')
-class TimeSeriesODE(System):
+@Experiment.register('time_series_ode')
+class TimeSeriesODE(Experiment):
     def __init__(self,
                  process: Module,
                  l_size=64,

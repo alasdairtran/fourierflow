@@ -7,11 +7,11 @@ from einops import repeat
 
 from rivernet.modules import Module
 
-from .base import System
+from .base import Experiment
 
 
-@System.register('nbeats')
-class NBEATSSystem(System):
+@Experiment.register('nbeats')
+class NBEATSExperiment(Experiment):
     def __init__(self, model: Module = None, backcast_length: int = 42,
                  forecast_length: int = 7, copying_previous_day: bool = False, model_path: str = None):
         super().__init__()

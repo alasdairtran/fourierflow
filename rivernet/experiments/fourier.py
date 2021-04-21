@@ -3,11 +3,11 @@ import torch.nn.functional as F
 from rivernet.modules.fourier import SimpleBlock1d
 from rivernet.modules.loss import LpLoss
 
-from .base import System
+from .base import Experiment
 
 
-@System.register('fourier_1d')
-class Fourier1D(System):
+@Experiment.register('fourier_1d')
+class Fourier1D(Experiment):
     def __init__(self, modes, width):
         super().__init__()
         self.conv = SimpleBlock1d(modes, width)

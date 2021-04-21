@@ -16,7 +16,7 @@ datastore:
   n_steps: 10
   batch_size: 20
   n_workers: 4
-system:
+experiment:
   type: fourier_2d
   conv:
     type: fourier_net_2d

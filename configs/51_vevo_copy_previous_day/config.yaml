@@ -13,7 +13,7 @@ datastore:
   test_id_path: /localdata/u4921817/projects/phd/radflow/data/vevo/vevo_static_connected_nodes.pkl
   batch_size: 64
   n_workers: 4
-system:
+experiment:
   type: nbeats
   copying_previous_day: true
   forecast_length: 7

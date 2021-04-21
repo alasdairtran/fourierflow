@@ -2,12 +2,12 @@ import torch
 import torch.nn.functional as F
 from rivernet.modules import Module
 
-from .base import System
+from .base import Experiment
 from .viz import plot_deterministic_forecasts
 
 
-@System.register('nbeats_forecaster')
-class NBEATSForecaster(System):
+@Experiment.register('nbeats_forecaster')
+class NBEATSForecaster(Experiment):
     def __init__(self, model: Module, n_plots):
         super().__init__()
         self.model = model

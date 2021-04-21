@@ -20,7 +20,7 @@ valid_data_loader:
   batch_size: 20
   shuffle: false
   num_workers: 4
-system:
+experiment:
   type: fourier_1d
   modes: 16
   width: 64

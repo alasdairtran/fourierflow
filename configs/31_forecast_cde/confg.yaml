@@ -33,7 +33,7 @@ valid_data_loader:
   batch_size: 32
   shuffle: false
   num_workers: 4
-system:
+experiment:
   type: cde_forecaster
   n_plots: 4
 trainer:

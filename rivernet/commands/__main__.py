@@ -10,7 +10,7 @@ import wandb
 from pytorch_lightning.loggers import WandbLogger
 
 from rivernet.datastores import Datastore
-from rivernet.systems import System
+from rivernet.experiments import Experiment
 from rivernet.utils.parsing import yaml_to_params
 
 app = typer.Typer()
@@ -44,11 +44,11 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     wandb_logger.experiment.log_artifact(code_artifact)
 
     datastore = Datastore.from_params(params['datastore'])
-    system = System.from_params(params['system'])
+    experiment = Experiment.from_params(params['experiment'])
     trainer = pl.Trainer(logger=wandb_logger,
                          **params.pop('trainer').as_dict())
-    trainer.fit(system, datamodule=datastore)
-    trainer.test(system, datamodule=datastore)
+    trainer.fit(experiment, datamodule=datastore)
+    trainer.test(experiment, datamodule=datastore)
 
 
 @app.command()
@@ -56,9 +56,10 @@ def test(config_path: str, model_path: str = None, overrides: str = '', debug: b
     """Test a model."""
     params = yaml_to_params(config_path, overrides)
     datastore = Datastore.from_params(params['datastore'])
-    system = System.from_params(params['system'], model_path=model_path)
+    experiment = Experiment.from_params(
+        params['experiment'], model_path=model_path)
     trainer = pl.Trainer(**params.pop('trainer').as_dict())
-    trainer.test(system, datamodule=datastore)
+    trainer.test(experiment, datamodule=datastore)
 
 
 if __name__ == "__main__":

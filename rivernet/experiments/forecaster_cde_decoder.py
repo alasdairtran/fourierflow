@@ -1,9 +1,11 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import torchcde
 from rivernet.modules import Module
+from torchdiffeq import odeint
 
-from .base import System
+from .base import Experiment
 from .viz import plot_deterministic_forecasts
 
 
@@ -57,12 +59,47 @@ class NeuralCDE(torch.nn.Module):
         return out
 
 
-@System.register('cde_forecaster')
-class CDEForecaster(System):
+class LatentODEfunc(nn.Module):
+    def __init__(self, latent_dim=4, nhidden=20):
+        super().__init__()
+        self.elu = nn.ELU(inplace=True)
+        self.fc1 = nn.Linear(latent_dim, nhidden)
+        self.fc2 = nn.Linear(nhidden, nhidden)
+        self.fc3 = nn.Linear(nhidden, latent_dim)
+        self.nfe = 0
+
+    def forward(self, t, x):
+        self.nfe += 1
+        out = self.fc1(x)
+        out = self.elu(out)
+        out = self.fc2(out)
+        out = self.elu(out)
+        out = self.fc3(out)
+        return out
+
+
+class Decoder(nn.Module):
+    def __init__(self, latent_dim=4, obs_dim=2, nhidden=20):
+        super(Decoder, self).__init__()
+        self.relu = nn.ReLU(inplace=True)
+        self.fc1 = nn.Linear(latent_dim, nhidden)
+        self.fc2 = nn.Linear(nhidden, obs_dim)
+
+    def forward(self, z):
+        out = self.fc1(z)
+        out = self.relu(out)
+        out = self.fc2(out)
+        return out
+
+
+@Experiment.register('cde_decoder_forecaster')
+class CDEDecoderForecaster(Experiment):
     def __init__(self, n_plots):
         super().__init__()
         self.model = NeuralCDE(input_channels=2,
-                               hidden_channels=128, output_channels=80)
+                               hidden_channels=128, output_channels=128)
+        self.func = LatentODEfunc(128, 128)
+        self.dec = Decoder(128, 1, 128)
         self.n_plots = n_plots
 
     def forward(self, x):
@@ -72,9 +109,13 @@ class CDEForecaster(System):
         t, mu, t_x, x, x_coeffs, t_y, y = batch
         # x.shape == [batch_size, backcast_len]
 
-        preds = self.model(x_coeffs)
-        # z0.shape == [batch_size, hidden_size]
+        z = self.model(x_coeffs)
+        # z.shape == [batch_size, hidden_size]
 
+        times = torch.linspace(0, 1, 80).to(x.device)
+        # Forward in time and solve ode for reconstructions
+        pred_z = odeint(self.func, z, times, method='dopri5').permute(1, 0, 2)
+        preds = self.dec(pred_z).squeeze(-1)
         mse = F.mse_loss(preds, y, reduction='mean')
         self.log('train_mse', mse)
 
@@ -84,8 +125,15 @@ class CDEForecaster(System):
         t, mu, t_x, x, x_coeffs, t_y, y = batch
         # x.shape == [batch_size, backcast_len]
 
-        preds = self.model(x_coeffs)
+        z = self.model(x_coeffs)
+        # z.shape == [batch_size, hidden_size]
+
+        times = torch.linspace(0, 1, 80).to(x.device)
+        # Forward in time and solve ode for reconstructions
+        pred_z = odeint(self.func, z, times, method='dopri5').permute(1, 0, 2)
+        preds = self.dec(pred_z).squeeze(-1)
         mse = F.mse_loss(preds, y, reduction='mean')
+
         self.log('valid_mse', mse)
 
         if batch_idx == 0:

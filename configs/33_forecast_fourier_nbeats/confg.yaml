@@ -33,7 +33,7 @@ valid_data_loader:
   batch_size: 32
   shuffle: false
   num_workers: 4
-system:
+experiment:
   type: nbeats_forecaster
   model:
     type: nbeats

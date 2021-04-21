@@ -5,11 +5,11 @@ from einops import repeat
 from rivernet.modules import Module
 from rivernet.modules.loss import LpLoss
 
-from .base import System
+from .base import Experiment
 
 
-@System.register('fourier_2d')
-class Fourier2DSystem(System):
+@Experiment.register('fourier_2d')
+class Fourier2DExperiment(Experiment):
     def __init__(self, conv: Module, n_steps: int, model_path: str = None):
         super().__init__()
         self.conv = conv

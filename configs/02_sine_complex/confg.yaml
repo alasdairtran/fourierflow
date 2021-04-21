@@ -24,7 +24,7 @@ valid_data_loader:
   batch_size: 5
   shuffle: false
   num_workers: 4
-system:
+experiment:
   type: time_series_ode
   num_context_range: [20, 30]
   extra_target_range: [10, 20]

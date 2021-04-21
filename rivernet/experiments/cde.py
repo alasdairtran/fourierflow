@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torchcde
 
-from .base import System
+from .base import Experiment
 
 
 ######################
@@ -84,8 +84,8 @@ class NeuralCDE(torch.nn.Module):
         return pred_y
 
 
-@System.register('cde_classification')
-class CDEClassification(System):
+@Experiment.register('cde_classification')
+class CDEClassification(Experiment):
     def __init__(self):
         super().__init__()
         self.model = NeuralCDE(input_channels=3,
