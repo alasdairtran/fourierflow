@@ -333,10 +333,11 @@ class TimeSeriesPerceiver(Module):
                 get_cross_attn(**cache_args),
                 get_cross_ff(**cache_args),
                 self_attns,
-                nn.Sequential(
-                    nn.LayerNorm(latent_dim),
-                    GehringLinear(latent_dim, 1))
             ]))
+
+        self.out_proj = nn.Sequential(
+            nn.LayerNorm(latent_dim),
+            GehringLinear(latent_dim, 1))
 
         self.sinu_emb = None
         if self_attn_rel_pos:
@@ -390,8 +391,7 @@ class TimeSeriesPerceiver(Module):
         pos_emb = self.sinu_emb(x) if exists(self.sinu_emb) else None
 
         # layers
-        forecast = torch.zeros((b, z), device=x.device)
-        for cross_attn, cross_ff, self_attns, out_proj in self.layers:
+        for cross_attn, cross_ff, self_attns in self.layers:
             x = cross_attn(x, context=data, mask=mask) + x
             x = cross_ff(x) + x
 
@@ -400,7 +400,5 @@ class TimeSeriesPerceiver(Module):
                 x = self_ff(x) + x
             # x.shape == [batch_size, n_latents, latent_dim]
 
-            f = rearrange(out_proj(x), 'b t 1 -> b t')
-            forecast += f
-
+        forecast = rearrange(self.out_proj(x), 'b z 1 -> b z')
         return forecast

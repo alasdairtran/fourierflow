@@ -24,13 +24,13 @@ experiment:
     input_channels: 1
     input_axis: 1
     num_latents: 7
-    latent_dim: 64
+    latent_dim: 80
     cross_heads: 1
     latent_heads: 8
-    cross_dim_head: 8
-    latent_dim_head: 8
-    attn_dropout: 0.1
-    ff_dropout: 0.1
+    cross_dim_head: 10
+    latent_dim_head: 10
+    attn_dropout: 0
+    ff_dropout: 0
     weight_tie_layers: false
     fourier_encode_data: true
     self_per_cross_attn: 1
