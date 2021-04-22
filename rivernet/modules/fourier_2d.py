@@ -13,7 +13,6 @@ import torch.nn as nn
 from einops import rearrange
 
 from rivernet.common import Module
-from .linear import GehringLinear
 
 
 class SpectralConv2d(nn.Module):
@@ -22,7 +21,7 @@ class SpectralConv2d(nn.Module):
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
-        self.linear = GehringLinear(in_dim, out_dim)
+        self.linear = nn.Linear(in_dim, out_dim)
         self.act = nn.ReLU()
 
         fourier_weight = [nn.Parameter(torch.FloatTensor(
@@ -97,7 +96,7 @@ class SimpleBlock2d(nn.Module):
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
-        self.in_proj = GehringLinear(12, self.width)
+        self.in_proj = nn.Linear(12, self.width)
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
         self.spectral_layers = nn.ModuleList([])
@@ -108,9 +107,9 @@ class SimpleBlock2d(nn.Module):
                                                        dropout=dropout))
 
         self.feedforward = nn.Sequential(
-            GehringLinear(self.width, 128),
+            nn.Linear(self.width, 128),
             nn.ReLU(),
-            GehringLinear(128, 1))
+            nn.Linear(128, 1))
 
     def forward(self, x):
         x = self.in_proj(x)

@@ -24,7 +24,10 @@ pip install -U torch-geometric
 
 ```sh
 # N-BEATS baseline
-CUDA_VISIBLE_DEVICES=0 rivernet train configs/53_nbeats_vevo_full/config.yaml
+rivernet train configs/53_nbeats_vevo_full/config.yaml
 # N-BEATS with fourier layer - similar performance
-CUDA_VISIBLE_DEVICES=0 rivernet train configs/54_vevo_perceiver/config.yaml
+rivernet train configs/54_vevo_perceiver/config.yaml
+
+# Reproducing SOA model on Navier Stokes
+rivernet train configs/41_navier_stokes_2d_baseline/config.yaml
 ```
