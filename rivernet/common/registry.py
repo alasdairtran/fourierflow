@@ -20,8 +20,12 @@ class Experiment(Registrable, LightningModule):
         parameters = [[n, p] for n, p in self.named_parameters()
                       if p.requires_grad]
         opt = self.optimizer.construct(model_parameters=parameters)
-        scheduler = self.scheduler.construct(optimizer=opt)
-        return [opt], [scheduler]
+
+        if self.scheduler:
+            scheduler = self.scheduler.construct(optimizer=opt)
+            return [opt], [scheduler]
+        else:
+            return opt
 
 
 class Module(Registrable, nn.Module):

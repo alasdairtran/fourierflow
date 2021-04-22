@@ -99,7 +99,7 @@ def plot_sines(device, t, y, mu, nodep, expt):
                c='k', alpha=truth_darkness, zorder=2)
     ax.scatter(t, y, c='r', s=3, alpha=darkness, zorder=0)
     fig.tight_layout()
-    expt.log_figure(figure=fig, figure_name='one')
+    expt.log({f'one': wandb.Image(fig)})
 
     fig = plt.figure(figsize=(6, 3))
     ax = fig.add_subplot(1, 1, 1)
@@ -118,7 +118,7 @@ def plot_sines(device, t, y, mu, nodep, expt):
     ax.scatter(t_context_2[0].cpu().numpy(), x_context_2[0].cpu().numpy(),
                c='k', alpha=truth_darkness, zorder=2)
     ax.scatter(t, y, c='r', s=3, alpha=darkness, zorder=0)
-    expt.log_figure(figure=fig, figure_name='many')
+    expt.log({f'many': wandb.Image(fig)})
 
     plt.close('all')
 

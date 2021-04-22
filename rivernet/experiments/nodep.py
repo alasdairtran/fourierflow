@@ -1,11 +1,14 @@
 
+from typing import Optional
+
 import numpy as np
 import torch
+from allennlp.common import Lazy
+from allennlp.training.optimizers import Optimizer
 from torch.distributions.kl import kl_divergence
 
-from rivernet.common import Module
+from rivernet.common import Experiment, Module, Scheduler
 
-from rivernet.common import Experiment
 from .viz import plot_sines
 
 
@@ -13,11 +16,13 @@ from .viz import plot_sines
 class TimeSeriesODE(Experiment):
     def __init__(self,
                  process: Module,
-                 l_size=64,
-                 dropout=0.1,
-                 num_context_range=(1, 20),
-                 extra_target_range=(0, 5),
-                 testing_context_size=10):
+                 l_size,
+                 dropout,
+                 num_context_range,
+                 extra_target_range,
+                 testing_context_size,
+                 optimizer: Lazy[Optimizer],
+                 scheduler: Optional[Lazy[Scheduler]] = None):
         super().__init__()
         self.l_size = l_size
         self.nfe = 0
@@ -26,6 +31,8 @@ class TimeSeriesODE(Experiment):
         self.test_context_size = testing_context_size
         self.rs = np.random.RandomState(1242)
         self.nodep = process
+        self.optimizer = optimizer
+        self.scheduler = scheduler
 
         # Fix a random datapoint for plotting
         self.t = None
@@ -107,10 +114,6 @@ class TimeSeriesODE(Experiment):
         device = next(self.parameters()).device
         plot_sines(device, self.t, self.y, self.mu,
                    self.nodep, self.logger.experiment)
-
-    def configure_optimizers(self):
-        opt = torch.optim.RMSprop(self.parameters(), lr=1e-3)
-        return opt
 
 
 def context_target_split(x, y, num_context, num_extra_target, locations=None):
