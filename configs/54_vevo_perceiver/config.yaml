@@ -23,7 +23,7 @@ experiment:
     max_freq: 21
     input_channels: 1
     input_axis: 1
-    num_latents: 7
+    num_latents: 64
     latent_dim: 80
     cross_heads: 1
     latent_heads: 8

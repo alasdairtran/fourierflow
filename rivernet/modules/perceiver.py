@@ -337,7 +337,7 @@ class TimeSeriesPerceiver(Module):
 
         self.out_proj = nn.Sequential(
             nn.LayerNorm(latent_dim),
-            GehringLinear(latent_dim, 1))
+            GehringLinear(latent_dim, 7))
 
         self.sinu_emb = None
         if self_attn_rel_pos:
@@ -400,5 +400,5 @@ class TimeSeriesPerceiver(Module):
                 x = self_ff(x) + x
             # x.shape == [batch_size, n_latents, latent_dim]
 
-        forecast = rearrange(self.out_proj(x), 'b z 1 -> b z')
+        forecast = self.out_proj(x.mean(dim=-2))
         return forecast
