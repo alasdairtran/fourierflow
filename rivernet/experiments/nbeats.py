@@ -5,9 +5,7 @@ import wandb
 from allennlp.training.learning_rate_schedulers import LinearWithWarmup
 from einops import repeat
 
-from rivernet.common import Module
-
-from rivernet.common import Experiment
+from rivernet.common import Experiment, Module
 
 
 @Experiment.register('nbeats')
@@ -32,7 +30,7 @@ class NBEATSExperiment(Experiment):
         targets = views[:, -self.forecast_len:]
 
         if self.model:
-            _, X = self.model(sources)
+            X = self.model(sources)
             preds = torch.exp(X)
         elif self.copying_previous_day:
             v = views[:, self.backcast_len - 1]

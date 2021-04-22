@@ -25,4 +25,5 @@ pip install -U torch-geometric
 ```sh
 # N-BEATS baseline
 CUDA_VISIBLE_DEVICES=0 rivernet train configs/53_nbeats_vevo_full/config.yaml
+CUDA_VISIBLE_DEVICES=0 rivernet train configs/54_vevo_perceiver/config.yaml
 ```

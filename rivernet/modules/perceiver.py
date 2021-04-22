@@ -1,4 +1,3 @@
-from rivernet.common import Module
 from math import log, pi
 
 import torch
@@ -6,8 +5,10 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import einsum, nn
 
+from rivernet.common import Module
 from rivernet.utils import cache_fn, default, exists
 
+from .linear import GehringLinear
 from .rotary import SinusoidalEmbeddings, apply_rotary_emb
 
 
@@ -66,10 +67,10 @@ class FeedForward(nn.Module):
     def __init__(self, dim, mult=4, dropout=0.):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, dim * mult * 2),
+            GehringLinear(dim, dim * mult * 2),
             GEGLU(),
             nn.Dropout(dropout),
-            nn.Linear(dim * mult, dim)
+            GehringLinear(dim * mult, dim)
         )
 
     def forward(self, x):
@@ -85,11 +86,11 @@ class Attention(nn.Module):
         self.scale = dim_head ** -0.5
         self.heads = heads
 
-        self.to_q = nn.Linear(query_dim, inner_dim, bias=False)
-        self.to_kv = nn.Linear(context_dim, inner_dim * 2, bias=False)
+        self.to_q = GehringLinear(query_dim, inner_dim, bias=False)
+        self.to_kv = GehringLinear(context_dim, inner_dim * 2, bias=False)
 
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, query_dim),
+            GehringLinear(inner_dim, query_dim),
             nn.Dropout(dropout))
 
     def forward(self, x, context=None, mask=None, pos_emb=None):
@@ -204,7 +205,7 @@ class Perceiver(Module):
 
         self.to_logits = nn.Sequential(
             nn.LayerNorm(latent_dim),
-            nn.Linear(latent_dim, num_classes)
+            GehringLinear(latent_dim, num_classes)
         )
 
         self.sinu_emb = None
@@ -264,3 +265,142 @@ class Perceiver(Module):
 
         x = x.mean(dim=-2)
         return self.to_logits(x)
+
+
+@Module.register('time_series_perceiver')
+class TimeSeriesPerceiver(Module):
+    def __init__(self,
+                 *,
+                 num_freq_bands,
+                 depth,
+                 max_freq,
+                 freq_base=2,
+                 input_channels=3,
+                 input_axis=2,
+                 num_latents=512,
+                 latent_dim=512,
+                 cross_heads=1,
+                 latent_heads=8,
+                 cross_dim_head=64,
+                 latent_dim_head=64,
+                 attn_dropout=0.,
+                 ff_dropout=0.,
+                 weight_tie_layers=False,
+                 fourier_encode_data=True,
+                 self_per_cross_attn=1,
+                 self_attn_rel_pos=True):
+        super().__init__()
+        self.input_axis = input_axis
+        self.max_freq = max_freq
+        self.num_freq_bands = num_freq_bands
+        self.freq_base = freq_base
+
+        self.fourier_encode_data = fourier_encode_data
+        fourier_channels = (
+            input_axis * ((num_freq_bands * 2) + 1)) if fourier_encode_data else 0
+        input_dim = fourier_channels + input_channels
+
+        self.latents = nn.Parameter(torch.randn(num_latents, latent_dim))
+
+        def get_cross_attn(): return PreNorm(latent_dim, Attention(latent_dim, input_dim,
+                                                                   heads=cross_heads, dim_head=cross_dim_head, dropout=attn_dropout), context_dim=input_dim)
+
+        def get_cross_ff(): return PreNorm(
+            latent_dim, FeedForward(latent_dim, dropout=ff_dropout))
+
+        def get_latent_attn(): return PreNorm(latent_dim, Attention(
+            latent_dim, heads=latent_heads, dim_head=latent_dim_head, dropout=attn_dropout))
+        def get_latent_ff(): return PreNorm(
+            latent_dim, FeedForward(latent_dim, dropout=ff_dropout))
+
+        get_cross_attn, get_cross_ff, get_latent_attn, get_latent_ff = map(
+            cache_fn, (get_cross_attn, get_cross_ff, get_latent_attn, get_latent_ff))
+
+        self.layers = nn.ModuleList([])
+        for i in range(depth):
+            should_cache = i > 0 and weight_tie_layers
+            cache_args = {'_cache': should_cache}
+
+            self_attns = nn.ModuleList([])
+
+            for _ in range(self_per_cross_attn):
+                self_attns.append(nn.ModuleList([
+                    get_latent_attn(**cache_args),
+                    get_latent_ff(**cache_args)
+                ]))
+
+            self.layers.append(nn.ModuleList([
+                get_cross_attn(**cache_args),
+                get_cross_ff(**cache_args),
+                self_attns,
+                nn.Sequential(
+                    nn.LayerNorm(latent_dim),
+                    GehringLinear(latent_dim, 1))
+            ]))
+
+        self.sinu_emb = None
+        if self_attn_rel_pos:
+            self.sinu_emb = SinusoidalEmbeddings(latent_dim_head)
+
+    def forward(self, data, mask=None):
+        # data.shape == [batch_size, backcast_len]
+
+        data = rearrange(data, 'b s -> b s 1')
+
+        # The input data can have an abitrary number of axes. The first
+        # axis is the batch dimension, the last axis is the feature dimension.
+        # All the middle axes are assumed to be some combination of spatial
+        # and temporal dimensions.
+        b, *axes, _, device = *data.shape, data.device
+        assert len(axes) == self.input_axis, \
+            'Input data must have the right number of axes.'
+
+        if self.fourier_encode_data:
+            # calculate fourier encoded positions in the range of [-1, 1], for all axis
+
+            def generate_grid(size):
+                return torch.linspace(-1., 1., steps=size, device=device)
+            axis_pos = list(map(generate_grid, axes))
+            # axis_pos[i].shape = grid_size
+
+            # This stores the coordiates of the data in the first dimension.
+            pos = torch.stack(torch.meshgrid(*axis_pos), dim=-1)
+            # pos.shape == [n_axes, *data.shape]
+
+            enc_pos = fourier_encode(
+                pos, self.max_freq, self.num_freq_bands, base=self.freq_base)
+            # enc_pos.shape == [n_axes, **data.shape, n_bands * 2 + 1]
+            enc_pos = rearrange(enc_pos, '... n d -> ... (n d)')
+            enc_pos = repeat(enc_pos, '... -> b ...', b=b)
+
+            data = torch.cat((data, enc_pos), dim=-1)
+
+        # concat to channels of data and flatten axis
+        data = rearrange(data, 'b ... d -> b (...) d')
+        # data.shape == [batch_size, seq_len, n_features]
+
+        # Initially, x is like our prior. We evolve this set of latents over
+        # time. In each layer, the latents get to attend over the original
+        # inputs, and then attend to itself.
+        x = repeat(self.latents, 'n d -> b n d', b=b)
+        b, z, d = x.shape
+        # x.shape == [batch_size, n_latents, latent_dim]
+
+        # rotary embeddings for latents, if specified
+        pos_emb = self.sinu_emb(x) if exists(self.sinu_emb) else None
+
+        # layers
+        forecast = torch.zeros((b, z), device=x.device)
+        for cross_attn, cross_ff, self_attns, out_proj in self.layers:
+            x = cross_attn(x, context=data, mask=mask) + x
+            x = cross_ff(x) + x
+
+            for self_attn, self_ff in self_attns:
+                x = self_attn(x, pos_emb=pos_emb) + x
+                x = self_ff(x) + x
+            # x.shape == [batch_size, n_latents, latent_dim]
+
+            f = rearrange(out_proj(x), 'b t 1 -> b t')
+            forecast += f
+
+        return forecast

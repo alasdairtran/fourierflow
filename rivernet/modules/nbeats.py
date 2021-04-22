@@ -5,9 +5,9 @@ import torch.nn as nn
 from einops import rearrange, reduce, repeat
 from torch.nn import functional as F
 
+from rivernet.common import Module
 from rivernet.modules.linear import GehringLinear
 
-from rivernet.common import Module
 from .fourier import SpectralConv1d
 
 
@@ -68,7 +68,7 @@ class NBeatsNet(Module):
                 forecast = forecast + f
                 # forecast.shape == [B, T]
 
-        return backcast, forecast
+        return forecast
 
 
 def linspace(backcast_length, forecast_length):
