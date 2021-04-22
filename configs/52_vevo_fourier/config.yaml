@@ -22,7 +22,7 @@ experiment:
     nb_blocks_per_stack: 1
     forecast_length: 7
     backcast_length: 42
-    hidden_layer_units: 192
+    hidden_layer_units: 288
     dropout: 0.1
     block_type: fourier
   forecast_length: 7
