@@ -1,1 +1,1 @@
-from .registry import Datastore, Experiment, Module
+from .registry import Datastore, Experiment, Module, Scheduler

@@ -2,21 +2,26 @@ import matplotlib.pyplot as plt
 import pl_bolts
 import torch
 import wandb
+from allennlp.common import Lazy
 from allennlp.training.learning_rate_schedulers import LinearWithWarmup
+from allennlp.training.optimizers import Optimizer
 from einops import repeat
 
-from rivernet.common import Experiment, Module
+from rivernet.common import Experiment, Module, Scheduler
 
 
 @Experiment.register('nbeats')
 class NBEATSExperiment(Experiment):
-    def __init__(self, model: Module = None, backcast_length: int = 42,
+    def __init__(self, optimizer: Lazy[Optimizer], scheduler: Lazy[Scheduler],
+                 model: Module = None, backcast_length: int = 42,
                  forecast_length: int = 7, copying_previous_day: bool = False, model_path: str = None):
         super().__init__()
         self.model = model
         self.backcast_len = backcast_length
         self.forecast_len = forecast_length
         self.copying_previous_day = copying_previous_day
+        self.optimizer = optimizer
+        self.scheduler = scheduler
 
     def forward(self, x):
         x = self.model(x)
@@ -59,10 +64,3 @@ class NBEATSExperiment(Experiment):
         loss = self._learning_step(batch)
         self.log('test_loss', loss)
         self.log('test_smape', 200 * loss)
-
-    def configure_optimizers(self):
-        opt = torch.optim.AdamW(
-            self.parameters(), lr=1e-4, weight_decay=1e-4)
-        scheduler = pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR(
-            opt, warmup_epochs=1, max_epochs=20)
-        return [opt], [scheduler]

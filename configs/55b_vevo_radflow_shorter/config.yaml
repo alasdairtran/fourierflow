@@ -30,10 +30,18 @@ experiment:
     weight_decay: 0.0001
   scheduler:
     type: linear_warmup_cosine_annealing
-    warmup_epochs: 5
-    max_epochs: 100
+    warmup_epochs: 3
+    max_epochs: 60
 trainer:
   gpus: 1
   precision: 32
-  max_epochs: 100
+  max_epochs: 60
   check_val_every_n_epoch: 10
+optimizer:
+  type: adamw
+  lr: 0.0001
+  weight_decay: 0.0001
+scheduler:
+  type: linear_warmup_cosine_annealing
+  warmup_epochs: 3
+  max_epochs: 60

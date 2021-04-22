@@ -27,6 +27,14 @@ experiment:
     block_type: generic
   forecast_length: 7
   backcast_length: 42
+  optimizer:
+    type: adamw
+    lr: 0.0001
+    weight_decay: 0.0001
+  scheduler:
+    type: linear_warmup_cosine_annealing
+    warmup_epochs: 1
+    max_epochs: 20
 trainer:
   gpus: 1
   precision: 32

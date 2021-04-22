@@ -1,20 +1,24 @@
 import matplotlib.pyplot as plt
 import torch
 import wandb
+from allennlp.common import Lazy
+from allennlp.training.optimizers import Optimizer
 from einops import repeat
-from rivernet.common import Module
-from rivernet.modules.loss import LpLoss
 
-from rivernet.common import Experiment
+from rivernet.common import Experiment, Module, Scheduler
+from rivernet.modules.loss import LpLoss
 
 
 @Experiment.register('fourier_2d')
 class Fourier2DExperiment(Experiment):
-    def __init__(self, conv: Module, n_steps: int, model_path: str = None):
+    def __init__(self, optimizer: Lazy[Optimizer], scheduler: Lazy[Scheduler],
+                 conv: Module, n_steps: int, model_path: str = None):
         super().__init__()
         self.conv = conv
         self.n_steps = n_steps
         self.l2_loss = LpLoss(size_average=True)
+        self.optimizer = optimizer
+        self.scheduler = scheduler
 
         if model_path:
             best_model_state = torch.load(model_path)
