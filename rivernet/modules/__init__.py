@@ -4,3 +4,4 @@ from .fourier_2d import SimpleBlock2d
 from .nbeats import NBeatsNet
 from .perceiver import Perceiver, TimeSeriesPerceiver
 from .processes import NeuralODEProcess, NeuralProcess
+from .radflow import LSTMDecoder
