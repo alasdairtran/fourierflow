@@ -23,9 +23,10 @@ class SineDatastore(Datastore):
         self.n_workers = n_workers
         self.batch_size = batch_size
 
-        self.train_dataset = SineDataset(n_points=2000, seed=98353, **kwargs)
-        self.valid_dataset = SineDataset(n_points=20, seed=64343, **kwargs)
-        self.test_dataset = SineDataset(n_points=20, seed=94813, **kwargs)
+        self.train_dataset = SineDataset(
+            num_samples=2000, seed=98353, **kwargs)
+        self.valid_dataset = SineDataset(num_samples=20, seed=64343, **kwargs)
+        self.test_dataset = SineDataset(num_samples=20, seed=94813, **kwargs)
         # train_dataset.shape == [1000, 64, 64, 10]
 
     def train_dataloader(self) -> DataLoader:
