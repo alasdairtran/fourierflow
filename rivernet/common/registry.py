@@ -22,7 +22,11 @@ class Experiment(Registrable, LightningModule):
         opt = self.optimizer.construct(model_parameters=parameters)
 
         if self.scheduler:
-            scheduler = self.scheduler.construct(optimizer=opt)
+            scheduler = {'scheduler': self.scheduler.construct(optimizer=opt),
+                         'name': 'learning_rate',
+                         'interval': 'step',
+                         'frequency': 1}
+
             return [opt], [scheduler]
         else:
             return opt
@@ -33,7 +37,7 @@ class Module(Registrable, nn.Module):
 
 
 class Scheduler(Registrable, _LRScheduler):
-    @classmethod
+    @ classmethod
     def from_params(cls: Type[T],
                     params: Params,
                     constructor_to_call: Callable[..., T] = None,
@@ -60,4 +64,6 @@ class Scheduler(Registrable, _LRScheduler):
 Registrable._registry[Scheduler] = {
     'step_lr': (torch.optim.lr_scheduler.StepLR, None),
     'linear_warmup_cosine_annealing': (pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR, None),
+
+
 }

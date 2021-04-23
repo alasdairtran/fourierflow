@@ -5,6 +5,7 @@ import ptvsd
 import pytorch_lightning as pl
 import typer
 import wandb
+from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
 
 from rivernet.common import Datastore, Experiment
@@ -42,7 +43,9 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
     datastore = Datastore.from_params(params['datastore'])
     experiment = Experiment.from_params(params['experiment'])
+    lr_monitor = LearningRateMonitor(logging_interval='step')
     trainer = pl.Trainer(logger=wandb_logger,
+                         callbacks=[lr_monitor],
                          **params.pop('trainer').as_dict())
     trainer.fit(experiment, datamodule=datastore)
     trainer.test(experiment, datamodule=datastore)
