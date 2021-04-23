@@ -131,7 +131,7 @@ class SineDataset(Dataset):
             coeffs = torchcde.natural_cubic_coeffs(torch.from_numpy(x2))
             # coeffs.shape == [n_steps - 1, 4 * n_channels]
 
-            self.data.append((t, mu, t_x, x, coeffs, t_y, y))
+            self.data.append((t, mu, process, t_x, x, coeffs, t_y, y))
 
     def __getitem__(self, index):
         return self.data[index]

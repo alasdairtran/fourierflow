@@ -47,7 +47,10 @@ class TimeSeriesODE(Experiment):
         return embedding
 
     def training_step(self, batch, batch_idx):
-        x, y, mu = batch
+        x, mu, y, _, _, _, _, _ = batch
+        x = x.unsqueeze(-1)
+        mu = mu.unsqueeze(-1)
+        y = y.unsqueeze(-1)
 
         # Sample number of context and target points
         num_context = self.rs.randint(*self.num_context_range)
@@ -92,7 +95,10 @@ class TimeSeriesODE(Experiment):
         return -log_likelihood + kl
 
     def validation_step(self, batch, batch_idx):
-        x, y, mu = batch
+        x, mu, y, _, _, _, _, _ = batch
+        x = x.unsqueeze(-1)
+        mu = mu.unsqueeze(-1)
+        y = y.unsqueeze(-1)
         if self.t is None:
             self.t, self.y, self.mu = x[0], y[0], mu[0]
 
