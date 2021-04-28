@@ -1,9 +1,9 @@
 import torch
 import torch.nn.functional as F
 import torchcde
-from rivernet.common import Module
+from fourierflow.common import Module
 
-from rivernet.common import Experiment
+from fourierflow.common import Experiment
 from .viz import plot_deterministic_forecasts
 
 

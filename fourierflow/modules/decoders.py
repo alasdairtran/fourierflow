@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 from torchdiffeq import odeint
 
-from rivernet.common import Module
+from fourierflow.common import Module
 
 
 @Module.register('ode_decoder')

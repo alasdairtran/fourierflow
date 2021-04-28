@@ -1,4 +1,4 @@
-# rivernet
+# fourierflow
 
 Experiments with label propagation in networks of time series
 
@@ -6,8 +6,8 @@ Experiments with label propagation in networks of time series
 
 ```sh
 conda env create -f conda.yaml
-conda activate rivernet
-python -m ipykernel install --user --name rivernet --display-name "rivernet"
+conda activate fourierflow
+python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
 python setup.py develop
 
 # Ensure PyTorch Geometric is compatible with CUDA and Pytorch versions
@@ -24,10 +24,10 @@ pip install -U torch-geometric
 
 ```sh
 # N-BEATS baseline
-rivernet train configs/53_nbeats_vevo_full/config.yaml
+fourierflow train configs/53_nbeats_vevo_full/config.yaml
 # N-BEATS with fourier layer - similar performance
-rivernet train configs/54_vevo_perceiver/config.yaml
+fourierflow train configs/54_vevo_perceiver/config.yaml
 
 # Reproducing SOA model on Navier Stokes
-rivernet train configs/41_navier_stokes_2d_baseline/config.yaml
+fourierflow train configs/41_navier_stokes_2d_baseline/config.yaml
 ```

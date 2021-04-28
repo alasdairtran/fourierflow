@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 
-from rivernet.common import Module
+from fourierflow.common import Module
 
 
 class SpectralConv2d(nn.Module):

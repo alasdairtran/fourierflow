@@ -4,7 +4,7 @@ import torch
 from einops import repeat
 from torch.utils.data import DataLoader, Dataset
 
-from rivernet.common import Datastore
+from fourierflow.common import Datastore
 
 
 @Datastore.register('navier_stokes')

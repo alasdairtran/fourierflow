@@ -8,8 +8,8 @@ import wandb
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
 
-from rivernet.common import Datastore, Experiment
-from rivernet.utils.parsing import yaml_to_params
+from fourierflow.common import Datastore, Experiment
+from fourierflow.utils.parsing import yaml_to_params
 
 app = typer.Typer()
 
@@ -36,8 +36,8 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
                                mode='online',
                                config=deepcopy(params.as_dict()),
                                **wandb_opts)
-    code_artifact = wandb.Artifact('rivernet', type='code')
-    code_artifact.add_dir(os.path.join(root_dir, 'rivernet'))
+    code_artifact = wandb.Artifact('fourierflow', type='code')
+    code_artifact.add_dir(os.path.join(root_dir, 'fourierflow'))
     code_artifact.add_file(config_path, 'config.yaml')
     wandb_logger.experiment.log_artifact(code_artifact)
 

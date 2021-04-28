@@ -1,9 +1,9 @@
 from setuptools import find_packages, setup
 
-setup(name='rivernet',
+setup(name='fourierflow',
       version='0.1',
       description='Exploration of neural ODE processes and Fourier layers.',
-      url='https://github.com/alasdairtran/rivernet',
+      url='https://github.com/alasdairtran/fourierflow',
       author='Alasdair Tran',
       author_email='alasdair.tran@anu.edu.au',
       license='MIT',
@@ -11,6 +11,6 @@ setup(name='rivernet',
       install_requires=[],
       entry_points='''
             [console_scripts]
-            rivernet=rivernet.commands.__main__:app
+            fourierflow=fourierflow.commands.__main__:app
       ''',
       zip_safe=False)

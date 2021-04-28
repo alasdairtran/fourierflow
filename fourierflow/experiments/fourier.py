@@ -1,9 +1,9 @@
 import torch
 import torch.nn.functional as F
-from rivernet.modules.fourier import SimpleBlock1d
-from rivernet.modules.loss import LpLoss
+from fourierflow.modules.fourier import SimpleBlock1d
+from fourierflow.modules.loss import LpLoss
 
-from rivernet.common import Experiment
+from fourierflow.common import Experiment
 
 
 @Experiment.register('fourier_1d')

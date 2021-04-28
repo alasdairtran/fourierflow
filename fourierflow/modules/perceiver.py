@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import einsum, nn
 
-from rivernet.common import Module
-from rivernet.utils import cache_fn, default, exists
+from fourierflow.common import Module
+from fourierflow.utils import cache_fn, default, exists
 
 from .linear import GehringLinear
 from .rotary import SinusoidalEmbeddings, apply_rotary_emb

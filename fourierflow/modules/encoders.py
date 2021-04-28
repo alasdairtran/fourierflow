@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from rivernet.common import Module
+from fourierflow.common import Module
 
 
 @Module.register('encoder')

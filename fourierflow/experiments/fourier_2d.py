@@ -5,8 +5,8 @@ from allennlp.common import Lazy
 from allennlp.training.optimizers import Optimizer
 from einops import repeat
 
-from rivernet.common import Experiment, Module, Scheduler
-from rivernet.modules.loss import LpLoss
+from fourierflow.common import Experiment, Module, Scheduler
+from fourierflow.modules.loss import LpLoss
 
 
 @Experiment.register('fourier_2d')

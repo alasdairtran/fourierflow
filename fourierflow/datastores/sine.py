@@ -8,7 +8,7 @@ import torch
 import torchcde
 from torch.utils.data import DataLoader, Dataset
 
-from rivernet.common import Datastore
+from fourierflow.common import Datastore
 
 
 @Datastore.register('sine')

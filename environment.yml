@@ -1,4 +1,4 @@
-name: rivernet
+name: fourierflow
 channels:
   - pytorch
   - defaults

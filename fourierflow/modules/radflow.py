@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from rivernet.common import Module
+from fourierflow.common import Module
 
 from .linear import GehringLinear
 
