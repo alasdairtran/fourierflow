@@ -6,8 +6,13 @@ authors = ["Alasdair Tran <alasdair.tran@anu.edu.au>"]
 repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-allennlp = "^2.3.0"
+python = "^3.8.9"
+# poetry add allennlp einops hyperopt ipykernel jupyterlab jupyterlab \
+#   matplotlib numpy pandas ptvsd pydocstyle pylint pytorch-lightning \
+#   pytorch-lightning-bolts seaborn typer torch \
+#   git+https://github.com/patrick-kidger/torchcde.git \
+#   transformers wandb
+allennlp = "^2.4.0"
 einops = "^0.3.0"
 hyperopt = "^0.2.5"
 ipykernel = "^5.5.3"
@@ -17,22 +22,21 @@ numpy = "^1.20.2"
 pandas = "^1.2.4"
 ptvsd = "^4.3.2"
 pydocstyle = "^6.0.0"
-pylint = "^2.7.4"
-pytorch-lightning = "^1.2.8"
+pylint = "^2.8.2"
+pytorch-lightning = "^1.2.10"
+pytorch-lightning-bolts = "^0.3.2"
 seaborn = "^0.11.1"
 typer = "^0.3.2"
 torch = "^1.8.1"
-transformers = "^4.5.1"
-wandb = "^0.10.26"
 torchcde = {git = "https://github.com/patrick-kidger/torchcde.git"}
-pytorch-lightning-bolts = "^0.3.2"
-
+transformers = "^4.5.1"
+wandb = "^0.10.27"
 
 [tool.poetry.dev-dependencies]
+# poetry add --dev mypy isort autopep8
 mypy = "^0.812"
 isort = "^5.8.0"
 autopep8 = "^1.5.6"
-
 [tool.poetry.scripts]
 fourierflow = 'fourierflow.commands.__main__:app'
 

@@ -5,19 +5,20 @@ Experiments with label propagation in networks of time series
 ## Getting Started
 
 ```sh
-conda env create -f conda.yaml
-conda activate fourierflow
+# Set up pyenv and pin python version to 3.8.9
+brew install pyenv
+echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.zshrc
+source ~/.zshrc
+pyenv install 3.8.9
+pyenv local 3.8.9
+# Set up poetry
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+echo -e 'export PATH="$HOME/.poetry/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+# Install all python dependencies
+poetry install
+source ./venv/bin/activate
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
-python setup.py develop
-
-# Ensure PyTorch Geometric is compatible with CUDA and Pytorch versions
-export TORCH_VERSION=1.7.0
-export CUDA_VERSION=cu110
-pip install --no-index torch-scatter -f https://pytorch-geometric.com/whl/torch-${TORCH_VERSION}+${CUDA_VERSION}.html
-pip install --no-index torch-sparse -f https://pytorch-geometric.com/whl/torch-${TORCH_VERSION}+${CUDA_VERSION}.html
-pip install --no-index torch-cluster -f https://pytorch-geometric.com/whl/torch-${TORCH_VERSION}+${CUDA_VERSION}.html
-pip install --no-index torch-spline-conv -f https://pytorch-geometric.com/whl/torch-${TORCH_VERSION}+${CUDA_VERSION}.html
-pip install -U torch-geometric
 ```
 
 ## Training
