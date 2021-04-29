@@ -39,3 +39,4 @@ __pycache__
 /data/*
 /expt/**/serialization
 /notebooks
+/results
