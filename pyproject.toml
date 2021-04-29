@@ -9,7 +9,7 @@ repository = "https://github.com/alasdairtran/fourierflow"
 python = "^3.8.9"
 # poetry add allennlp einops hyperopt ipykernel jupyterlab jupyterlab \
 #   matplotlib numpy pandas ptvsd pydocstyle pylint pytorch-lightning \
-#   pytorch-lightning-bolts seaborn typer torch \
+#   pytorch-lightning-bolts seaborn typer torch torchaudio \
 #   git+https://github.com/patrick-kidger/torchcde.git \
 #   transformers wandb
 allennlp = "^2.4.0"
@@ -28,6 +28,7 @@ pytorch-lightning-bolts = "^0.3.2"
 seaborn = "^0.11.1"
 typer = "^0.3.2"
 torch = "^1.8.1"
+torchaudio = "^0.8.1"
 torchcde = {git = "https://github.com/patrick-kidger/torchcde.git"}
 transformers = "^4.5.1"
 wandb = "^0.10.27"
