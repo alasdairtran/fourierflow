@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import matplotlib.pyplot as plt
 import pl_bolts
 import torch
@@ -12,9 +14,11 @@ from fourierflow.common import Experiment, Module, Scheduler
 
 @Experiment.register('nbeats')
 class NBEATSExperiment(Experiment):
-    def __init__(self, optimizer: Lazy[Optimizer], scheduler: Lazy[Scheduler],
+    def __init__(self, optimizer: Lazy[Optimizer],
                  model: Module = None, backcast_length: int = 42,
-                 forecast_length: int = 7, copying_previous_day: bool = False, model_path: str = None):
+                 forecast_length: int = 7, copying_previous_day: bool = False,
+                 scheduler: Lazy[Scheduler] = None,
+                 scheduler_config: Dict[str, Any] = None, model_path: str = None):
         super().__init__()
         self.model = model
         self.backcast_len = backcast_length
@@ -22,6 +26,7 @@ class NBEATSExperiment(Experiment):
         self.copying_previous_day = copying_previous_day
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.scheduler_config = scheduler_config
 
     def forward(self, x):
         x = self.model(x)

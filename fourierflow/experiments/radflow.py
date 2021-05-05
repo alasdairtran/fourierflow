@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 import matplotlib.pyplot as plt
 import pl_bolts
@@ -15,7 +15,8 @@ from fourierflow.common import Experiment, Module, Scheduler
 @Experiment.register('radflow')
 class RadflowExperiment(Experiment):
     def __init__(self, optimizer: Lazy[Optimizer], scheduler: Lazy[Scheduler], rnn: Module = None, backcast_length: int = 42,
-                 forecast_length: int = 7, copying_previous_day: bool = False, model_path: str = None):
+                 forecast_length: int = 7, copying_previous_day: bool = False,
+                 scheduler_config: Dict[str, Any] = None, model_path: str = None):
         super().__init__()
         self.decoder = rnn
         self.backcast_len = backcast_length
@@ -23,6 +24,7 @@ class RadflowExperiment(Experiment):
         self.copying_previous_day = copying_previous_day
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.scheduler_config = scheduler_config
 
     def forward(self, x):
         x = self.decoder(x)

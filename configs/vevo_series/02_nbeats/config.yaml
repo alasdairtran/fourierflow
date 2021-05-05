@@ -1,7 +1,7 @@
 wandb:
   project: vevo-series
   group:
-  name: vevo-nbeats
+  name: 01_nbeats
   tags:
     - vevo
     - nbeats
@@ -32,9 +32,14 @@ experiment:
     lr: 0.0001
     weight_decay: 0.0001
   scheduler:
-    type: linear_warmup_cosine_annealing
-    warmup_epochs: 1
-    max_epochs: 20
+    type: linear_with_warmup
+    num_warmup_steps: 1000
+    num_training_steps: 19000
+  scheduler_config:
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: None
 trainer:
   gpus: 1
   precision: 32

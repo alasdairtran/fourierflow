@@ -26,8 +26,9 @@ pip install -U torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f 
 ## Training
 
 ```sh
-# N-BEATS baseline
-fourierflow train configs/53_nbeats_vevo_full/config.yaml
+# Vevo experiments
+fourierflow train configs/vevo/02_nbeats/config.yaml
+fourierflow train configs/vevo/03_radflow/config.yaml
 # N-BEATS with fourier layer - similar performance
 fourierflow train configs/54_vevo_perceiver/config.yaml
 
