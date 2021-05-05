@@ -12,7 +12,9 @@ T = TypeVar("T", bound="Scheduler")
 
 
 class Datastore(Registrable, LightningDataModule):
-    ...
+    @property
+    def batches_per_epochs(self):
+        return len(self.train_dataloader())
 
 
 class Experiment(Registrable, LightningModule):
@@ -41,7 +43,8 @@ class Scheduler(Registrable, _LRScheduler):
     def from_params(cls: Type[T],
                     params: Params,
                     constructor_to_call: Callable[..., T] = None,
-                    constructor_to_inspect: Union[Callable[..., T], Callable[[T], None]] = None,
+                    constructor_to_inspect: Union[Callable[..., T], Callable[[
+                        T], None]] = None,
                     **extras):
         as_registrable = cast(Type[Registrable], cls)
         default_to_first_choice = as_registrable.default_implementation is not None
@@ -64,6 +67,4 @@ class Scheduler(Registrable, _LRScheduler):
 Registrable._registry[Scheduler] = {
     'step_lr': (torch.optim.lr_scheduler.StepLR, None),
     'linear_warmup_cosine_annealing': (pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR, None),
-
-
 }

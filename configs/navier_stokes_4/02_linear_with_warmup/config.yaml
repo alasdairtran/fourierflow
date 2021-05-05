@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 01_fourier_li
+  name: 02_linear_with_warmup
   tags:
     - pde
     - navier-stokes
@@ -29,9 +29,9 @@ experiment:
     lr: 0.0025
     weight_decay: 0.0001
   scheduler:
-    type: step_lr
-    step_size: 100
-    gamma: 0.5
+    type: linear_with_warmup
+    num_warmup_steps: 1250
+    num_training_steps: 25000
 trainer:
   gpus: 1
   precision: 32
