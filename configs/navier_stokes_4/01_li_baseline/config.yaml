@@ -1,7 +1,7 @@
 wandb:
-  project: navier-stokes
-  group: 2d
-  name: fourier-li
+  project: navier-stokes-4
+  group:
+  name: 01-fourier-li
   tags:
     - pde
     - navier-stokes

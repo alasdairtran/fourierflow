@@ -79,12 +79,6 @@ class Fourier2DExperiment(Experiment):
         self.log('test_loss', loss)
         self.log('test_loss_full', loss_full)
 
-    def configure_optimizers(self):
-        opt = torch.optim.Adam(self.parameters(), lr=0.0025, weight_decay=1e-4)
-        scheduler = torch.optim.lr_scheduler.StepLR(
-            opt, step_size=100, gamma=0.5)
-        return [opt], [scheduler]
-
 
 def log_imshow(expt, tensor, name):
     fig = plt.figure(figsize=(6, 6))

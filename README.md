@@ -30,5 +30,5 @@ fourierflow train configs/53_nbeats_vevo_full/config.yaml
 fourierflow train configs/54_vevo_perceiver/config.yaml
 
 # Reproducing SOA model on Navier Stokes
-fourierflow train configs/41_navier_stokes_2d_baseline/config.yaml
+fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
 ```
