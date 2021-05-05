@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import matplotlib.pyplot as plt
 import torch
 import wandb
@@ -12,6 +14,7 @@ from fourierflow.modules.loss import LpLoss
 @Experiment.register('fourier_2d')
 class Fourier2DExperiment(Experiment):
     def __init__(self, optimizer: Lazy[Optimizer], scheduler: Lazy[Scheduler],
+                 scheduler_config: Dict[str, Any],
                  conv: Module, n_steps: int, model_path: str = None):
         super().__init__()
         self.conv = conv
@@ -19,6 +22,7 @@ class Fourier2DExperiment(Experiment):
         self.l2_loss = LpLoss(size_average=True)
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.scheduler_config = scheduler_config
 
         if model_path:
             best_model_state = torch.load(model_path)

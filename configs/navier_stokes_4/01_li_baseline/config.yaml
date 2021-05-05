@@ -32,6 +32,11 @@ experiment:
     type: step_lr
     step_size: 100
     gamma: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: None
 trainer:
   gpus: 1
   precision: 32

@@ -32,6 +32,11 @@ experiment:
     type: linear_with_warmup
     num_warmup_steps: 1250
     num_training_steps: 25000
+  scheduler_config:
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: None
 trainer:
   gpus: 1
   precision: 32

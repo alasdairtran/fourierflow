@@ -24,11 +24,11 @@ class Experiment(Registrable, LightningModule):
         opt = self.optimizer.construct(model_parameters=parameters)
 
         if self.scheduler:
-            # scheduler = {'scheduler': self.scheduler.construct(optimizer=opt),
-            #              'name': 'learning_rate',
-            #              'interval': 'step',
-            #              'frequency': 1}
-            scheduler = self.scheduler.construct(optimizer=opt)
+            scheduler = {'scheduler': self.scheduler.construct(optimizer=opt),
+                         'name': self.scheduler_config['name'],
+                         'interval': self.scheduler_config['interval'],
+                         'monitor': self.scheduler_config['monitor'],
+                         'frequency': self.scheduler_config['frequency']}
 
             return [opt], [scheduler]
         else:
@@ -40,7 +40,7 @@ class Module(Registrable, nn.Module):
 
 
 class Scheduler(Registrable, _LRScheduler):
-    @ classmethod
+    @classmethod
     def from_params(cls: Type[T],
                     params: Params,
                     constructor_to_call: Callable[..., T] = None,

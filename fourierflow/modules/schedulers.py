@@ -9,7 +9,6 @@ class LinearWithWarmupScheduler(Scheduler, LambdaLR):
                  num_training_steps: int, last_epoch=-1, verbose=False):
 
         def lr_lambda(current_step: int):
-            print(current_step)
             if current_step < num_warmup_steps:
                 return float(current_step) / float(max(1, num_warmup_steps))
             return max(0.0, float(num_training_steps - current_step) /
