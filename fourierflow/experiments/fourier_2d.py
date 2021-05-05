@@ -13,9 +13,9 @@ from fourierflow.modules.loss import LpLoss
 
 @Experiment.register('fourier_2d')
 class Fourier2DExperiment(Experiment):
-    def __init__(self, optimizer: Lazy[Optimizer], scheduler: Lazy[Scheduler],
-                 scheduler_config: Dict[str, Any],
-                 conv: Module, n_steps: int, model_path: str = None):
+    def __init__(self,
+                 conv: Module, n_steps: int, optimizer: Lazy[Optimizer], scheduler: Lazy[Scheduler] = None,
+                 scheduler_config: Dict[str, Any] = None, model_path: str = None):
         super().__init__()
         self.conv = conv
         self.n_steps = n_steps
