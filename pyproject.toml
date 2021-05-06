@@ -31,7 +31,7 @@ torch = "^1.8.1"
 torchaudio = "^0.8.1"
 torchcde = {git = "https://github.com/patrick-kidger/torchcde.git"}
 transformers = "^4.5.1"
-wandb = "^0.10.29"
+wandb = "^0.10.27"
 
 [tool.poetry.dev-dependencies]
 # poetry add --dev mypy isort autopep8
