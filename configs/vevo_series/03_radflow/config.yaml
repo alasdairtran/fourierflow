@@ -1,7 +1,7 @@
 wandb:
   project: vevo-series
   group:
-  name: 03_radflow
+  name: 03_radflow_half
   tags:
     - vevo
     - radflow
@@ -39,7 +39,9 @@ experiment:
     monitor: None
 trainer:
   gpus: 1
-  precision: 32
+  precision: 16
   max_epochs: 100
   check_val_every_n_epoch: 10
   gradient_clip_val: 0.1
+checkpointer:
+  validation_metric: valid_smape

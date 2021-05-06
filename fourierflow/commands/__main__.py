@@ -5,7 +5,7 @@ import ptvsd
 import pytorch_lightning as pl
 import typer
 import wandb
-from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
 from fourierflow.common import Datastore, Experiment
@@ -28,11 +28,18 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     params = yaml_to_params(config_path, overrides)
 
     save_dir = os.getenv('SM_MODEL_DIR', 'results')
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
+    results_dir = os.path.join(save_dir, *parts[i+1:-1])
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir, exist_ok=True)
+
+    checkpoint_params = params.pop('checkpointer')
+    metric = checkpoint_params.pop('validation_metric')
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=os.path.join(results_dir, 'checkpoints'),
+        monitor=metric)
 
     wandb_opts = params.pop('wandb').as_dict()
-    wandb_logger = WandbLogger(save_dir=save_dir,
+    wandb_logger = WandbLogger(save_dir=results_dir,
                                mode='online',
                                config=deepcopy(params.as_dict()),
                                **wandb_opts)
@@ -45,13 +52,13 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     experiment = Experiment.from_params(params['experiment'])
     lr_monitor = LearningRateMonitor(logging_interval='step')
     trainer = pl.Trainer(logger=wandb_logger,
-                         callbacks=[lr_monitor],
+                         callbacks=[lr_monitor, checkpoint_callback],
                          **params.pop('trainer').as_dict())
     trainer.fit(experiment, datamodule=datastore)
     trainer.test(experiment, datamodule=datastore)
 
 
-@app.command()
+@ app.command()
 def test(config_path: str, model_path: str = None, overrides: str = '', debug: bool = False):
     """Test a model."""
     params = yaml_to_params(config_path, overrides)
