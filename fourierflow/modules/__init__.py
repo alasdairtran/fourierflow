@@ -7,4 +7,5 @@ from .perceiver import (Perceiver, TimeSeriesPerceiver,
                         TimeSeriesPerceiverResidual)
 from .processes import NeuralODEProcess, NeuralProcess
 from .radflow import LSTMDecoder
+from .radflow_attention import AttentionDecoder
 from .schedulers import LinearWithWarmupScheduler

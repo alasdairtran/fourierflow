@@ -8,6 +8,7 @@ from torch import einsum, nn
 from fourierflow.common import Module
 from fourierflow.utils import cache_fn, default, exists
 
+from .attention import Attention
 from .rotary import SinusoidalEmbeddings, apply_rotary_emb
 
 
@@ -74,63 +75,6 @@ class FeedForward(nn.Module):
 
     def forward(self, x):
         return self.net(x)
-
-
-class Attention(nn.Module):
-    def __init__(self, query_dim, context_dim=None, heads=8, dim_head=64, dropout=0.):
-        super().__init__()
-        inner_dim = dim_head * heads
-        context_dim = default(context_dim, query_dim)
-
-        self.scale = dim_head ** -0.5
-        self.heads = heads
-
-        self.to_q = nn.Linear(query_dim, inner_dim, bias=False)
-        self.to_kv = nn.Linear(context_dim, inner_dim * 2, bias=False)
-
-        self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, query_dim),
-            nn.Dropout(dropout))
-
-    def forward(self, x, context=None, mask=None, pos_emb=None):
-        h = self.heads
-
-        # Convert into the query space
-        q = self.to_q(x)
-
-        # If context doesn't exist, we simply do self attention
-        context = default(context, x)
-
-        # Convert context into the key and value space
-        k, v = self.to_kv(context).chunk(2, dim=-1)
-
-        # The heads are independent of each other. Move them to batch dimension.
-        q, k, v = map(lambda t: rearrange(
-            t, 'b n (h d) -> (b h) n d', h=h), (q, k, v))
-
-        if exists(pos_emb):
-            q, k = apply_rotary_emb(q, k, pos_emb)
-
-        # Dot product between query and key, i.e. unnormalized attention scores
-        sim = einsum('b i d, b j d -> b i j', q, k) * self.scale
-
-        if exists(mask):
-            mask = rearrange(mask, 'b ... -> b (...)')
-            max_neg_value = -torch.finfo(sim.dtype).max
-            mask = repeat(mask, 'b j -> (b h) () j', h=h)
-            sim.masked_fill_(~mask, max_neg_value)
-
-        # attention, what we cannot get enough of
-        attn = sim.softmax(dim=-1)
-
-        # Weighted sum of the values
-        out = einsum('b i j, b j d -> b i d', attn, v)
-
-        # Concatenate heads
-        out = rearrange(out, '(b h) n d -> b n (h d)', h=h)
-
-        # Final feedforward layer
-        return self.to_out(out)
 
 
 @Module.register('perceiver')
@@ -526,21 +470,22 @@ class TimeSeriesPerceiverResidual(Module):
             should_cache = i > 0 and weight_tie_layers
             cache_args = {'_cache': should_cache}
 
-            backcast_f = nn.Sequential(
-                nn.Linear(latent_dim, latent_dim),
-                nn.GELU(),
-                nn.Linear(latent_dim, latent_dim))
+            # backcast_f = nn.Sequential(
+            #     nn.Linear(latent_dim, latent_dim),
+            #     nn.GELU(),
+            #     nn.Linear(latent_dim, latent_dim))
 
-            forecast_f = nn.Sequential(
-                nn.Linear(latent_dim, latent_dim),
-                nn.GELU(),
-                nn.Linear(latent_dim, latent_dim))
+            # forecast_f = nn.Sequential(
+            #     nn.Linear(latent_dim, latent_dim),
+            #     nn.GELU(),
+            #     nn.Linear(latent_dim, latent_dim))
 
             self.layers.append(nn.ModuleList([
                 get_cross_attn(**cache_args),
-                get_cross_ff(**cache_args),
-                backcast_f,
-                forecast_f,
+                PreNorm(
+                    latent_dim, FeedForward(latent_dim, dropout=ff_dropout)),
+                PreNorm(
+                    latent_dim, FeedForward(latent_dim, dropout=ff_dropout)),
             ]))
 
         self.out_proj = nn.Sequential(
@@ -592,9 +537,9 @@ class TimeSeriesPerceiverResidual(Module):
         # x.shape == [batch_size, n_latents, latent_dim]
 
         out = x.new_zeros(*x.shape)
-        for cross_attn, cross_ff, backcast_f, forecast_f in self.layers:
+        for cross_attn, backcast_f, forecast_f in self.layers:
             x = cross_attn(x, context=data, mask=mask) + x
-            x = cross_ff(x) + x
+            # x = cross_ff(x) + x
             # x.shape == [batch_size, n_latents, latent_dim]
 
             b = backcast_f(x)

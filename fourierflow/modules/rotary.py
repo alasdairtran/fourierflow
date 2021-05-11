@@ -4,9 +4,9 @@ from torch import einsum, nn
 
 
 class SinusoidalEmbeddings(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, max_ts=10000):
         super().__init__()
-        inv_freq = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
+        inv_freq = 1. / (max_ts ** (torch.arange(0, dim, 2).float() / dim))
         self.register_buffer('inv_freq', inv_freq)
 
     def forward(self, x):

@@ -1,12 +1,12 @@
 wandb:
   project: vevo-series
   group:
-  name: 05_perceiver_residual
+  name: 03_radflow_biggest
   tags:
     - vevo
-    - perceiver
+    - radflow
     - time-series
-  notes: Vevo with perceiver.
+  notes: Reproduced best experiment on VEVO dataset with Radflow.
 datastore:
   type: vevo
   data_path: /localdata/u4921817/projects/phd/radflow/data/vevo/vevo_static.hdf5
@@ -15,25 +15,13 @@ datastore:
   batch_size: 64
   n_workers: 4
 experiment:
-  type: nbeats
-  model:
-    type: time_series_perceiver_residual
-    num_freq_bands: 8
-    depth: 8
-    max_freq: 21
-    input_channels: 1
-    input_axis: 1
-    input_dim: 64
-    num_latents: 64
-    latent_dim: 112
-    cross_heads: 4
-    latent_heads: 4
-    cross_dim_head: 32
-    latent_dim_head: 32
-    attn_dropout: 0
-    ff_dropout: 0
-    weight_tie_layers: false
-    fourier_encode_data: true
+  type: radflow
+  rnn:
+    type: radflow_lstm
+    n_layers: 8
+    hidden_size: 512
+    input_size: 1
+    dropout: 0.1
   forecast_length: 7
   backcast_length: 42
   optimizer:
