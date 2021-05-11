@@ -7,13 +7,14 @@ repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
 python = "^3.8.9"
-# poetry add allennlp einops hyperopt ipykernel jupyterlab jupyterlab \
+# poetry add allennlp einops entmax hyperopt ipykernel jupyterlab jupyterlab \
 #   matplotlib numpy pandas ptvsd pydocstyle pylint pytorch-lightning \
 #   pytorch-lightning-bolts seaborn typer torch torchaudio \
 #   git+https://github.com/patrick-kidger/torchcde.git \
 #   transformers wandb
 allennlp = "^2.4.0"
 einops = "^0.3.0"
+entmax = "^1.0"
 hyperopt = "^0.2.5"
 ipykernel = "^5.5.3"
 jupyterlab = "^3.0.14"

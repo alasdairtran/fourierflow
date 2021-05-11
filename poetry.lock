@@ -382,6 +382,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "entmax"
+version = "1.0"
+description = "The entmax mapping and its loss, a family of sparse alternatives to softmax."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "entrypoints"
 version = "0.3"
 description = "Discover and load entry points from installed packages."
@@ -2342,7 +2350,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8.9"
-content-hash = "bacc6b02c6bb0888e752bbab4419178b46931d920b82322e630b6fc9d5fecb8e"
+content-hash = "3efdaf5dd3981de1ff0e142c4556456de6b07d4c20ffb67d7f15bf51bd6c62d9"
 
 [metadata.files]
 absl-py = [
@@ -2588,6 +2596,9 @@ docker-pycreds = [
 einops = [
     {file = "einops-0.3.0-py2.py3-none-any.whl", hash = "sha256:a91c6190ceff7d513d74ca9fd701dfa6a1ffcdd98ea0ced14350197c07f75c73"},
     {file = "einops-0.3.0.tar.gz", hash = "sha256:a3b0935a4556f012cd5fa1851373f63366890a3f6698d117afea55fd2a40c1fc"},
+]
+entmax = [
+    {file = "entmax-1.0.tar.gz", hash = "sha256:1cd9721c34935824e071c8c20900711cad60c3d84bc9e4668f3b7a8873bf62cf"},
 ]
 entrypoints = [
     {file = "entrypoints-0.3-py2.py3-none-any.whl", hash = "sha256:589f874b313739ad35be6e0cd7efde2a4e9b6fea91edcc34e58ecbb8dbe56d19"},
