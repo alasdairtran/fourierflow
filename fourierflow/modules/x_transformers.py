@@ -23,7 +23,7 @@ Intermediates = namedtuple('Intermediates', [
     'post_softmax_attn'
 ])
 
-LayerIntermediates = namedtuple('Intermediates', [
+LayerIntermediates = namedtuple('LayerIntermediates', [
     'hiddens',
     'attn_intermediates'
 ])

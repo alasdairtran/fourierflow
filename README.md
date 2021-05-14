@@ -21,6 +21,7 @@ source .venv/bin/activate
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
 # Manually reinstall Pytorch with CUDA 11.1 support
 pip install -U torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+pip install git+https://github.com/google-research/torchsde.git
 
 # MIMIC-III dataset
 cd data/mimiciii/1.4 && gzip -d *gz

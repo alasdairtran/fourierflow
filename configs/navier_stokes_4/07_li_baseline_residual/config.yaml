@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 01_fourier_li
+  name: 07_fourier_li_resdiual
   tags:
     - pde
     - navier-stokes
@@ -23,6 +23,7 @@ experiment:
     modes1: 12
     modes2: 12
     width: 20
+    residual: true
   n_steps: 10
   optimizer:
     type: adamw

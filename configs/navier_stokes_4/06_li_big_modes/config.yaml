@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 01_fourier_li
+  name: 06_li_big_modes
   tags:
     - pde
     - navier-stokes
@@ -20,9 +20,9 @@ experiment:
   type: fourier_2d
   conv:
     type: fourier_net_2d
-    modes1: 12
-    modes2: 12
-    width: 20
+    modes1: 24
+    modes2: 24
+    width: 64
   n_steps: 10
   optimizer:
     type: adamw

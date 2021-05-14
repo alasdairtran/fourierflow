@@ -12,7 +12,8 @@ class NavierStokesDatastore(Datastore):
     name = 'navier_stokes'
 
     def __init__(self, data_path: str, train_size: int, test_size: int,
-                 ssr: int, n_steps: int, n_workers: int, batch_size: int):
+                 ssr: int, n_steps: int, n_workers: int, batch_size: int,
+                 append_pos: bool = True):
         super().__init__()
         self.n_workers = n_workers
         self.batch_size = batch_size
@@ -23,15 +24,16 @@ class NavierStokesDatastore(Datastore):
         u = data[:, ::ssr, ::ssr, n_steps:n_steps*2]
         B, X, Y, T = a.shape
 
-        # Note that linspace is inclusive of both ends
-        ticks = torch.linspace(0, 1, X)
-        grid_x = repeat(ticks, 'x -> b x y 1', b=B, y=Y)
-        grid_y = repeat(ticks, 'y -> b x y 1', b=B, x=X)
+        if append_pos:
+            # Note that linspace is inclusive of both ends
+            ticks = torch.linspace(0, 1, X)
+            grid_x = repeat(ticks, 'x -> b x y 1', b=B, y=Y)
+            grid_y = repeat(ticks, 'y -> b x y 1', b=B, x=X)
 
-        # Add positional information to inputs
-        a = torch.cat([grid_x, grid_y, a], dim=-1)
-        # a.shape == [1200, 64, 64, 12]
-        # u.shape == [1200, 64, 64, 10]
+            # Add positional information to inputs
+            a = torch.cat([a, grid_x, grid_y], dim=-1)
+            # a.shape == [1200, 64, 64, 12]
+            # u.shape == [1200, 64, 64, 10]
 
         self.train_dataset = NavierStokesDataset(
             a[:train_size], u[:train_size])

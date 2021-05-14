@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 01_fourier_li
+  name: 04_fourier_pos
   tags:
     - pde
     - navier-stokes
@@ -18,11 +18,16 @@ datastore:
   n_workers: 4
 experiment:
   type: fourier_2d
+  use_fourier_position: true
+  max_freq: 32
+  num_freq_bands: 8
+  freq_base: 2
   conv:
     type: fourier_net_2d
     modes1: 12
     modes2: 12
     width: 20
+    input_dim: 34
   n_steps: 10
   optimizer:
     type: adamw

@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 01_fourier_li
+  name: 17_next_input_f
   tags:
     - pde
     - navier-stokes
@@ -19,10 +19,14 @@ datastore:
 experiment:
   type: fourier_2d
   conv:
-    type: fourier_net_2d
+    type: fourier_net_2d_split
     modes1: 12
     modes2: 12
-    width: 20
+    width: 30
+    residual: true
+    linear_out: true
+    n_layers: 6
+    next_input: f
   n_steps: 10
   optimizer:
     type: adamw

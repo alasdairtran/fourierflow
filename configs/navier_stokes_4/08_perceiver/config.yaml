@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 01_fourier_li
+  name: 08_perceiver
   tags:
     - pde
     - navier-stokes
@@ -16,13 +16,24 @@ datastore:
   n_steps: 10
   batch_size: 20
   n_workers: 4
+  append_pos: false
 experiment:
   type: fourier_2d
   conv:
-    type: fourier_net_2d
-    modes1: 12
-    modes2: 12
-    width: 20
+    type: perceiver
+    num_freq_bands: 8
+    depth: 4
+    max_freq: 32
+    freq_base: 2
+    input_channels: 10
+    input_axis: 2
+    num_latents: 64
+    latent_dim: 128
+    cross_heads: 4
+    cross_dim_head: 16
+    num_classes: 1
+    self_per_cross_attn: 0
+  append_pos: false
   n_steps: 10
   optimizer:
     type: adamw
