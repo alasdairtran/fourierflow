@@ -73,7 +73,48 @@ class Fourier2DParallelExperiment(Experiment):
 
         return fourier_feats
 
-    def _learning_step(self, data):
+    def _training_step(self, data):
+        B, *dim_sizes, T = data.shape
+        X, Y = dim_sizes
+        # data.shape == [batch_size, *dim_sizes, total_steps]
+
+        yy = data[:, ..., -self.n_steps:]
+        # yy.shape == [batch_size, *dim_sizes, n_steps]
+
+        # Batch up time dimension
+        yy = rearrange(yy, 'b ... t -> (b t) ...')
+        # yy.shape == [batch_size * n_steps, *dim_sizes]
+
+        # We'll run all steps at the same time
+        xx = data.unfold(-1, self.n_steps, 1)
+        # xx.shape == [batch_size, *dim_sizes, total_steps - n_steps + 1, n_steps]
+
+        # Ignore last step since there is no ground-truth output
+        xx = xx[..., :-1, :]
+        # xx.shape == [batch_size, *dim_sizes, total_steps - n_steps, n_steps]
+
+        # Batch up the time dimension
+        xx = rearrange(xx, 'b ... t -> (b t) ...')
+        # xx.shape == [batch_size * n_steps, *dim_sizes, total_steps - n_steps]
+
+        pos_feats = self.encode_positions(dim_sizes, 0, 1, False)
+        # pos_feats.shape == [*dim_sizes, pos_size]
+
+        BN = B * self.n_steps
+        pos_feats = repeat(pos_feats, '... -> b ...', b=BN)
+        # pos_feats.shape == [batch_size * n_steps, *dim_sizes, n_dims]
+
+        # Add positional info
+        xx = torch.cat([xx, pos_feats], dim=-1)
+
+        im, im_list = self.conv(xx)
+        # im.shape == [batch_size * n_steps, *dim_sizes, 1]
+
+        loss = self.l2_loss(im.reshape(BN, -1), yy.reshape(BN, -1))
+
+        return loss
+
+    def _valid_step(self, data):
         B, *dim_sizes, T = data.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
@@ -91,7 +132,11 @@ class Fourier2DParallelExperiment(Experiment):
         # We predict one future one step at a time
         pred_layer_list = []
         for t in range(self.n_steps):
-            x = data[..., t: t+self.n_steps]
+            if self.training or t == 0:
+                x = data[..., t: t+self.n_steps]
+            else:
+                e = t + self.n_steps - pred.shape[-1]
+                x = torch.cat([data[..., t:e], pred], dim=-1)
             x = torch.cat([x, pos_feats], dim=-1)
 
             y = yy[..., t: t+1]
@@ -110,13 +155,12 @@ class Fourier2DParallelExperiment(Experiment):
         return loss, loss_full, pred, pred_layer_list
 
     def training_step(self, batch, batch_idx):
-        loss, loss_full, _, _ = self._learning_step(batch)
+        loss = self._training_step(batch)
         self.log('train_loss', loss)
-        self.log('train_loss_full', loss_full)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list = self._learning_step(batch)
+        loss, loss_full, preds, pred_list = self._valid_step(batch)
         self.log('valid_loss', loss)
         self.log('valid_loss_full', loss_full)
 
@@ -133,7 +177,7 @@ class Fourier2DParallelExperiment(Experiment):
                     log_imshow(expt, layer[0], f'layer {i} t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _ = self._learning_step(batch)
+        loss, loss_full, _, _ = self._valid_step(batch)
         self.log('test_loss', loss)
         self.log('test_loss_full', loss_full)
 
