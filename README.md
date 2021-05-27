@@ -51,4 +51,7 @@ fourierflow train configs/54_vevo_perceiver/config.yaml
 
 # Reproducing SOA model on Navier Stokes
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
+
+# With Radflow
+fourierflow train configs/navier_stokes_4/40_modes_16_width_32/config.yaml
 ```

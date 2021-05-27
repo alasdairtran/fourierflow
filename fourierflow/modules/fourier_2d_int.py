@@ -12,12 +12,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
+from torchdiffeq import odeint
 
 from fourierflow.common import Module
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes, resdiual=True, conv_norm=False, nonlinear=False, dropout=0.1):
+    def __init__(self, in_dim, out_dim, n_modes, resdiual=True, dropout=0.1):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -26,9 +27,7 @@ class SpectralConv2d(nn.Module):
         self.residual = resdiual
         self.act = nn.ReLU()
         self.act2 = nn.ReLU()
-        self.nonlinear = nonlinear
-        self.norm = nn.LayerNorm(in_dim) if conv_norm else nn.Identity()
-        n = 4 if nonlinear else 2
+        n = 2
 
         fourier_weight = [nn.Parameter(torch.FloatTensor(
             in_dim, out_dim, n_modes, n_modes, 2)) for _ in range(n)]
@@ -58,7 +57,7 @@ class SpectralConv2d(nn.Module):
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
         B, M, N, I = x.shape
-        res = self.linear(self.norm(x))
+        res = self.linear(x)
         # res.shape == [batch_size, grid_size, grid_size, out_dim]
 
         x = rearrange(x, 'b m n i -> b i m n')
@@ -79,14 +78,6 @@ class SpectralConv2d(nn.Module):
         out_ft[:, :, -self.n_modes:, :self.n_modes] = self.complex_matmul_2d(
             x_ft[:, :, -self.n_modes:, :self.n_modes], self.fourier_weight[1])
 
-        if self.nonlinear:
-            out_ft = self.act2(out_ft)
-            out_ft[:, :, :self.n_modes, :self.n_modes] = self.complex_matmul_2d(
-                x_ft[:, :, :self.n_modes, :self.n_modes], self.fourier_weight[2])
-
-            out_ft[:, :, -self.n_modes:, :self.n_modes] = self.complex_matmul_2d(
-                x_ft[:, :, -self.n_modes:, :self.n_modes], self.fourier_weight[3])
-
         out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
 
         x = torch.fft.irfft2(out_ft, s=(N, M), norm='ortho')
@@ -103,12 +94,12 @@ class SpectralConv2d(nn.Module):
         return b, f
 
 
-@Module.register('fourier_net_2d_split_real')
-class SimpleBlock2dSplitReal(nn.Module):
+@Module.register('fourier_net_2d_integrate')
+class SimpleBlock2dIntegrate(nn.Module):
     def __init__(self, modes1, modes2, width, input_dim=12, dropout=0.1,
                  n_layers=4, residual=False, conv_residual=True,
-                 nonlinear=False, linear_out: bool = False,
-                 norm=False, conv_norm=False, next_input='subtract'):
+                 linear_out: bool = False,
+                 norm=False):
         super().__init__()
 
         """
@@ -129,18 +120,14 @@ class SimpleBlock2dSplitReal(nn.Module):
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
         self.residual = residual
-        self.next_input = next_input
+        self.n_layers = n_layers
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
-        self.spectral_layers = nn.ModuleList([])
-        for i in range(n_layers):
-            self.spectral_layers.append(SpectralConv2d(in_dim=width,
-                                                       out_dim=width,
-                                                       n_modes=modes1,
-                                                       resdiual=conv_residual,
-                                                       nonlinear=nonlinear,
-                                                       conv_norm=conv_norm,
-                                                       dropout=dropout))
+        self.f = SpectralConv2d(in_dim=width,
+                                out_dim=width,
+                                n_modes=modes1,
+                                resdiual=conv_residual,
+                                dropout=dropout)
 
         self.out = nn.Sequential(
             nn.LayerNorm(self.width) if norm else nn.Identity(),
@@ -151,22 +138,15 @@ class SimpleBlock2dSplitReal(nn.Module):
     def forward(self, x):
         # x.shape == [n_batches, *dim_sizes, input_size]
         x = self.in_proj(x)
-        forecast_list = []
-        forecast = 0
-        for layer in self.spectral_layers:
-            b, f = layer(x)
-            f_out = self.out(f)
-            forecast = forecast + f_out
-            forecast_list.append(f_out)
-            if self.next_input == 'subtract':
-                x = x - b
-            elif self.next_input == 'b':
-                x = b
-            elif self.next_input == 'f':
-                x = f
-            elif self.next_input == 'add':
-                x = x + b
-            else:
-                raise ValueError
 
-        return forecast, forecast_list
+        # ts = x.new_tensor([0, 1])
+        # x = odeint(self.f, x, ts, method='dopri5')[-1]
+        forecast = 0
+        for i in range(self.n_layers):
+            b, f = self.f(x)
+            x = x - b
+            forecast = forecast + f
+
+        forecast = self.out(forecast)
+
+        return forecast, None

@@ -14,10 +14,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from fourierflow.common import Experiment, Module, Scheduler
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
+from fourierflow.modules.perceiver import (Attention, FeedForward, PreNorm,
+                                           cache_fn)
 
 
-@Experiment.register('fourier_2d')
-class Fourier2DExperiment(Experiment):
+@Experiment.register('fourier_2d_parellel')
+class Fourier2DParallelExperiment(Experiment):
     def __init__(self,
                  conv: Module,
                  optimizer: Lazy[Optimizer],
@@ -29,7 +31,16 @@ class Fourier2DExperiment(Experiment):
                  scheduler_config: Dict[str, Any] = None,
                  use_fourier_position: bool = False,
                  append_pos: bool = True,
-                 teacher_forcing: bool = False,
+                 num_latents: int = 64,
+                 weight_tie_layers: bool = False,
+                 latent_dim: int = 128,
+                 ff_dropout: float = 0.1,
+                 input_dim: int = 64,
+                 cross_heads: int = 1,
+                 latent_heads: int = 1,
+                 latent_dim_head: int = 64,
+                 attn_dropout: float = 0.0,
+                 n_layers: int = 6,
                  model_path: str = None):
         super().__init__()
         self.conv = conv
@@ -43,21 +54,45 @@ class Fourier2DExperiment(Experiment):
         self.num_freq_bands = num_freq_bands
         self.freq_base = freq_base
         self.append_pos = append_pos
-        self.teacher_forcing = teacher_forcing
-        if self.use_fourier_position:
-            self.in_proj = nn.Linear(n_steps, 34)
+        self.embed_obs = nn.Linear(1, 34)
+        self.embed_inputs = nn.Linear(34, 64)
 
-        # if model_path:
-        #     best_model_state = torch.load(model_path)
-        #     self.load_state_dict(best_model_state)
+        self.latents = nn.Parameter(torch.randn(64, 64, latent_dim))
+
+        def get_cross_attn(): return PreNorm(latent_dim, Attention(latent_dim, input_dim,
+                                                                   heads=cross_heads, dim_head=cross_dim_head, dropout=attn_dropout), context_dim=input_dim)
+
+        def get_cross_ff(): return PreNorm(
+            latent_dim, FeedForward(latent_dim, dropout=ff_dropout))
+
+        def get_latent_attn(): return PreNorm(latent_dim, Attention(
+            latent_dim, heads=latent_heads, dim_head=latent_dim_head, dropout=attn_dropout))
+        def get_latent_ff(): return PreNorm(
+            latent_dim, FeedForward(latent_dim, dropout=ff_dropout))
+
+        get_cross_attn, get_cross_ff, get_latent_attn, get_latent_ff = map(
+            cache_fn, (get_cross_attn, get_cross_ff, get_latent_attn, get_latent_ff))
+
+        self.layers = nn.ModuleList([])
+        for i in range(n_layers):
+            should_cache = i > 0 and weight_tie_layers
+            cache_args = {'_cache': should_cache}
+
+            self.layers.append(nn.ModuleList([
+                get_cross_attn(**cache_args),
+                PreNorm(
+                    latent_dim, FeedForward(latent_dim, dropout=ff_dropout)),
+                PreNorm(
+                    latent_dim, FeedForward(latent_dim, dropout=ff_dropout)),
+            ]))
 
     def forward(self, x):
         x = self.conv(x)
         return x.squeeze()
 
     def encode_fourier_positions(self, dim_sizes, device):
-        # dim_sizes is a list of dimensions in all positional dimensions
-        # e.g. for a 64 x 64 image, dim_sizes = [64, 64]
+        # dim_sizes is a list of dimensions in all positional/time dimensions
+        # e.g. for a 64 x 64 image over 20 steps, dim_sizes = [64, 64, 20]
 
         # A way to interpret `pos` is that we could append `pos` directly
         # to the raw inputs to attach the positional info to the raw features.
@@ -78,40 +113,42 @@ class Fourier2DExperiment(Experiment):
         return fourier_feats
 
     def _learning_step(self, batch):
-        xx, yy = batch
-        B, *dim_sizes, _ = xx.shape
-        X, Y = dim_sizes
-        # Note here the in_channels consists of the first 10 time steps
-        # and 2 positional encodings.
-        # xx.shape == [batch_size, x_dim, y_dim, in_channels]
-        # yy.shape == [batch_size, x_dim, y_dim, out_channels]
+        B, *dim_sizes, = batch.shape
+        X, Y, T = dim_sizes
+        # batch.shape == [batch_size, x_dim, y_dim, total_steps]
 
-        if self.use_fourier_position:
-            pos_feats = self.encode_fourier_positions(dim_sizes, xx.device)
-            # pos_feats.shape == [*dim_sizes, pos_size]
+        batch = repeat(batch, '... -> ... 1')
+        # batch.shape == [batch_size, x_dim, y_dim, total_steps, 1]
 
-            pos_feats = repeat(pos_feats, '... -> b ...', b=B)
-            # pos_feats.shape == [batch_size, *dim_sizes, pos_size]
+        pos_feats = self.encode_fourier_positions(dim_sizes, batch.device)
+        # pos_feats.shape == [*dim_sizes, pos_size]
 
-            # xx = torch.cat([xx[..., :-2], pos_feats], dim=-1)
-            # xx.shape == [batch_size, x_dim, y_dim, in_channels]
+        pos_feats = repeat(pos_feats, '... p -> b ... t p', b=B, t=T)
+        # pos_feats.shape == [batch_size, *dim_sizes, total_steps, pos_size]
 
-            xx = xx[..., :-2]
-            embeds = self.in_proj(xx) + pos_feats
+        embeds = self.embed_obs(batch) + pos_feats
+        # embeds.shape == [batch_size, x_dim, y_dim, total_steps, 34?]
 
-            P = pos_feats.shape[-1]
+        embeds = self.embed_inputs(batch)
+        # embeds.shape == [batch_size, x_dim, y_dim, total_steps, 64]
 
-        else:
-            ticks = torch.linspace(0, 1, X).to(xx.device)
-            grid_x = repeat(ticks, 'x -> b x y 1', b=B, y=Y)
-            grid_y = repeat(ticks, 'y -> b x y 1', b=B, x=X)
-            # grid_x.shape == [batch_size, *dim_sizes, 1]
+        latents = repeat(self.latents, 'n d -> b n d', b=B)
 
-            pos_feats = torch.cat([grid_x, grid_y], dim=-1)
-            # pos_feats.shape == [batch_size, *dim_sizes, 2]
+        out = latents.new_zeros(*latents.shape)
+        for cross_attn, backcast_f, forecast_f in self.layers:
+            x = cross_attn(x, context=embeds) + x
+            # x = cross_ff(x) + x
+            # x.shape == [batch_size, n_latents, latent_dim]
 
-            embeds = xx
-            P = 2
+            b = backcast_f(x)
+            f = forecast_f(x)
+
+            x = x - b
+            out = out + f
+
+        out = out / len(self.layers)
+        # out.shape == [batch_size, n_latents, latent_dim]
+        ####
 
         loss = 0
         # We predict one future one step at a time
@@ -126,10 +163,6 @@ class Fourier2DExperiment(Experiment):
 
             loss += self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
             pred = im if t == 0 else torch.cat((pred, im), dim=-1)
-
-            if self.teacher_forcing and self.training:
-                im = y
-
             if self.use_fourier_position:
                 xx = torch.cat((xx[..., 1:], im), dim=-1)
                 embeds = self.in_proj(xx) + pos_feats

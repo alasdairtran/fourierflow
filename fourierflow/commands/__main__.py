@@ -58,13 +58,15 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     trainer.test(experiment, datamodule=datastore)
 
 
-@ app.command()
+@app.command()
 def test(config_path: str, model_path: str = None, overrides: str = '', debug: bool = False):
     """Test a model."""
     params = yaml_to_params(config_path, overrides)
     datastore = Datastore.from_params(params['datastore'])
     experiment = Experiment.from_params(
         params['experiment'], model_path=model_path)
+    # from fourierflow.experiments import Fourier2DExperiment
+    # experiment = Fourier2DExperiment.load_from_checkpoint(model_path)
     trainer = pl.Trainer(**params.pop('trainer').as_dict())
     trainer.test(experiment, datamodule=datastore)
 

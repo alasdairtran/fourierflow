@@ -1,0 +1,50 @@
+wandb:
+  project: navier-stokes-4
+  group:
+  name: 53_radflow_layers_12
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: Reproduced experiment of Li et al (2020)
+datastore:
+  type: navier_stokes
+  data_path: data/NavierStokes_V1e-5_N1200_T20.mat
+  train_size: 1000
+  test_size: 200
+  ssr: 1 # sub-sampling rate
+  n_steps: 10
+  batch_size: 4
+  n_workers: 4
+experiment:
+  type: fourier_2d
+  conv:
+    type: fourier_net_2d_split
+    modes1: 16
+    modes2: 16
+    width: 32
+    residual: true
+    linear_out: true
+    n_layers: 12
+  n_steps: 10
+  teacher_forcing: true
+  optimizer:
+    type: adamw
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    type: cosine_with_warmup
+    num_warmup_steps: 500
+    num_training_steps: 12500
+    num_cycles: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: None
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 50
+checkpointer:
+  validation_metric: valid_loss
