@@ -4,6 +4,7 @@ from .forecaster_cde_decoder import CDEDecoderForecaster
 from .forecaster_nbeats import NBEATSForecaster
 from .fourier import Fourier1D
 from .fourier_2d import Fourier2DExperiment
+from .fourier_2d_parellel import Fourier2DParallelExperiment
 from .nbeats import NBEATSExperiment
 from .nodep import TimeSeriesODE
 from .radflow import RadflowExperiment
