@@ -29,6 +29,8 @@ class Fourier2DParallelExperiment(Experiment):
                  freq_base: int = 2,
                  scheduler: Lazy[Scheduler] = None,
                  scheduler_config: Dict[str, Any] = None,
+                 low: float = 0,
+                 high: float = 1,
                  use_fourier_position: bool = False):
         super().__init__()
         self.conv = conv
@@ -41,6 +43,8 @@ class Fourier2DParallelExperiment(Experiment):
         self.max_freq = max_freq
         self.num_freq_bands = num_freq_bands
         self.freq_base = freq_base
+        self.low = low
+        self.high = high
         self.register_buffer('_float', torch.FloatTensor([0.1]))
 
     def forward(self, x):
@@ -97,7 +101,8 @@ class Fourier2DParallelExperiment(Experiment):
         xx = rearrange(xx, 'b ... t -> (b t) ...')
         # xx.shape == [batch_size * n_steps, *dim_sizes, total_steps - n_steps]
 
-        pos_feats = self.encode_positions(dim_sizes, 0, 1, False)
+        pos_feats = self.encode_positions(
+            dim_sizes, self.low, self.high, self.use_fourier_position)
         # pos_feats.shape == [*dim_sizes, pos_size]
 
         BN = B * self.n_steps
@@ -122,7 +127,8 @@ class Fourier2DParallelExperiment(Experiment):
         yy = data[:, ..., -self.n_steps:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
-        pos_feats = self.encode_positions(dim_sizes, 0, 1, False)
+        pos_feats = self.encode_positions(
+            dim_sizes, self.low, self.high, self.use_fourier_position)
         # pos_feats.shape == [*dim_sizes, pos_size]
 
         pos_feats = repeat(pos_feats, '... -> b ...', b=B)

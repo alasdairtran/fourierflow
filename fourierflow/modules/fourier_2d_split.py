@@ -107,7 +107,7 @@ class SpectralConv2d(nn.Module):
 class SimpleBlock2dSplit(nn.Module):
     def __init__(self, modes1, modes2, width, input_dim=12, dropout=0.1,
                  n_layers=4, residual=False, conv_residual=True,
-                 nonlinear=False, linear_out: bool = False,
+                 nonlinear=False, linear_out: bool = False, weight_sharing: bool = False,
                  norm=False, conv_norm=False, avg_outs=False, next_input='subtract'):
         super().__init__()
 
@@ -131,17 +131,28 @@ class SimpleBlock2dSplit(nn.Module):
         self.residual = residual
         self.next_input = next_input
         self.avg_outs = avg_outs
+        self.weight_sharing = weight_sharing
+        self.n_layers = n_layers
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
-        self.spectral_layers = nn.ModuleList([])
-        for i in range(n_layers):
-            self.spectral_layers.append(SpectralConv2d(in_dim=width,
-                                                       out_dim=width,
-                                                       n_modes=modes1,
-                                                       resdiual=conv_residual,
-                                                       nonlinear=nonlinear,
-                                                       conv_norm=conv_norm,
-                                                       dropout=dropout))
+        if not weight_sharing:
+            self.spectral_layers = nn.ModuleList([])
+            for i in range(n_layers):
+                self.spectral_layers.append(SpectralConv2d(in_dim=width,
+                                                           out_dim=width,
+                                                           n_modes=modes1,
+                                                           resdiual=conv_residual,
+                                                           nonlinear=nonlinear,
+                                                           conv_norm=conv_norm,
+                                                           dropout=dropout))
+        else:
+            self.layer = SpectralConv2d(in_dim=width,
+                                        out_dim=width,
+                                        n_modes=modes1,
+                                        resdiual=conv_residual,
+                                        nonlinear=nonlinear,
+                                        conv_norm=conv_norm,
+                                        dropout=dropout)
 
         self.out = nn.Sequential(
             nn.LayerNorm(self.width) if norm else nn.Identity(),
@@ -154,7 +165,8 @@ class SimpleBlock2dSplit(nn.Module):
         x = self.in_proj(x)
         forecast_list = []
         forecast = 0
-        for layer in self.spectral_layers:
+        for i in range(self.n_layers):
+            layer = self.layer if self.weight_sharing else self.spectral_layers[i]
             b, f = layer(x)
             f_out = self.out(f)
             forecast = forecast + f_out
