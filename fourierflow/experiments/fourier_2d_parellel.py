@@ -24,6 +24,7 @@ class Fourier2DParallelExperiment(Experiment):
                  conv: Module,
                  optimizer: Lazy[Optimizer],
                  n_steps: int,
+                 backcast_len: int = 10,
                  max_freq: int = 32,
                  num_freq_bands: int = 8,
                  freq_base: int = 2,
@@ -35,6 +36,7 @@ class Fourier2DParallelExperiment(Experiment):
         super().__init__()
         self.conv = conv
         self.n_steps = n_steps
+        self.backcast_len = backcast_len
         self.l2_loss = LpLoss(size_average=True)
         self.optimizer = optimizer
         self.scheduler = scheduler
@@ -82,38 +84,37 @@ class Fourier2DParallelExperiment(Experiment):
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
 
-        yy = data[:, ..., -self.n_steps:]
-        # yy.shape == [batch_size, *dim_sizes, n_steps]
+        yy = data[:, ..., self.backcast_len:]
+        # yy.shape == [batch_size, *dim_sizes, total_steps - backcast_len]
 
         # Batch up time dimension
         yy = rearrange(yy, 'b ... t -> (b t) ...')
-        # yy.shape == [batch_size * n_steps, *dim_sizes]
+        # yy.shape == [batch_size * time, *dim_sizes]
 
         # We'll run all steps at the same time
-        xx = data.unfold(-1, self.n_steps, 1)
-        # xx.shape == [batch_size, *dim_sizes, total_steps - n_steps + 1, n_steps]
+        xx = data.unfold(-1, self.backcast_len, 1)
+        # xx.shape == [batch_size, *dim_sizes, total_steps - backcast_len + 1, backcast_len]
 
         # Ignore last step since there is no ground-truth output
         xx = xx[..., :-1, :]
         # xx.shape == [batch_size, *dim_sizes, total_steps - n_steps, n_steps]
 
         # Batch up the time dimension
-        xx = rearrange(xx, 'b ... t -> (b t) ...')
-        # xx.shape == [batch_size * n_steps, *dim_sizes, total_steps - n_steps]
+        xx = rearrange(xx, 'b ... t s -> (b t) ... s')
+        # xx.shape == [batch_size * time, *dim_sizes, total_steps - n_steps]
 
         pos_feats = self.encode_positions(
             dim_sizes, self.low, self.high, self.use_fourier_position)
         # pos_feats.shape == [*dim_sizes, pos_size]
 
-        BN = B * self.n_steps
+        BN = xx.shape[0]
         pos_feats = repeat(pos_feats, '... -> b ...', b=BN)
         # pos_feats.shape == [batch_size * n_steps, *dim_sizes, n_dims]
 
         # Add positional info
         xx = torch.cat([xx, pos_feats], dim=-1)
-
         im, im_list = self.conv(xx)
-        # im.shape == [batch_size * n_steps, *dim_sizes, 1]
+        # im.shape == [batch_size * time, *dim_sizes, 1]
 
         loss = self.l2_loss(im.reshape(BN, -1), yy.reshape(BN, -1))
 
@@ -124,6 +125,7 @@ class Fourier2DParallelExperiment(Experiment):
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
 
+        xx = data[:, ..., -(self.n_steps+self.backcast_len):-self.n_steps]
         yy = data[:, ..., -self.n_steps:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
@@ -138,16 +140,16 @@ class Fourier2DParallelExperiment(Experiment):
         # We predict one future one step at a time
         pred_layer_list = []
         for t in range(self.n_steps):
-            if self.training or t == 0:
-                x = data[..., t: t+self.n_steps]
+            if t == 0:
+                x = xx
+            elif pred.shape[-1] < self.backcast_len:
+                x = torch.cat([xx[..., pred.shape[-1]:], pred], dim=-1)
             else:
-                e = t + self.n_steps - pred.shape[-1]
-                x = torch.cat([data[..., t:e], pred], dim=-1)
+                x = pred[..., -self.backcast_len:]
             x = torch.cat([x, pos_feats], dim=-1)
 
             y = yy[..., t: t+1]
             # y.shape == [batch_size, x_dim, y_dim, 1]
-            # print(x.shape)
             im, im_list = self.conv(x)
             pred_layer_list.append(im_list)
             # im.shape == [batch_size, *dim_sizes, 1]

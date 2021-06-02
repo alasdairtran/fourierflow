@@ -53,5 +53,5 @@ fourierflow train configs/54_vevo_perceiver/config.yaml
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
 
 # With Radflow
-fourierflow train configs/navier_stokes_4p/111_single_24/config.yaml
+fourierflow train configs/navier_stokes_4p/111b_single_24_40e/config.yaml
 ```
