@@ -6,42 +6,43 @@ authors = ["Alasdair Tran <alasdair.tran@anu.edu.au>"]
 repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
-python = "^3.8.9"
+python = "^3.9.5"
 # poetry add allennlp einops entmax gdown hyperopt ipykernel jupyterlab jupyterlab \
 #   matplotlib numpy pandas ptvsd pydocstyle pylint pytorch-lightning \
-#   pytorch-lightning-bolts seaborn typer torch torchaudio \
-#   git+https://github.com/patrick-kidger/torchcde.git \
-#   wandb
+#   seaborn typer wandb
 allennlp = "^2.4.0"
 einops = "^0.3.0"
 entmax = "^1.0"
 gdown = "^3.13.0"
 hyperopt = "^0.2.5"
 ipykernel = "^5.5.5"
-jupyterlab = "^3.0.15"
+jupyterlab = "^3.0.16"
 matplotlib = "^3.4.2"
 numpy = "^1.20.3"
 pandas = "^1.2.4"
 ptvsd = "^4.3.2"
-pydocstyle = "^6.0.0"
-pylint = "^2.8.2"
-pytorch-lightning = "^1.3.1"
-pytorch-lightning-bolts = "^0.3.2"
+pydocstyle = "^6.1.1"
+pylint = "^2.8.3"
+pytorch-lightning = "^1.3.3"
 seaborn = "^0.11.1"
 typer = "^0.3.2"
-torch = "^1.8.1"
-torchaudio = "^0.8.1"
-torchcde = {git = "https://github.com/patrick-kidger/torchcde.git"}
-wandb = "^0.10.30"
+wandb = "^0.10.31"
 
 [tool.poetry.dev-dependencies]
 # poetry add --dev mypy isort autopep8
-mypy = "^0.812"
-isort = "^5.8.0"
 autopep8 = "^1.5.7"
+isort = "^5.8.0"
+mypy = "^0.812"
+poethepoet = "^0.10.0"
 
 [tool.poetry.scripts]
 fourierflow = 'fourierflow.commands.__main__:app'
+
+[tool.poe.tasks]
+install-torch-cuda11 = "python -m pip install --no-cache-dir -U torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html"
+# Install master branch of nemo until pytorch 1.8 is officially supported
+install-nemo = "python -m pip install git+https://github.com/NVIDIA/NeMo.git@4781d174476#egg=nemo_toolkit[all]"
+
 
 [build-system]
 requires = ["poetry>=0.12"]

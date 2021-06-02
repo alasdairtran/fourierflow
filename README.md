@@ -5,23 +5,23 @@ Experiments with label propagation in networks of time series
 ## Getting Started
 
 ```sh
-# Set up pyenv and pin python version to 3.8.9
-brew install pyenv
-echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.zshrc
-source ~/.zshrc
-pyenv install 3.8.9
-pyenv local 3.8.9
+# Set up pyenv and pin python version to 3.9.5
+curl https://pyenv.run | bash
+# Configure our shell's environment for pyenv
+pyenv install 3.9.5
+pyenv local 3.9.5
+
 # Set up poetry
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-echo -e 'export PATH="$HOME/.poetry/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+export PATH="$HOME/.poetry/bin:$PATH"
+
 # Install all python dependencies
 poetry install
 source .venv/bin/activate
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
 # Manually reinstall Pytorch with CUDA 11.1 support
-pip install -U torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
-pip install git+https://github.com/google-research/torchsde.git
+poe install-torch-cuda11
+poe install-nemo
 
 # Download Navier Stokes datasets
 mkdir data/fourier && cd data/fourier
