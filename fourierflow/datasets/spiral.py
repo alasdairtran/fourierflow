@@ -2,9 +2,10 @@ import math
 
 import numpy as np
 import torch
-import torchcde
 
 from .base import RDataset
+
+# import torchcde
 
 
 @RDataset.register('spiral')

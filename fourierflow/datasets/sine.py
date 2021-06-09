@@ -5,7 +5,7 @@ from math import pi
 
 import numpy as np
 import torch
-import torchcde
+# import torchcde
 from torch.utils.data import Dataset
 
 from .base import RDataset
@@ -84,7 +84,7 @@ class SineData(Dataset):
             # Turn data into continuous path.
             # Cache the natural cubic spline coefficients.
             x2 = np.stack([t_x, x], axis=1).astype(np.float32)
-            coeffs = torchcde.natural_cubic_coeffs(torch.from_numpy(x2))
+            coeffs = .natural_cubic_coeffs(torch.from_numpy(x2))
             # coeffs.shape == [n_steps - 1, 4 * n_channels]
 
             self.data.append((t, mu, t_x, x, coeffs, t_y, y))
