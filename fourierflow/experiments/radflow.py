@@ -1,7 +1,6 @@
 from typing import Any, Dict
 
 import matplotlib.pyplot as plt
-import pl_bolts
 import torch
 import wandb
 from allennlp.common import Lazy

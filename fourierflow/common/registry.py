@@ -1,6 +1,5 @@
 from typing import Callable, Type, TypeVar, Union, cast
 
-import pl_bolts
 import torch
 import torch.nn as nn
 from allennlp.common import Params, Registrable
@@ -72,5 +71,4 @@ class Scheduler(Registrable, _LRScheduler):
 
 Registrable._registry[Scheduler] = {
     'step_lr': (torch.optim.lr_scheduler.StepLR, None),
-    'linear_warmup_cosine_annealing': (pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR, None),
 }
