@@ -1,10 +1,12 @@
-from typing import Callable, Type, TypeVar, Union, cast
+from typing import IO
+from typing import Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 import torch
 import torch.nn as nn
 from allennlp.common import Params, Registrable
 from allennlp.training.optimizers import Optimizer
 from pytorch_lightning import LightningDataModule, LightningModule
+from pytorch_lightning.utilities.cloud_io import load as pl_load
 from torch.optim.lr_scheduler import _LRScheduler
 
 T = TypeVar("T", bound="Scheduler")
@@ -37,6 +39,19 @@ class Experiment(Registrable, LightningModule):
             return [opt], [scheduler]
         else:
             return opt
+
+    def load_lightning_model_state(self,
+                                   checkpoint_path: Union[str, IO],
+                                   map_location: Optional[Union[Dict[str, str],
+                                                                str, torch.device, int, Callable]] = None,
+                                   strict: bool = True):
+        if map_location is not None:
+            checkpoint = pl_load(checkpoint_path, map_location=map_location)
+        else:
+            checkpoint = pl_load(checkpoint_path,
+                                 map_location=lambda storage, loc: storage)
+
+        self.load_state_dict(checkpoint['state_dict'], strict=strict)
 
 
 class Module(Registrable, nn.Module):

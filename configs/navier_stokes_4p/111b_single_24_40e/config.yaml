@@ -46,4 +46,10 @@ trainer:
   precision: 32
   max_epochs: 40
 checkpointer:
+  save_last: true
+  save_top_k: 4
   validation_metric: valid_loss
+  mode: min
+  every_n_train_steps: None
+  every_n_val_epochs: 1
+  period: 1
