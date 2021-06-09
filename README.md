@@ -21,7 +21,6 @@ source .venv/bin/activate
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
 # Manually reinstall Pytorch with CUDA 11.1 support
 poe install-torch-cuda11
-poe install-nemo
 
 # Download Navier Stokes datasets
 mkdir data/fourier && cd data/fourier
