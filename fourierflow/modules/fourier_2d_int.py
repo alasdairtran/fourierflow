@@ -12,9 +12,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
-from torchdiffeq import odeint
 
 from fourierflow.common import Module
+
+# from torchdiffeq import odeint
 
 
 class SpectralConv2d(nn.Module):

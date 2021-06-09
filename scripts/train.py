@@ -10,7 +10,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from torchdiffeq import odeint_adjoint as odeint
+
+# from torchdiffeq import odeint_adjoint as odeint
 
 
 class GehringLinear(nn.Linear):

@@ -30,7 +30,6 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from datasets import SineData
 from docopt import docopt
 from models import NeuralODEProcess
 from pytorch_lightning.loggers import CometLogger
@@ -38,9 +37,11 @@ from schema import And, Or, Schema, Use
 from torch.distributions import Normal
 from torch.distributions.kl import kl_divergence
 from torch.utils.data import DataLoader, Dataset
-from torchdiffeq import odeint
+# from torchdiffeq import odeint
 from torchdyn.models import NeuralDE
 from viz import plot_sines
+
+from datasets import SineData
 
 
 class TimeSeriesODE(pl.LightningModule):

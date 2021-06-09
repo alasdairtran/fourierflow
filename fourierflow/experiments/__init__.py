@@ -4,7 +4,6 @@ from .forecaster_cde_decoder import CDEDecoderForecaster
 from .forecaster_nbeats import NBEATSForecaster
 from .fourier import Fourier1D
 from .fourier_2d import Fourier2DExperiment
-from .fourier_2d_ode import Fourier2DODEExperiment
 from .fourier_2d_parellel import Fourier2DParallelExperiment
 from .fourier_2d_single import Fourier2DSingleExperiment
 from .nbeats import NBEATSExperiment
