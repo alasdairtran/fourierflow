@@ -17,10 +17,12 @@ from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
 
 
-@Experiment.register('fourier_2d_single')
-class Fourier2DSingleExperiment(Experiment):
+@Experiment.register('fourier_2d_scales')
+class Fourier2DScalesExperiment(Experiment):
     def __init__(self,
-                 conv: Module,
+                 #  conv_1: Module,
+                 #  conv_2: Module,
+                 conv_4: Module,
                  optimizer: Lazy[Optimizer],
                  n_steps: int,
                  max_freq: int = 32,
@@ -32,7 +34,9 @@ class Fourier2DSingleExperiment(Experiment):
                  high: float = 1,
                  use_fourier_position: bool = False):
         super().__init__()
-        self.conv = conv
+        # self.conv_1 = conv_1
+        # self.conv_2 = conv_2
+        self.conv_4 = conv_4
         self.n_steps = n_steps
         self.l2_loss = LpLoss(size_average=True)
         self.optimizer = optimizer
@@ -76,17 +80,55 @@ class Fourier2DSingleExperiment(Experiment):
 
         return fourier_feats
 
-    def _training_step(self, data):
-        B, *dim_sizes, T = data.shape
-        X, Y = dim_sizes
-        # data.shape == [batch_size, *dim_sizes, total_steps]
+    def _calculate_loss(self, preds, data, n_steps):
+        preds = rearrange(preds, '(b t) ... 1 -> b t ...', b=data.shape[0])
+        # preds.shape == [batch_size, total_steps, *dim_sizes]
 
-        yy = data[:, ..., 1:]
+        # Ignore last `n_steps` steps as there are no targets
+        preds = preds[:, :-n_steps]
+        # preds.shape == [batch_size, time, *dim_sizes]
+
+        preds = rearrange(preds, 'b t ... -> (b t) (...)')
+        # preds.shape == [batch_size * time, product(*dim_sizes)]
+
+        targets = data[:, ..., n_steps:]
+        # targets.shape == [batch_size, *dim_sizes, time]
+
+        # Batch up time dimension
+        targets = rearrange(targets, 'b ... t -> (b t) (...)')
+        # targets.shape == [batch_size * time, product(*dim_sizes)]
+
+        loss = self.l2_loss(preds, targets)
+        return loss
+
+    def _train_for_step(self, data, xx, n, conv):
+        # Ignore final n steps since there is no ground-truth output
+        xx = xx[..., :-n, :]
+        # xx.shape == [batch_size, *dim_sizes, total_steps - n, 3]
+
+        # Batch up step dimension
+        xx = rearrange(xx, 'b ... t e -> (b t) ... e')
+        # xx.shape == [batch_size * time, *dim_sizes, 3]
+
+        im, _ = conv(xx)
+        # im.shape == [batch_size * time, *dim_sizes, 1]
+
+        yy = data[:, ..., n:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
         # Batch up time dimension
         yy = rearrange(yy, 'b ... t -> (b t) ...')
         # yy.shape == [batch_size * time, *dim_sizes]
+
+        BN = im.shape[0]
+        loss = self.l2_loss(im.reshape(BN, -1), yy.reshape(BN, -1))
+
+        return loss
+
+    def _training_step(self, data):
+        B, *dim_sizes, T = data.shape
+        X, Y = dim_sizes
+        # data.shape == [batch_size, *dim_sizes, total_steps]
 
         pos_feats = self.encode_positions(
             dim_sizes, self.low, self.high, self.use_fourier_position)
@@ -103,21 +145,15 @@ class Fourier2DSingleExperiment(Experiment):
         xx = torch.cat([xx, all_pos_feats], dim=-1)
         # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
 
-        # Ignore final steps since there is no ground-truth output
-        xx = xx[..., :-1, :]
-        # xx.shape == [batch_size, *dim_sizes, total_steps - 1, 3]
+        # loss_1 = self._train_for_step(data, xx, 1, self.conv_1)
+        # self.log('train_loss_1', loss_1)
+        # loss_2 = self._train_for_step(data, xx, 2, self.conv_2)
+        # self.log('train_loss_2', loss_2)
+        loss_19 = self._train_for_step(data, xx, 19, self.conv_4)
+        self.log('train_loss_19', loss_19)
+        # loss = (loss_1 + loss_2 + loss_4) / 3
 
-        # Batch up step dimension
-        xx = rearrange(xx, 'b ... t e -> (b t) ... e')
-        # xx.shape == [batch_size * time, *dim_sizes, 3]
-
-        im, _ = self.conv(xx)
-        # im.shape == [batch_size * time, *dim_sizes, 1]
-
-        BN = im.shape[0]
-        loss = self.l2_loss(im.reshape(BN, -1), yy.reshape(BN, -1))
-
-        return loss
+        return loss_19
 
     def _valid_step(self, data, split):
         B, *dim_sizes, T = data.shape
@@ -139,86 +175,35 @@ class Fourier2DSingleExperiment(Experiment):
         xx = torch.cat([xx, all_pos_feats], dim=-1)
         # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
 
-        xx = xx[..., -self.n_steps-1:-1, :]
-        # xx.shape == [batch_size, *dim_sizes, n_steps, 3]
+        xx = xx[..., 0, :]
+        # xx.shape == [batch_size, *dim_sizes, 3]
 
         yy = data[:, ..., -self.n_steps:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
-        loss = 0
-        # We predict one future one step at a time
-        pred_layer_list = []
-        for t in range(self.n_steps):
-            if t == 0:
-                x = xx[..., t, :]
-            else:
-                x = torch.cat([im, pos_feats], dim=-1)
-            # x.shape == [batch_size, *dim_sizes, 3]
+        # Task, given only initial condition at time 0, predict time:
+        # 1, 2, 4, 8, 15, 19
+        # im_4, _ = self.conv_4(xx)
+        # inputs_4 = torch.cat([im_4, pos_feats], dim=-1)
 
-            im, im_list = self.conv(x)
-            # im.shape == [batch_size, *dim_sizes, 1]
+        # im_8, _ = self.conv_4(inputs_4)
+        # inputs_8 = torch.cat([im_8, pos_feats], dim=-1)
 
-            y = yy[..., t]
-            loss += self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
-            pred = im if t == 0 else torch.cat((pred, im), dim=-1)
-            pred_layer_list.append(im_list)
+        # im_12, _ = self.conv_4(inputs_8)
+        # inputs_12 = torch.cat([im_12, pos_feats], dim=-1)
 
-        loss /= self.n_steps
-        loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
+        # im_16, _ = self.conv_4(inputs_12)
+        # inputs_16 = torch.cat([im_16, pos_feats], dim=-1)
 
-        return loss, loss_full, pred, pred_layer_list
+        # im_18, _ = self.conv_2(inputs_16)
+        # inputs_18 = torch.cat([im_18, pos_feats], dim=-1)
 
-    def _test_step(self, data, split):
-        B, *dim_sizes, T = data.shape
-        X, Y = dim_sizes
-        # data.shape == [batch_size, *dim_sizes, total_steps]
+        im_19, _ = self.conv_4(xx)
+        targets_19 = rearrange(data[:, ..., 19], 'b ... -> b (...)')
+        loss_19 = self.l2_loss(im_19, targets_19)
+        self.log(f'{split}_loss_19', loss_19)
 
-        pos_feats = self.encode_positions(
-            dim_sizes, self.low, self.high, self.use_fourier_position)
-        # pos_feats.shape == [*dim_sizes, pos_size]
-
-        pos_feats = repeat(pos_feats, '... -> b ...', b=B)
-        # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
-
-        xx = repeat(data, '... -> ... 1')
-        # xx.shape == [batch_size, *dim_sizes, total_steps, 1]
-
-        all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
-
-        xx = torch.cat([xx, all_pos_feats], dim=-1)
-        # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
-
-        xx = xx[..., :1, :]
-        # xx.shape == [batch_size, *dim_sizes, n_steps, 3]
-
-        yy = data[:, ..., 1:]
-        # yy.shape == [batch_size, *dim_sizes, n_steps]
-
-        loss = 0
-        # We predict one future one step at a time
-        pred_layer_list = []
-        for t in range(19):
-            if t == 0:
-                x = xx[..., t, :]
-            else:
-                x = torch.cat([im, pos_feats], dim=-1)
-            # x.shape == [batch_size, *dim_sizes, 3]
-
-            im, im_list = self.conv(x)
-            # im.shape == [batch_size, *dim_sizes, 1]
-
-            y = yy[..., t]
-            l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
-            loss += l
-            if t in [0, 1, 3, 7, 14, 18]:
-                self.log(f'test_loss_{t + 1}', l)
-            pred = im if t == 0 else torch.cat((pred, im), dim=-1)
-            pred_layer_list.append(im_list)
-
-        loss /= self.n_steps
-        loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
-
-        return loss, loss_full, pred, pred_layer_list
+        return im_19
 
     def training_step(self, batch, batch_idx):
         loss = self._training_step(batch)
@@ -226,27 +211,16 @@ class Fourier2DSingleExperiment(Experiment):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list = self._valid_step(batch, 'valid')
-        self.log('valid_loss', loss)
-        self.log('valid_loss_full', loss_full)
+        preds_19 = self._valid_step(batch, 'valid')
 
         if batch_idx == 0:
             data = batch
             expt = self.logger.experiment
-            log_imshow(expt, data[0, :, :, 9], 'gt t=9')
             log_imshow(expt, data[0, :, :, 19], 'gt t=19')
-            log_imshow(expt, preds[0, :, :, -1], 'pred t=19')
-
-            layers = pred_list[-1]
-            if layers:
-                for i, layer in enumerate(layers):
-                    log_imshow(expt, layer[0], f'layer {i} t=19')
+            log_imshow(expt, preds_19[0, :, :, 0], 'pred t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _ = self._valid_step(batch, 'test')
-        # loss, loss_full, _, _ = self._test_step(batch, 'test')
-        self.log('test_loss', loss)
-        self.log('test_loss_full', loss_full)
+        self._valid_step(batch, 'test')
 
 
 class MidpointNormalize(mpl.colors.Normalize):
