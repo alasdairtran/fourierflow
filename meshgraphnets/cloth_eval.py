@@ -17,7 +17,8 @@
 """Functions to build evaluation metrics for cloth data."""
 
 import tensorflow.compat.v1 as tf
-from meshgraphnets.common import NodeType
+
+from common import NodeType
 
 
 def _rollout(model, initial_state, num_steps):

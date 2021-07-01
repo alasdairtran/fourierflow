@@ -16,9 +16,12 @@
 # ============================================================================
 """Model for CylinderFlow."""
 
+import core_model
+import normalization
 import sonnet as snt
 import tensorflow.compat.v1 as tf
-from meshgraphnets import common, core_model, normalization
+
+import common
 
 
 class Model(snt.AbstractModule):

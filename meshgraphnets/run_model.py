@@ -18,11 +18,15 @@
 
 import pickle
 
+import cfd_eval
+import cfd_model
+import cloth_eval
+import cloth_model
+import core_model
+import dataset
 import numpy as np
 import tensorflow.compat.v1 as tf
 from absl import app, flags, logging
-from meshgraphnets import (cfd_eval, cfd_model, cloth_eval, cloth_model,
-                           core_model, dataset)
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum('mode', 'train', ['train', 'eval'],
