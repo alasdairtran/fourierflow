@@ -1,6 +1,6 @@
 # fourierflow
 
-Experiments with label propagation in networks of time series
+Experiments with Fourier layers on simulation data.
 
 ## Getting Started
 
@@ -37,6 +37,25 @@ unzip *.zip && rm -rf *.zip
 
 # MIMIC-III dataset
 cd data/mimiciii/1.4 && gzip -d *gz
+
+# DeepMind meshgraphnets simulation data
+cd deepmind-research/meshgraphnets
+sh download_dataset.sh airfoil data
+sh download_dataset.sh cylinder_flow data
+sh download_dataset.sh deforming_plate data
+sh download_dataset.sh flag_minimal data
+sh download_dataset.sh flag_simple data
+sh download_dataset.sh flag_dynamic data
+sh download_dataset.sh sphere_simple data
+sh download_dataset.sh sphere_dynamic data
+# Reproduce mesh experiment
+virtualenv --python=python3.6 .venv/mesh
+source .venv/mesh/bin/activate
+pip install -r requirements.txt
+# Train
+python -m meshgraphnets.run_model --mode=train --model=cfd \
+    --checkpoint_dir=data/chk --dataset_dir=data/flag_simple
+
 ```
 
 ## Training
@@ -53,4 +72,11 @@ fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
 
 # With Radflow
 fourierflow train configs/navier_stokes_4p/111b_single_24_40e/config.yaml
+```
+
+## Evaluation
+
+```sh
+# Performance tradeoff evaluation. We use the Navier Stokes test set
+# as our benchmark dataset.
 ```
