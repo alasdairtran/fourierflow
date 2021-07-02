@@ -17,7 +17,7 @@ export PATH="$HOME/.poetry/bin:$PATH"
 
 # Install all python dependencies
 poetry install
-source .venv/bin/activate
+source .venv/bin/activate # or: poetry shell
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
 # Manually reinstall Pytorch with CUDA 11.1 support
 poe install-torch-cuda11
