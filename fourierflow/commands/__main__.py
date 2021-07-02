@@ -127,7 +127,10 @@ def download_zongyi(config_path: str,
     """
     params = yaml_to_params(config_path, overrides)
 
-    print(params)
+    raise NotImplementedError()
+
+    # TODO: change workdir to os.pathexpandvars('$FNO_DATA_ROOT')
+
     for hashid, fname in [
         ("16a8od4vidbiNR3WtaBPCSZ0T3moxjhYe", "Burgers_R10.zip"),
         ("1nzT0-Tu-LS2SoMUCcmO1qyjQd6WC9OdJ", "Burgers_v100.zip"),
@@ -143,6 +146,7 @@ def download_zongyi(config_path: str,
             "https://drive.google.com/uc?id={hashid}".format(hashid=hashid),
             fname, postprocess=gdown.extractall)
 
+    # TODO: delete zips
 
 
 if __name__ == "__main__":
