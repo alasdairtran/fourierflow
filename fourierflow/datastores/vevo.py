@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
+import os
 
 from fourierflow.common import Datastore
 
@@ -18,7 +19,7 @@ class VevoDatastore(Datastore):
         self.n_workers = n_workers
         self.batch_size = batch_size
 
-        views = h5py.File(data_path, 'r')['views'][...]
+        views = h5py.File(os.path.expandvars(data_path), 'r')['views'][...]
 
         # Forward-fill missing values
         mask = views == -1
@@ -31,11 +32,11 @@ class VevoDatastore(Datastore):
 
         assert (views >= 0).all()
 
-        with open(train_id_path, 'rb') as f:
+        with open(os.path.expandvars(train_id_path), 'rb') as f:
             train_idx = sorted(pickle.load(f))
             train_views = views[train_idx]
 
-        with open(test_id_path, 'rb') as f:
+        with open(os.path.expandvars(test_id_path), 'rb') as f:
             test_idx = sorted(pickle.load(f))
             test_views = views[test_idx]
 

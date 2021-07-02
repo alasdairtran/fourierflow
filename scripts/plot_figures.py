@@ -11,7 +11,7 @@ from fourierflow.datastores.synthetic.ns_2d import navier_stokes_2d
 
 def plot_pde_inference_performance_tradeoff():
     data_path = 'data/NavierStokes_V1e-5_N1200_T20.mat'
-    data = scipy.io.loadmat(data_path)['u'].astype(np.float32)
+    data = scipy.io.loadmat(os.path.expandvars(data_path))['u'].astype(np.float32)
 
     w0 = data[:, :, :, 10]
 

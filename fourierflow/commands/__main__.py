@@ -36,7 +36,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
     params = yaml_to_params(config_path, overrides)
 
-    save_dir = os.getenv('SM_MODEL_DIR', 'results')
+    save_dir = os.pathexpandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
@@ -85,7 +85,7 @@ def test(config_path: str,
     parts = config_path.split('/')
     i = parts.index('configs')
 
-    save_dir = os.getenv('SM_MODEL_DIR', 'results')
+    save_dir = os.pathexpandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
