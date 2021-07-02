@@ -11,6 +11,12 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 import gdown
 
+## This is run in package root to provide defaults env vars for ${VAR} substitution
+# from dotenv import load_dotenv
+
+# # defaults for environment vars
+# load_dotenv() 
+
 from fourierflow.common import Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
 

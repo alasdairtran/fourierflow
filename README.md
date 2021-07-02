@@ -22,6 +22,9 @@ python -m ipykernel install --user --name fourierflow --display-name "fourierflo
 # Manually reinstall Pytorch with CUDA 11.1 support
 poe install-torch-cuda11
 
+# set default paths
+cp example.env .env
+
 # Download Navier Stokes datasets
 fourierflow download_zongyi
 
