@@ -25,8 +25,11 @@ poe install-torch-cuda11
 # set default paths
 cp example.env .env
 
+# Alternatively, you can pass the paths to the system using env vars, e.g. 
+FNO_DATA_ROOT=/My/Data/Location fourierflow 
+
 # Download Navier Stokes datasets
-fourierflow download_zongyi
+fourierflow download-fno-examples
 
 # MIMIC-III dataset
 cd data/mimiciii/1.4 && gzip -d *gz
@@ -48,7 +51,6 @@ pip install -r requirements.txt
 # Train
 python -m meshgraphnets.run_model --mode=train --model=cfd \
     --checkpoint_dir=data/chk --dataset_dir=data/flag_simple
-
 ```
 
 ## Training
