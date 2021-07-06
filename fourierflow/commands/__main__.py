@@ -9,6 +9,13 @@ import typer
 import wandb
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
+import gdown
+
+## This is run in package root to provide defaults env vars for ${VAR} substitution
+# from dotenv import load_dotenv
+
+# # defaults for environment vars
+# load_dotenv() 
 
 from fourierflow.common import Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
@@ -29,7 +36,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
     params = yaml_to_params(config_path, overrides)
 
-    save_dir = os.getenv('SM_MODEL_DIR', 'results')
+    save_dir = os.pathexpandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
@@ -78,7 +85,7 @@ def test(config_path: str,
     parts = config_path.split('/')
     i = parts.index('configs')
 
-    save_dir = os.getenv('SM_MODEL_DIR', 'results')
+    save_dir = os.pathexpandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
@@ -91,6 +98,56 @@ def test(config_path: str,
     trainer = pl.Trainer(logger=wandb_logger,
                          **params.pop('trainer').as_dict())
     trainer.test(experiment, datamodule=datastore)
+
+
+
+@app.command()
+def download_fno_examples(
+        debug: bool = False):
+    """Download some google datasets. 
+
+    Should probably be in a separate module.
+
+    Copied from a shell script:
+
+    mkdir data/fourier && cd data/fourier
+    gdown --id 16a8od4vidbiNR3WtaBPCSZ0T3moxjhYe # Burgers_R10.zip
+    gdown --id 1nzT0-Tu-LS2SoMUCcmO1qyjQd6WC9OdJ # Burgers_v100.zip
+    gdown --id 1G9IW_2shmfgprPYISYt_YS8xa87p4atu # Burgers_v1000.zip
+    gdown --id 1ViDqN7nc_VCnMackiXv_d7CHZANAFKzV # Darcy_241.zip
+    gdown --id 1Z1uxG9R8AdAGJprG5STcphysjm56_0Jf # Darcy_421.zip
+    gdown --id 1r3idxpsHa21ijhlu3QQ1hVuXcqnBTO7d # NavierStokes_V1e-3_N5000_T50.zip
+    gdown --id 1pr_Up54tNADCGhF8WLvmyTfKlCD5eEkI # NavierStokes_V1e-4_N20_T50_R256_test.zip
+    gdown --id 1RmDQQ-lNdAceLXrTGY_5ErvtINIXnpl3 # NavierStokes_V1e-4_N10000_T30.zip
+    gdown --id 1lVgpWMjv9Z6LEv3eZQ_Qgj54lYeqnGl5 # NavierStokes_V1e-5_N1200_T20.zip
+    unzip *.zip && rm -rf *.zip
+    """
+    fno_datasets = {
+        "16a8od4vidbiNR3WtaBPCSZ0T3moxjhYe": "Burgers_R10.zip",
+        "1nzT0-Tu-LS2SoMUCcmO1qyjQd6WC9OdJ": "Burgers_v100.zip",
+        "1G9IW_2shmfgprPYISYt_YS8xa87p4atu": "Burgers_v1000.zip",
+        "1ViDqN7nc_VCnMackiXv_d7CHZANAFKzV": "Darcy_241.zip",
+        "1Z1uxG9R8AdAGJprG5STcphysjm56_0Jf": "Darcy_421.zip",
+        "1r3idxpsHa21ijhlu3QQ1hVuXcqnBTO7d": "NavierStokes_V1e-3_N5000_T50.zip",
+        "1pr_Up54tNADCGhF8WLvmyTfKlCD5eEkI": "NavierStokes_V1e-4_N20_T50_R256_test.zip",
+        "1RmDQQ-lNdAceLXrTGY_5ErvtINIXnpl3": "NavierStokes_V1e-4_N10000_T30.zip",
+        "1lVgpWMjv9Z6LEv3eZQ_Qgj54lYeqnGl5": "NavierStokes_V1e-5_N1200_T20.zip",
+    }
+
+    startdir = os.getcwd()
+    workdir = os.path.expandvars('$FNO_DATA_ROOT')
+    try:
+        os.chdir(workdir)
+        for shareid, fname in fno_datasets.items():
+            # This is slightly faster with cached_download
+            # but CSIRO HPC hates the massive cache folder
+            gdown.download(
+                "https://drive.google.com/uc?id={shareid}".format(shareid=shareid),
+                fname)
+            gdown.extractall(fname)
+            os.unlink(fname)
+    finally:
+        os.chdir(startdir)
 
 
 if __name__ == "__main__":

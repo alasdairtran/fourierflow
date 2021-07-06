@@ -9,7 +9,7 @@ wandb:
   notes: Reproduced experiment of Li et al (2020)
 datastore:
   type: navier_stokes_2
-  data_path: data/NavierStokes_V1e-5_N1200_T20.mat
+  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
   train_size: 1000
   test_size: 200
   ssr: 1 # sub-sampling rate

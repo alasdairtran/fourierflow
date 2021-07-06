@@ -17,23 +17,19 @@ export PATH="$HOME/.poetry/bin:$PATH"
 
 # Install all python dependencies
 poetry install
-source .venv/bin/activate
+source .venv/bin/activate # or: poetry shell
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
 # Manually reinstall Pytorch with CUDA 11.1 support
 poe install-torch-cuda11
 
+# set default paths
+cp example.env .env
+
+# Alternatively, you can pass the paths to the system using env vars, e.g. 
+FNO_DATA_ROOT=/My/Data/Location fourierflow 
+
 # Download Navier Stokes datasets
-mkdir data/fourier && cd data/fourier
-gdown --id 16a8od4vidbiNR3WtaBPCSZ0T3moxjhYe # Burgers_R10.zip
-gdown --id 1nzT0-Tu-LS2SoMUCcmO1qyjQd6WC9OdJ # Burgers_v100.zip
-gdown --id 1G9IW_2shmfgprPYISYt_YS8xa87p4atu # Burgers_v1000.zip
-gdown --id 1ViDqN7nc_VCnMackiXv_d7CHZANAFKzV # Darcy_241.zip
-gdown --id 1Z1uxG9R8AdAGJprG5STcphysjm56_0Jf # Darcy_421.zip
-gdown --id 1r3idxpsHa21ijhlu3QQ1hVuXcqnBTO7d # NavierStokes_V1e-3_N5000_T50.zip
-gdown --id 1pr_Up54tNADCGhF8WLvmyTfKlCD5eEkI # NavierStokes_V1e-4_N20_T50_R256_test.zip
-gdown --id 1RmDQQ-lNdAceLXrTGY_5ErvtINIXnpl3 # NavierStokes_V1e-4_N10000_T30.zip
-gdown --id 1lVgpWMjv9Z6LEv3eZQ_Qgj54lYeqnGl5 # NavierStokes_V1e-5_N1200_T20.zip
-unzip *.zip && rm -rf *.zip
+fourierflow download-fno-examples
 
 # MIMIC-III dataset
 cd data/mimiciii/1.4 && gzip -d *gz
@@ -55,7 +51,6 @@ pip install -r requirements.txt
 # Train
 python -m meshgraphnets.run_model --mode=train --model=cfd \
     --checkpoint_dir=data/chk --dataset_dir=data/flag_simple
-
 ```
 
 ## Training

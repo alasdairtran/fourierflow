@@ -3,6 +3,7 @@ import scipy.io
 import torch
 from einops import repeat
 from torch.utils.data import DataLoader, Dataset
+import os
 
 from fourierflow.common import Datastore
 
@@ -17,7 +18,7 @@ class NavierStokes2Datastore(Datastore):
         self.n_workers = n_workers
         self.batch_size = batch_size
 
-        data = scipy.io.loadmat(data_path)['u'].astype(np.float32)
+        data = scipy.io.loadmat(os.path.expandvars(data_path))['u'].astype(np.float32)
         # For NavierStokes_V1e-5_N1200_T20.mat
         # data.shape == (1200, 64, 64, 20)
 

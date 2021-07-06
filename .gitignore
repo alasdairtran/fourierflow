@@ -45,3 +45,6 @@ checkpoint
 /results
 *.h5
 *.mat
+
+# per-machine project settings
+.env
