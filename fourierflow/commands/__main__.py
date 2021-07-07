@@ -2,6 +2,7 @@ import os
 from copy import deepcopy
 from typing import IO, Callable, Dict, Optional, Union
 
+import gdown
 import ptvsd
 import pytorch_lightning as pl
 import torch
@@ -9,16 +10,16 @@ import typer
 import wandb
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
-import gdown
+
+from fourierflow.common import Datastore, Experiment
+from fourierflow.utils.parsing import yaml_to_params
 
 ## This is run in package root to provide defaults env vars for ${VAR} substitution
 # from dotenv import load_dotenv
 
 # # defaults for environment vars
-# load_dotenv() 
+# load_dotenv()
 
-from fourierflow.common import Datastore, Experiment
-from fourierflow.utils.parsing import yaml_to_params
 
 app = typer.Typer()
 
@@ -36,7 +37,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
     params = yaml_to_params(config_path, overrides)
 
-    save_dir = os.pathexpandvars('$SM_MODEL_DIR')
+    save_dir = os.path.expandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
@@ -85,7 +86,7 @@ def test(config_path: str,
     parts = config_path.split('/')
     i = parts.index('configs')
 
-    save_dir = os.pathexpandvars('$SM_MODEL_DIR')
+    save_dir = os.path.expandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
@@ -104,7 +105,7 @@ def test(config_path: str,
 @app.command()
 def download_fno_examples(
         debug: bool = False):
-    """Download some google datasets. 
+    """Download some google datasets.
 
     Should probably be in a separate module.
 
