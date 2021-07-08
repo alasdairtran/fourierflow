@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 01_layers_4
+  name: 00a_no_W
   tags:
     - pde
     - navier-stokes
@@ -22,9 +22,9 @@ experiment:
     modes1: 16
     modes2: 16
     width: 32
-    residual: true
+    residual: false
     linear_out: true
-    n_layers: 4
+    n_layers: 2
     input_dim: 3
   n_steps: 10
   optimizer:

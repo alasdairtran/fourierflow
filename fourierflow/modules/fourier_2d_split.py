@@ -17,17 +17,18 @@ from fourierflow.common import Module
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes, resdiual=True, conv_norm=False, nonlinear=False, dropout=0.1):
+    def __init__(self, in_dim, out_dim, n_modes, residual=True, conv_norm=False, nonlinear=False, dropout=0.1):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
-        self.linear = nn.Linear(in_dim, out_dim)
-        self.residual = resdiual
+        self.residual = residual
         self.act = nn.ReLU()
         self.act2 = nn.ReLU()
         self.nonlinear = nonlinear
-        self.norm = nn.LayerNorm(in_dim) if conv_norm else nn.Identity()
+        if residual:
+            self.linear = nn.Linear(in_dim, out_dim)
+            self.norm = nn.LayerNorm(in_dim) if conv_norm else nn.Identity()
         n = 4 if nonlinear else 2
 
         fourier_weight = [nn.Parameter(torch.FloatTensor(
@@ -58,7 +59,8 @@ class SpectralConv2d(nn.Module):
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
         B, M, N, I = x.shape
-        res = self.linear(self.norm(x))
+        if self.residual:
+            res = self.linear(self.norm(x))
         # res.shape == [batch_size, grid_size, grid_size, out_dim]
 
         x = rearrange(x, 'b m n i -> b i m n')
@@ -106,7 +108,7 @@ class SpectralConv2d(nn.Module):
 @Module.register('fourier_net_2d_split')
 class SimpleBlock2dSplit(nn.Module):
     def __init__(self, modes1, modes2, width, input_dim=12, dropout=0.1,
-                 n_layers=4, residual=False, conv_residual=True,
+                 n_layers=4, residual=False,
                  nonlinear=False, linear_out: bool = False, weight_sharing: bool = False,
                  norm=False, conv_norm=False, avg_outs=False, next_input='subtract'):
         super().__init__()
@@ -141,7 +143,7 @@ class SimpleBlock2dSplit(nn.Module):
                 self.spectral_layers.append(SpectralConv2d(in_dim=width,
                                                            out_dim=width,
                                                            n_modes=modes1,
-                                                           resdiual=conv_residual,
+                                                           residual=residual,
                                                            nonlinear=nonlinear,
                                                            conv_norm=conv_norm,
                                                            dropout=dropout))
@@ -149,7 +151,7 @@ class SimpleBlock2dSplit(nn.Module):
             self.layer = SpectralConv2d(in_dim=width,
                                         out_dim=width,
                                         n_modes=modes1,
-                                        resdiual=conv_residual,
+                                        residual=residual,
                                         nonlinear=nonlinear,
                                         conv_norm=conv_norm,
                                         dropout=dropout)

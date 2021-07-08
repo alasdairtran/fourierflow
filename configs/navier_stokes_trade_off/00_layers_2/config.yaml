@@ -1,12 +1,12 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 111b_single_24_40e
+  name: 00_layers_2
   tags:
     - pde
     - navier-stokes
     - fourier
-  notes: Reproduced experiment of Li et al (2020)
+  notes: ""
 datastore:
   type: navier_stokes_2
   data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
