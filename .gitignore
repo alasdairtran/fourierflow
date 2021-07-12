@@ -18,6 +18,7 @@ __pycache__
 events.out.tfevents.*
 *.pbtxt
 checkpoint
+*.pkl
 
 # Packaging
 /dist
