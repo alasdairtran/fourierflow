@@ -102,7 +102,7 @@ class SpectralConv2d(nn.Module):
 
         b = self.backcast_ff(x)
         f = self.forecast_ff(x)
-        return b, f
+        return b, f, [x_ft, out_ft, self.fourier_weight]
 
 
 @Module.register('fourier_net_2d_split')
@@ -167,9 +167,11 @@ class SimpleBlock2dSplit(nn.Module):
         x = self.in_proj(x)
         forecast_list = []
         forecast = 0
+        out_fts = []
         for i in range(self.n_layers):
             layer = self.layer if self.weight_sharing else self.spectral_layers[i]
-            b, f = layer(x)
+            b, f, out_ft = layer(x)
+            out_fts.append(out_ft)
             f_out = self.out(f)
             forecast = forecast + f_out
             forecast_list.append(f_out)
@@ -187,4 +189,4 @@ class SimpleBlock2dSplit(nn.Module):
         if self.avg_outs:
             forecast = forecast / len(self.spectral_layers)
 
-        return forecast, forecast_list
+        return forecast, forecast_list, out_fts

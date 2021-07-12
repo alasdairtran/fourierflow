@@ -111,7 +111,7 @@ class Fourier2DSingleExperiment(Experiment):
         xx = rearrange(xx, 'b ... t e -> (b t) ... e')
         # xx.shape == [batch_size * time, *dim_sizes, 3]
 
-        im, _ = self.conv(xx)
+        im, _, _ = self.conv(xx)
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
         BN = im.shape[0]
@@ -148,6 +148,7 @@ class Fourier2DSingleExperiment(Experiment):
         loss = 0
         # We predict one future one step at a time
         pred_layer_list = []
+        out_fts_list = []
         for t in range(self.n_steps):
             if t == 0:
                 x = xx[..., t, :]
@@ -155,8 +156,10 @@ class Fourier2DSingleExperiment(Experiment):
                 x = torch.cat([im, pos_feats], dim=-1)
             # x.shape == [batch_size, *dim_sizes, 3]
 
-            im, im_list = self.conv(x)
+            im, im_list, out_fts = self.conv(x)
             # im.shape == [batch_size, *dim_sizes, 1]
+
+            out_fts_list.append(out_fts)
 
             y = yy[..., t]
             loss += self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
@@ -166,7 +169,7 @@ class Fourier2DSingleExperiment(Experiment):
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, pred, pred_layer_list
+        return loss, loss_full, pred, pred_layer_list, out_fts_list
 
     def _test_step(self, data, split):
         B, *dim_sizes, T = data.shape
@@ -197,6 +200,7 @@ class Fourier2DSingleExperiment(Experiment):
         loss = 0
         # We predict one future one step at a time
         pred_layer_list = []
+        out_fts_list = []
         for t in range(19):
             if t == 0:
                 x = xx[..., t, :]
@@ -204,9 +208,10 @@ class Fourier2DSingleExperiment(Experiment):
                 x = torch.cat([im, pos_feats], dim=-1)
             # x.shape == [batch_size, *dim_sizes, 3]
 
-            im, im_list = self.conv(x)
+            im, im_list, out_fts = self.conv(x)
             # im.shape == [batch_size, *dim_sizes, 1]
 
+            out_fts_list.append(out_fts)
             y = yy[..., t]
             l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
             loss += l
@@ -218,7 +223,7 @@ class Fourier2DSingleExperiment(Experiment):
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, pred, pred_layer_list
+        return loss, loss_full, pred, pred_layer_list, out_fts_list
 
     def training_step(self, batch, batch_idx):
         loss = self._training_step(batch)
@@ -226,7 +231,7 @@ class Fourier2DSingleExperiment(Experiment):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list = self._valid_step(batch, 'valid')
+        loss, loss_full, preds, pred_list, _ = self._valid_step(batch, 'valid')
         self.log('valid_loss', loss)
         self.log('valid_loss_full', loss_full)
 
@@ -243,10 +248,22 @@ class Fourier2DSingleExperiment(Experiment):
                     log_imshow(expt, layer[0], f'layer {i} t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _ = self._valid_step(batch, 'test')
+        loss, loss_full, preds, pred_list, out_fts_list = self._valid_step(
+            batch, 'test')
         # loss, loss_full, _, _ = self._test_step(batch, 'test')
         self.log('test_loss', loss)
         self.log('test_loss_full', loss_full)
+
+        # import pickle
+        # with open('R.pkl', 'wb') as f:
+        #     pickle.dump(out_fts_list, f)
+
+        # if batch_idx == 0:
+        #     expt = self.logger.experiment
+        #     log_imshow(expt, torch.sqrt(
+        #         out_fts_list[0][0][0].real**2 + out_fts_list[0][0][0].imag**2), 'layer 0')
+        #     log_imshow(expt, torch.sqrt(
+        #         out_fts_list[0][1][0].real**2 + out_fts_list[0][1][0].imag**2), 'layer 1')
 
 
 class MidpointNormalize(mpl.colors.Normalize):
@@ -271,11 +288,12 @@ def log_imshow(expt, tensor, name):
     fig = plt.figure(figsize=(6, 6))
     ax = fig.add_subplot(1, 1, 1)
     vals = tensor.cpu().numpy()
-    vmin = -3  # -1 if 'layer' in name else -3
-    vmax = 3  # 1 if 'layer' in name else 3
-    norm = MidpointNormalize(vmin=vmin, vmax=vmax, midpoint=0)
+    vmax = vals.max()
+    # vmin = 0  # -1 if 'layer' in name else -3
+    # vmax = 10  # 1 if 'layer' in name else 3
+    # norm = MidpointNormalize(vmin=0, vmax=10, midpoint=0)
     im = ax.imshow(vals, interpolation='bilinear',
-                   cmap=plt.get_cmap('bwr'), norm=norm)
+                   cmap=plt.get_cmap('Reds'))
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     fig.colorbar(im, cax=cax, orientation='vertical')
