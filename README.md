@@ -19,6 +19,9 @@ export PATH="$HOME/.poetry/bin:$PATH"
 poetry install
 source .venv/bin/activate # or: poetry shell
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
+# Manually install tensorflow as poetry gets mad when tensorflow wants newer
+# tensorboard version than what pytorch-lightning requires.
+poe install-tensorflow
 # Manually reinstall Pytorch with CUDA 11.1 support
 poe install-torch-cuda11
 
@@ -60,12 +63,19 @@ sh download_dataset.sh flag_dynamic_sizing data
 sh download_dataset.sh sphere_simple data
 sh download_dataset.sh sphere_dynamic data
 sh download_dataset.sh sphere_dynamic_sizing data
+
+# Create index files
+python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/train.tfrecord data/cylinder_flow/train.index
+python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/valid.tfrecord data/cylinder_flow/valid.index
+python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/test.tfrecord data/cylinder_flow/test.index
+
 # Reproduce mesh experiment
 pyenv local 3.6.14
 virtualenv .venv/mesh
 source .venv/mesh/bin/activate
 pip install -r requirements.txt
 # Set LD_LIBRARY_PATH to cuda-10.0/lib64 location
+
 # Train
 python run_model.py --mode=train --model=cloth --checkpoint_dir=chk/flag_simple --dataset_dir=data/flag_simple
 python run_model.py --mode=train --model=cfd --checkpoint_dir=chk/cylinder_flow --dataset_dir=data/cylinder_flow

@@ -8,40 +8,40 @@ repository = "https://github.com/alasdairtran/fourierflow"
 [tool.poetry.dependencies]
 python = "^3.9.5"
 # poetry add allennlp einops entmax gdown hyperopt ipykernel jupyterlab jupyterlab \
-#   matplotlib moviepy numpy pandas ptvsd pydocstyle pylint python-dotenv pytorch-lightning \
-#   seaborn tfrecord typer wandb
+#   matplotlib moviepy pandas ptvsd pydocstyle pylint python-dotenv pytorch-lightning \
+#   seaborn tfrecord typer wandb tensorflow-gpu=2.4.2
 allennlp = "^2.5.0"
 einops = "^0.3.0"
 entmax = "^1.0"
 gdown = "^3.13.0"
 hyperopt = "^0.2.5"
-ipykernel = "^5.5.5"
+ipykernel = "^6.0.1"
 jupyterlab = "^3.0.16"
 matplotlib = "^3.4.2"
 moviepy = "^1.0.3"
-numpy = "^1.20.3"
-pandas = "^1.2.4"
+pandas = "^1.3.0"
 ptvsd = "^4.3.2"
 pydocstyle = "^6.1.1"
-pylint = "^2.8.3"
+pylint = "^2.9.3"
 python-dotenv = "^0.18.0"
-pytorch-lightning = "^1.3.4"
+pytorch-lightning = "^1.3.8"
 seaborn = "^0.11.1"
 tfrecord = "^1.14.1"
 typer = "^0.3.2"
-wandb = "^0.10.31"
+wandb = "^0.10.33"
 
 [tool.poetry.dev-dependencies]
 # poetry add --dev autopep8 isort mypy poethepoet
 autopep8 = "^1.5.7"
-isort = "^5.8.0"
-mypy = "^0.901"
+isort = "^5.9.2"
+mypy = "^0.910"
 poethepoet = "^0.10.0"
 
 [tool.poetry.scripts]
 fourierflow = 'fourierflow.commands.__main__:app'
 
 [tool.poe.tasks]
+install-tensorflow = "python -m pip install --no-cache-dir tensorflow-gpu"
 # Remove when this is fixed: https://github.com/python-poetry/poetry/issues/2613
 install-torch-cuda11 = "python -m pip install --no-cache-dir -U torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html"
 
