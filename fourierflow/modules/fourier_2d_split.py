@@ -126,7 +126,10 @@ class SimpleBlock2dSplit(nn.Module):
         output shape: (batchsize, x=64, y=64, c=1)
         """
 
-        self.modes1 = modes1
+        if isinstance(modes1, list):
+            self.modes1 = modes1
+        else:
+            self.modes1 = [modes1] * n_layers
         self.modes2 = modes2
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
@@ -139,10 +142,10 @@ class SimpleBlock2dSplit(nn.Module):
 
         if not weight_sharing:
             self.spectral_layers = nn.ModuleList([])
-            for i in range(n_layers):
+            for m in self.modes1:
                 self.spectral_layers.append(SpectralConv2d(in_dim=width,
                                                            out_dim=width,
-                                                           n_modes=modes1,
+                                                           n_modes=m,
                                                            residual=residual,
                                                            nonlinear=nonlinear,
                                                            conv_norm=conv_norm,
