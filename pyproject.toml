@@ -9,7 +9,7 @@ repository = "https://github.com/alasdairtran/fourierflow"
 python = "^3.9.5"
 # poetry add allennlp einops entmax gdown hyperopt ipykernel jupyterlab jupyterlab \
 #   matplotlib moviepy numpy pandas ptvsd pydocstyle pylint python-dotenv pytorch-lightning \
-#   seaborn typer wandb
+#   seaborn tfrecord typer wandb
 allennlp = "^2.5.0"
 einops = "^0.3.0"
 entmax = "^1.0"
@@ -27,6 +27,7 @@ pylint = "^2.8.3"
 python-dotenv = "^0.18.0"
 pytorch-lightning = "^1.3.4"
 seaborn = "^0.11.1"
+tfrecord = "^1.14.1"
 typer = "^0.3.2"
 wandb = "^0.10.31"
 
@@ -41,6 +42,7 @@ poethepoet = "^0.10.0"
 fourierflow = 'fourierflow.commands.__main__:app'
 
 [tool.poe.tasks]
+# Remove when this is fixed: https://github.com/python-poetry/poetry/issues/2613
 install-torch-cuda11 = "python -m pip install --no-cache-dir -U torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html"
 
 
