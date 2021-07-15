@@ -30,6 +30,7 @@ class Fourier2DSingleExperiment(Experiment):
                  scheduler_config: Dict[str, Any] = None,
                  low: float = 0,
                  high: float = 1,
+                 use_position: bool = True,
                  use_fourier_position: bool = False):
         super().__init__()
         self.conv = conv
@@ -39,6 +40,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.scheduler = scheduler
         self.scheduler_config = scheduler_config
         self.use_fourier_position = use_fourier_position
+        self.use_position = use_position
         self.max_freq = max_freq
         self.num_freq_bands = num_freq_bands
         self.freq_base = freq_base
@@ -88,20 +90,21 @@ class Fourier2DSingleExperiment(Experiment):
         yy = rearrange(yy, 'b ... t -> (b t) ...')
         # yy.shape == [batch_size * time, *dim_sizes]
 
-        pos_feats = self.encode_positions(
-            dim_sizes, self.low, self.high, self.use_fourier_position)
-        # pos_feats.shape == [*dim_sizes, pos_size]
-
-        pos_feats = repeat(pos_feats, '... -> b ...', b=B)
-        # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
-
         xx = repeat(data, '... -> ... 1')
         # xx.shape == [batch_size, *dim_sizes, total_steps, 1]
 
-        all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
+        if self.use_position:
+            pos_feats = self.encode_positions(
+                dim_sizes, self.low, self.high, self.use_fourier_position)
+            # pos_feats.shape == [*dim_sizes, pos_size]
 
-        xx = torch.cat([xx, all_pos_feats], dim=-1)
-        # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
+            pos_feats = repeat(pos_feats, '... -> b ...', b=B)
+            # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
+
+            all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
+
+            xx = torch.cat([xx, all_pos_feats], dim=-1)
+            # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
 
         # Ignore final steps since there is no ground-truth output
         xx = xx[..., :-1, :]
@@ -124,20 +127,21 @@ class Fourier2DSingleExperiment(Experiment):
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
 
-        pos_feats = self.encode_positions(
-            dim_sizes, self.low, self.high, self.use_fourier_position)
-        # pos_feats.shape == [*dim_sizes, pos_size]
-
-        pos_feats = repeat(pos_feats, '... -> b ...', b=B)
-        # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
-
         xx = repeat(data, '... -> ... 1')
         # xx.shape == [batch_size, *dim_sizes, total_steps, 1]
 
-        all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
+        if self.use_position:
+            pos_feats = self.encode_positions(
+                dim_sizes, self.low, self.high, self.use_fourier_position)
+            # pos_feats.shape == [*dim_sizes, pos_size]
 
-        xx = torch.cat([xx, all_pos_feats], dim=-1)
-        # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
+            pos_feats = repeat(pos_feats, '... -> b ...', b=B)
+            # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
+
+            all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
+
+            xx = torch.cat([xx, all_pos_feats], dim=-1)
+            # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
 
         xx = xx[..., -self.n_steps-1:-1, :]
         # xx.shape == [batch_size, *dim_sizes, n_steps, 3]
@@ -152,8 +156,10 @@ class Fourier2DSingleExperiment(Experiment):
         for t in range(self.n_steps):
             if t == 0:
                 x = xx[..., t, :]
-            else:
+            elif self.use_position:
                 x = torch.cat([im, pos_feats], dim=-1)
+            else:
+                x = im
             # x.shape == [batch_size, *dim_sizes, 3]
 
             im, im_list, out_fts = self.conv(x)
@@ -176,20 +182,21 @@ class Fourier2DSingleExperiment(Experiment):
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
 
-        pos_feats = self.encode_positions(
-            dim_sizes, self.low, self.high, self.use_fourier_position)
-        # pos_feats.shape == [*dim_sizes, pos_size]
-
-        pos_feats = repeat(pos_feats, '... -> b ...', b=B)
-        # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
-
         xx = repeat(data, '... -> ... 1')
         # xx.shape == [batch_size, *dim_sizes, total_steps, 1]
 
-        all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
+        if self.use_position:
+            pos_feats = self.encode_positions(
+                dim_sizes, self.low, self.high, self.use_fourier_position)
+            # pos_feats.shape == [*dim_sizes, pos_size]
 
-        xx = torch.cat([xx, all_pos_feats], dim=-1)
-        # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
+            pos_feats = repeat(pos_feats, '... -> b ...', b=B)
+            # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
+
+            all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
+
+            xx = torch.cat([xx, all_pos_feats], dim=-1)
+            # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
 
         xx = xx[..., :1, :]
         # xx.shape == [batch_size, *dim_sizes, n_steps, 3]
@@ -204,8 +211,10 @@ class Fourier2DSingleExperiment(Experiment):
         for t in range(19):
             if t == 0:
                 x = xx[..., t, :]
-            else:
+            elif self.use_position:
                 x = torch.cat([im, pos_feats], dim=-1)
+            else:
+                x = im
             # x.shape == [batch_size, *dim_sizes, 3]
 
             im, im_list, out_fts = self.conv(x)
