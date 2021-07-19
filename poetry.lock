@@ -3011,7 +3011,7 @@ test = ["zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.5"
-content-hash = "6bdbae06e53edab1c7d003d12b417cc4e5602af43a994c6b6d4bd769ec3d8580"
+content-hash = "bc0da1cf9dd664531a080154833c73856bfc489f1feed7a3c21caea4b731aa03"
 
 [metadata.files]
 absl-py = [
