@@ -42,7 +42,7 @@ fourierflow download-fno-examples
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
 
 # With Radflow
-fourierflow train configs/navier_stokes_4p/111b_single_24_40e/config.yaml
+fourierflow train configs/navier_stokes_trade_off/18_bilinear_24/config.yaml
 
 # Performance tradeoff evaluation. We use the Navier Stokes test set
 # as our benchmark dataset.
