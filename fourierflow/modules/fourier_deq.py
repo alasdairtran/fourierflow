@@ -13,14 +13,19 @@ from fourierflow.modules.deq.solvers import anderson, broyden
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes, w):
+    def __init__(self, in_dim, out_dim, n_modes):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
-        self.fourier_weight = w
         self.act = nn.ReLU()
         self.act2 = nn.ReLU()
+
+        fourier_weight = [nn.Parameter(torch.FloatTensor(
+            in_dim, out_dim, n_modes, n_modes, 2)) for _ in range(2)]
+        self.fourier_weight = nn.ParameterList(fourier_weight)
+        for param in self.fourier_weight:
+            nn.init.xavier_normal_(param, gain=1/(in_dim*out_dim))
 
         self.forecast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim),
@@ -104,20 +109,14 @@ class SpectralConv2d(nn.Module):
 
 
 class DEQBlock(nn.Module):
-    def __init__(self, modes, width, input_dim=12):
+    def __init__(self, modes, width, n_layers):
         super().__init__()
-
-        fourier_weight = [nn.Parameter(torch.FloatTensor(
-            width, width, modes, modes, 2)) for _ in range(2)]
-        self.fourier_weight = nn.ParameterList(fourier_weight)
-        for param in self.fourier_weight:
-            nn.init.xavier_normal_(param, gain=1/(width*width))
+        self.n_layers = n_layers
 
         self.width = width
         self.f = SpectralConv2d(in_dim=width,
                                 out_dim=width,
-                                n_modes=modes,
-                                w=fourier_weight)
+                                n_modes=modes)
 
         self.solver = broyden
 
@@ -125,22 +124,22 @@ class DEQBlock(nn.Module):
         # z0.shape == [n_batches, width, flat_size]
 
         z = z0
-        for _ in range(24):
+        for _ in range(self.n_layers):
             z = self.f(z, x)
         return z
 
-        # f_thres = 10
-        # b_thres = 10
+        # f_thres = 30
+        # b_thres = 40
 
         # # Forward pass
         # with torch.no_grad():
-        #     z_star = self.solver(lambda z: self.f(z), z0, threshold=f_thres)[
+        #     z_star = self.solver(lambda z: self.f(z, x), z0, threshold=f_thres)[
         #         'result']   # See step 2 above
         #     new_z_star = z_star
 
         # # (Prepare for) Backward pass, see step 3 above
         # if self.training:
-        #     new_z_star = self.f(z_star.requires_grad_())
+        #     new_z_star = self.f(z_star.requires_grad_(), x)
 
         #     # Jacobian-related computations, see additional step above. For instance:
         #     # jac_loss = jac_loss_estimate(new_z_star, z_star, vecs=1)
@@ -161,19 +160,13 @@ class DEQBlock(nn.Module):
 
 @Module.register('fourier_net_2d_deq')
 class SimpleBlock2dDEQ(nn.Module):
-    def __init__(self, modes, width, input_dim=12):
+    def __init__(self, modes, width, input_dim, n_layers):
         super().__init__()
-
-        fourier_weight = [nn.Parameter(torch.FloatTensor(
-            width, width, modes, modes, 2)) for _ in range(2)]
-        self.fourier_weight = nn.ParameterList(fourier_weight)
-        for param in self.fourier_weight:
-            nn.init.xavier_normal_(param, gain=1/(width*width))
 
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
 
-        self.deq_block = DEQBlock(modes, width, input_dim)
+        self.deq_block = DEQBlock(modes, width, n_layers)
 
         self.out = nn.Sequential(nn.Linear(self.width, 128),
                                  nn.ReLU(),

@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 01_deq_baseline
+  name: 02_layers_48
   tags:
     - pde
     - navier-stokes
@@ -13,7 +13,7 @@ datastore:
   train_size: 1000
   test_size: 200
   ssr: 1 # sub-sampling rate
-  batch_size: 2
+  batch_size: 1
   n_workers: 4
 experiment:
   type: fourier_2d_deq
@@ -22,6 +22,7 @@ experiment:
     modes: 16
     width: 32
     input_dim: 3
+    n_layers: 48
   n_steps: 10
   optimizer:
     type: adamw
