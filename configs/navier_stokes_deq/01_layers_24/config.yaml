@@ -13,7 +13,7 @@ datastore:
   train_size: 1000
   test_size: 200
   ssr: 1 # sub-sampling rate
-  batch_size: 2
+  batch_size: 1
   n_workers: 4
 experiment:
   type: fourier_2d_deq
@@ -23,6 +23,7 @@ experiment:
     width: 32
     input_dim: 3
     n_layers: 24
+    bilinear: false
   n_steps: 10
   optimizer:
     type: adamw

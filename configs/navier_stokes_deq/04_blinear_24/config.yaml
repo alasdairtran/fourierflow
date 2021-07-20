@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 02_layers_48
+  name: 04_blinear_24
   tags:
     - pde
     - navier-stokes
@@ -22,8 +22,8 @@ experiment:
     modes: 16
     width: 32
     input_dim: 3
-    n_layers: 48
-    bilinear: false
+    n_layers: 24
+    bilinear: true
   n_steps: 10
   optimizer:
     type: adamw

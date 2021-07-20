@@ -13,19 +13,26 @@ from fourierflow.modules.deq.solvers import anderson, broyden
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes):
+    def __init__(self, in_dim, out_dim, n_modes, bilinear=False):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
         self.act = nn.ReLU()
         self.act2 = nn.ReLU()
+        self.bilinear = bilinear
 
-        fourier_weight = [nn.Parameter(torch.FloatTensor(
-            in_dim, out_dim, n_modes, n_modes, 2)) for _ in range(2)]
-        self.fourier_weight = nn.ParameterList(fourier_weight)
-        for param in self.fourier_weight:
-            nn.init.xavier_normal_(param, gain=1/(in_dim*out_dim))
+        if bilinear:
+            self.w1 = nn.Parameter(torch.FloatTensor(in_dim, out_dim, 64, 2))
+            self.w2 = nn.Parameter(torch.FloatTensor(in_dim, out_dim, 33, 2))
+            nn.init.xavier_normal_(self.w1, gain=1/(in_dim*out_dim))
+            nn.init.xavier_normal_(self.w2, gain=1/(in_dim*out_dim))
+        else:
+            fourier_weight = [nn.Parameter(torch.FloatTensor(
+                in_dim, out_dim, n_modes, n_modes, 2)) for _ in range(2)]
+            self.fourier_weight = nn.ParameterList(fourier_weight)
+            for param in self.fourier_weight:
+                nn.init.xavier_normal_(param, gain=1/(in_dim*out_dim))
 
         self.forecast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim),
@@ -36,6 +43,25 @@ class SpectralConv2d(nn.Module):
             nn.Linear(out_dim, out_dim),
             nn.ReLU(),
             nn.Linear(out_dim, out_dim))
+
+    @staticmethod
+    def complex_bilinear_matmul_2d(a, b0, b1):
+        # (batch, in_channel, x, y), (in_channel, out_channel, x, y) -> (batch, out_channel, x, y)
+
+        # (in_channel, out_channel, x), (batch, in_channel, x, y) -> (batch, out_channel, x, y)
+        op = partial(torch.einsum, "iox,bixy->boxy")
+        c = torch.stack([
+            op(b0[..., 0], a[..., 0]) - op(b0[..., 1], a[..., 1]),
+            op(b0[..., 1], a[..., 0]) + op(b0[..., 0], a[..., 1])
+        ], dim=-1)
+
+        op = partial(torch.einsum, "bixy,ioy->boxy")
+        out = torch.stack([
+            op(c[..., 0], b1[..., 0]) - op(c[..., 1], b1[..., 1]),
+            op(c[..., 1], b1[..., 0]) + op(c[..., 0], b1[..., 1])
+        ], dim=-1)
+
+        return out
 
     @staticmethod
     def complex_matmul_2d(a, b):
@@ -77,14 +103,17 @@ class SpectralConv2d(nn.Module):
         x_ft = torch.stack([x_ft.real, x_ft.imag], dim=4)
         # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
-        out_ft = torch.zeros(B, I, N, M // 2 + 1, 2, device=x.device)
-        # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
+        if self.bilinear:
+            out_ft = self.complex_bilinear_matmul_2d(x_ft, self.w1, self.w2)
+        else:
+            out_ft = torch.zeros(B, I, N, M // 2 + 1, 2, device=x.device)
+            # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
-        out_ft[:, :, :self.n_modes, :self.n_modes] = self.complex_matmul_2d(
-            x_ft[:, :, :self.n_modes, :self.n_modes], self.fourier_weight[0])
+            out_ft[:, :, :self.n_modes, :self.n_modes] = self.complex_matmul_2d(
+                x_ft[:, :, :self.n_modes, :self.n_modes], self.fourier_weight[0])
 
-        out_ft[:, :, -self.n_modes:, :self.n_modes] = self.complex_matmul_2d(
-            x_ft[:, :, -self.n_modes:, :self.n_modes], self.fourier_weight[1])
+            out_ft[:, :, -self.n_modes:, :self.n_modes] = self.complex_matmul_2d(
+                x_ft[:, :, -self.n_modes:, :self.n_modes], self.fourier_weight[1])
 
         out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
 
@@ -109,14 +138,15 @@ class SpectralConv2d(nn.Module):
 
 
 class DEQBlock(nn.Module):
-    def __init__(self, modes, width, n_layers):
+    def __init__(self, modes, width, n_layers, bilinear):
         super().__init__()
         self.n_layers = n_layers
 
         self.width = width
         self.f = SpectralConv2d(in_dim=width,
                                 out_dim=width,
-                                n_modes=modes)
+                                n_modes=modes,
+                                bilinear=bilinear)
 
         self.solver = broyden
 
@@ -160,13 +190,13 @@ class DEQBlock(nn.Module):
 
 @Module.register('fourier_net_2d_deq')
 class SimpleBlock2dDEQ(nn.Module):
-    def __init__(self, modes, width, input_dim, n_layers):
+    def __init__(self, modes, width, input_dim, n_layers, bilinear):
         super().__init__()
 
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
 
-        self.deq_block = DEQBlock(modes, width, n_layers)
+        self.deq_block = DEQBlock(modes, width, n_layers, bilinear)
 
         self.out = nn.Sequential(nn.Linear(self.width, 128),
                                  nn.ReLU(),
