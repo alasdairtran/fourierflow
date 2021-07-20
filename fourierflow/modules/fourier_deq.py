@@ -138,9 +138,10 @@ class SpectralConv2d(nn.Module):
 
 
 class DEQBlock(nn.Module):
-    def __init__(self, modes, width, n_layers, bilinear):
+    def __init__(self, modes, width, n_layers, bilinear, pretraining):
         super().__init__()
         self.n_layers = n_layers
+        self.pretraining = pretraining
 
         self.width = width
         self.f = SpectralConv2d(in_dim=width,
@@ -153,50 +154,58 @@ class DEQBlock(nn.Module):
     def forward(self, z0, x):
         # z0.shape == [n_batches, width, flat_size]
 
-        z = z0
-        for _ in range(self.n_layers):
-            z = self.f(z, x)
-        return z
+        if self.pretraining:
+            z = z0
+            for _ in range(self.n_layers):
+                z = self.f(z, x)
+            return z
 
-        # f_thres = 30
-        # b_thres = 40
+        f_thres = 30
+        b_thres = 40
 
-        # # Forward pass
-        # with torch.no_grad():
-        #     z_star = self.solver(lambda z: self.f(z, x), z0, threshold=f_thres)[
-        #         'result']   # See step 2 above
-        #     new_z_star = z_star
+        # Forward pass
+        with torch.no_grad():
+            z_star = self.solver(lambda z: self.f(z, x), z0, threshold=f_thres)[
+                'result']   # See step 2 above
+            new_z_star = z_star
 
-        # # (Prepare for) Backward pass, see step 3 above
-        # if self.training:
-        #     new_z_star = self.f(z_star.requires_grad_(), x)
+        # (Prepare for) Backward pass, see step 3 above
+        if self.training:
+            new_z_star = self.f(z_star.requires_grad_(), x)
 
-        #     # Jacobian-related computations, see additional step above. For instance:
-        #     # jac_loss = jac_loss_estimate(new_z_star, z_star, vecs=1)
+            # Jacobian-related computations, see additional step above. For instance:
+            # jac_loss = jac_loss_estimate(new_z_star, z_star, vecs=1)
 
-        #     def backward_hook(grad):
-        #         if self.hook is not None:
-        #             self.hook.remove()
-        #             # torch.cuda.synchronize()   # To avoid infinite recursion
-        #         # Compute the fixed point of yJ + grad, where J=J_f is the Jacobian of f at z_star
-        #         new_grad = self.solver(lambda y: autograd.grad(new_z_star, z_star, y, retain_graph=True)[0] + grad,
-        #                                torch.zeros_like(grad), threshold=b_thres)['result']
-        #         return new_grad
+            def backward_hook(grad):
+                if self.hook is not None:
+                    self.hook.remove()
+                    torch.cuda.synchronize()   # To avoid infinite recursion
+                # Compute the fixed point of yJ + grad, where J=J_f is the Jacobian of f at z_star
 
-        #     self.hook = new_z_star.register_hook(backward_hook)
+                def f(y):
+                    g = autograd.grad(new_z_star, z_star, y,
+                                      retain_graph=True)[0]
+                    return g + grad
 
-        # return new_z_star
+                x0b = torch.zeros_like(grad)
+                new_grad = self.solver(f, x0b, b_thres)['result']
+                return new_grad
+
+            self.hook = new_z_star.register_hook(backward_hook)
+
+        return new_z_star
 
 
 @Module.register('fourier_net_2d_deq')
 class SimpleBlock2dDEQ(nn.Module):
-    def __init__(self, modes, width, input_dim, n_layers, bilinear):
+    def __init__(self, modes, width, input_dim, n_layers, bilinear, pretraining=True):
         super().__init__()
 
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
 
-        self.deq_block = DEQBlock(modes, width, n_layers, bilinear)
+        self.deq_block = DEQBlock(
+            modes, width, n_layers, bilinear, pretraining)
 
         self.out = nn.Sequential(nn.Linear(self.width, 128),
                                  nn.ReLU(),

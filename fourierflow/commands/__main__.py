@@ -14,7 +14,7 @@ from pytorch_lightning.loggers import WandbLogger
 from fourierflow.common import Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
 
-## This is run in package root to provide defaults env vars for ${VAR} substitution
+# This is run in package root to provide defaults env vars for ${VAR} substitution
 # from dotenv import load_dotenv
 
 # # defaults for environment vars
@@ -63,6 +63,11 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
     datastore = Datastore.from_params(params['datastore'])
     experiment = Experiment.from_params(params['experiment'])
+
+    pretrained_path = params.pop('pretrained_path', None)
+    if pretrained_path:
+        experiment.load_lightning_model_state(pretrained_path)
+
     lr_monitor = LearningRateMonitor(logging_interval='step')
     trainer = pl.Trainer(logger=wandb_logger,
                          callbacks=[lr_monitor, checkpoint_callback],
@@ -99,7 +104,6 @@ def test(config_path: str,
     trainer = pl.Trainer(logger=wandb_logger,
                          **params.pop('trainer').as_dict())
     trainer.test(experiment, datamodule=datastore)
-
 
 
 @app.command()
@@ -143,7 +147,8 @@ def download_fno_examples(
             # This is slightly faster with cached_download
             # but CSIRO HPC hates the massive cache folder
             gdown.download(
-                "https://drive.google.com/uc?id={shareid}".format(shareid=shareid),
+                "https://drive.google.com/uc?id={shareid}".format(
+                    shareid=shareid),
                 fname)
             gdown.extractall(fname)
             os.unlink(fname)
