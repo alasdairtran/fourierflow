@@ -2756,6 +2756,18 @@ torch = ">=1.3.1"
 image = ["scipy", "torchvision", "torch-fidelity"]
 
 [[package]]
+name = "torchtyping"
+version = "0.1.4"
+description = "Runtime type annotations for the shape, dtype etc. of PyTorch Tensors."
+category = "main"
+optional = false
+python-versions = ">=3.7.0"
+
+[package.dependencies]
+torch = ">=1.7.0"
+typeguard = ">=2.11.1"
+
+[[package]]
 name = "torchvision"
 version = "0.9.1"
 description = "image and video datasets and models for torch deep learning"
@@ -2850,6 +2862,18 @@ tokenizers = ["tokenizers (>=0.10.1,<0.11)"]
 torch = ["torch (>=1.0)"]
 torchhub = ["filelock", "importlib-metadata", "numpy (>=1.17)", "packaging", "protobuf", "regex (!=2019.12.17)", "requests", "sacremoses", "sentencepiece (==0.1.91)", "torch (>=1.0)", "tokenizers (>=0.10.1,<0.11)", "tqdm (>=4.27)"]
 vision = ["pillow"]
+
+[[package]]
+name = "typeguard"
+version = "2.12.1"
+description = "Run-time type checker for Python"
+category = "main"
+optional = false
+python-versions = ">=3.5.3"
+
+[package.extras]
+doc = ["sphinx-rtd-theme", "sphinx-autodoc-typehints (>=1.2.0)"]
+test = ["pytest", "typing-extensions", "mypy"]
 
 [[package]]
 name = "typer"
@@ -3011,7 +3035,7 @@ test = ["zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.5"
-content-hash = "bc0da1cf9dd664531a080154833c73856bfc489f1feed7a3c21caea4b731aa03"
+content-hash = "80419850ffa507c23a23864918501f8de40b8d76e5b0683053b7b61799a82d54"
 
 [metadata.files]
 absl-py = [
@@ -4905,6 +4929,10 @@ torchmetrics = [
     {file = "torchmetrics-0.4.1-py3-none-any.whl", hash = "sha256:70c83f0fc804a4fe00a9e72dbd2960ff76e39ef62570a19bbdce0c15a1ee0d71"},
     {file = "torchmetrics-0.4.1.tar.gz", hash = "sha256:2fc50f812210c33b8c2649dbb1482e3c47e93cae33e4b3d0427fb830384effbd"},
 ]
+torchtyping = [
+    {file = "torchtyping-0.1.4-py3-none-any.whl", hash = "sha256:485fb6ef3965c39b0de15f00d6f49373e0a3a6993e9733942a63c5e207d35390"},
+    {file = "torchtyping-0.1.4.tar.gz", hash = "sha256:4763375d17752641bd1bff0faaddade29be3c125fca6355e3cee7700e975fdb5"},
+]
 torchvision = [
     {file = "torchvision-0.9.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:da4c4f7363b60b0637354974ea0a29dbc301f66c9f25d92ed5f10637909f3500"},
     {file = "torchvision-0.9.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:8a937cd3b53656e15de03671f8a638b5e8e4c100725b854d73bdb51e41455e9e"},
@@ -4977,6 +5005,10 @@ traitlets = [
 transformers = [
     {file = "transformers-4.5.1-py3-none-any.whl", hash = "sha256:0a57d1cd9301a617c7015d7184228984abdfb1ae2158c29cfb32582219756d23"},
     {file = "transformers-4.5.1.tar.gz", hash = "sha256:3508e3b032cf0f5342c67836de4b121aa5c435c959472a28054ba895ea59cca7"},
+]
+typeguard = [
+    {file = "typeguard-2.12.1-py3-none-any.whl", hash = "sha256:cc15ef2704c9909ef9c80e19c62fb8468c01f75aad12f651922acf4dbe822e02"},
+    {file = "typeguard-2.12.1.tar.gz", hash = "sha256:c2af8b9bdd7657f4bd27b45336e7930171aead796711bc4cfc99b4731bb9d051"},
 ]
 typer = [
     {file = "typer-0.3.2-py3-none-any.whl", hash = "sha256:ba58b920ce851b12a2d790143009fa00ac1d05b3ff3257061ff69dbdfc3d161b"},
