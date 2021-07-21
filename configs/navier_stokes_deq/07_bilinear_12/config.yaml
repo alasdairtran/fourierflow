@@ -1,0 +1,53 @@
+wandb:
+  project: navier-stokes-4
+  group:
+  name: 07_bilinear_12
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+datastore:
+  type: navier_stokes_2
+  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
+  train_size: 1000
+  test_size: 200
+  ssr: 1 # sub-sampling rate
+  batch_size: 1
+  n_workers: 4
+experiment:
+  type: fourier_2d_deq
+  conv:
+    type: fourier_net_2d_deq
+    modes: 16
+    width: 32
+    input_dim: 3
+    n_layers: 12
+    bilinear: true
+  n_steps: 10
+  optimizer:
+    type: adamw
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    type: cosine_with_warmup
+    num_warmup_steps: 1000
+    num_training_steps: 20000
+    num_cycles: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: None
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 40
+checkpointer:
+  save_last: true
+  save_top_k: 4
+  validation_metric: valid_loss
+  mode: min
+  every_n_train_steps: None
+  every_n_val_epochs: 1
+  period: 1
