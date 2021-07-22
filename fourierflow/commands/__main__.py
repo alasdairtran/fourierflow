@@ -72,9 +72,11 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
         experiment.load_lightning_model_state(pretrained_path)
 
     lr_monitor = LearningRateMonitor(logging_interval='step')
+    multi_gpus = params.get('trainer').get('gpus', 0) > 1
+    plugins = DDPPlugin(find_unused_parameters=False) if multi_gpus else None
     trainer = pl.Trainer(logger=wandb_logger,
                          callbacks=[lr_monitor, checkpoint_callback],
-                         plugins=DDPPlugin(find_unused_parameters=False),
+                         plugins=plugins,
                          **params.pop('trainer').as_dict())
     trainer.fit(experiment, datamodule=datastore)
     trainer.test(experiment, datamodule=datastore)
