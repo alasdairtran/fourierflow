@@ -23,6 +23,7 @@ experiment:
     width: 32
     input_dim: 3
     n_layers: 12
+    size: 64
     bilinear: true
   n_steps: 10
   optimizer:

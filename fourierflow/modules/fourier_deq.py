@@ -13,7 +13,7 @@ from fourierflow.modules.deq.solvers import anderson, broyden
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes, bilinear=False):
+    def __init__(self, in_dim, out_dim, n_modes, size, bilinear=False):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -23,8 +23,9 @@ class SpectralConv2d(nn.Module):
         self.bilinear = bilinear
 
         if bilinear:
-            self.w1 = nn.Parameter(torch.FloatTensor(in_dim, out_dim, 64, 2))
-            self.w2 = nn.Parameter(torch.FloatTensor(in_dim, out_dim, 33, 2))
+            self.w1 = nn.Parameter(torch.FloatTensor(in_dim, out_dim, size, 2))
+            self.w2 = nn.Parameter(torch.FloatTensor(
+                in_dim, out_dim, size // 2 + 1, 2))
             nn.init.xavier_normal_(self.w1, gain=1/(in_dim*out_dim))
             nn.init.xavier_normal_(self.w2, gain=1/(in_dim*out_dim))
         else:
@@ -138,7 +139,7 @@ class SpectralConv2d(nn.Module):
 
 
 class DEQBlock(nn.Module):
-    def __init__(self, modes, width, n_layers, bilinear, pretraining):
+    def __init__(self, modes, width, n_layers, size, bilinear, pretraining):
         super().__init__()
         self.n_layers = n_layers
         self.pretraining = pretraining
@@ -147,6 +148,7 @@ class DEQBlock(nn.Module):
         self.f = SpectralConv2d(in_dim=width,
                                 out_dim=width,
                                 n_modes=modes,
+                                size=size,
                                 bilinear=bilinear)
 
         self.solver = broyden
@@ -198,14 +200,14 @@ class DEQBlock(nn.Module):
 
 @Module.register('fourier_net_2d_deq')
 class SimpleBlock2dDEQ(nn.Module):
-    def __init__(self, modes, width, input_dim, n_layers, bilinear, pretraining=True):
+    def __init__(self, modes, width, input_dim, n_layers, size, bilinear, pretraining=True):
         super().__init__()
 
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
 
         self.deq_block = DEQBlock(
-            modes, width, n_layers, bilinear, pretraining)
+            modes, width, n_layers, size, bilinear, pretraining)
 
         self.out = nn.Sequential(nn.Linear(self.width, 128),
                                  nn.ReLU(),

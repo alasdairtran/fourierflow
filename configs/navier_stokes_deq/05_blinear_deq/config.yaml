@@ -12,18 +12,19 @@ datastore:
   data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
   train_size: 1000
   test_size: 200
-  ssr: 1 # sub-sampling rate
+  ssr: 4 # sub-sampling rate
   batch_size: 1
   n_workers: 4
 experiment:
   type: fourier_2d_deq
   conv:
     type: fourier_net_2d_deq
-    modes: 16
-    width: 32
+    modes: 4
+    width: 4
     input_dim: 3
     n_layers: 24
-    bilinear: true
+    size: 16
+    bilinear: false
     pretraining: false
   n_steps: 10
   optimizer:
@@ -40,7 +41,7 @@ experiment:
     interval: step
     frequency: 1
     monitor: None
-pretrained_path: results/navier_stokes_deq/03_bilinear_48/checkpoints/epoch=19-step=19999.ckpt
+# pretrained_path: results/navier_stokes_deq/03_bilinear_48/checkpoints/epoch=19-step=19999.ckpt
 trainer:
   gpus: 1
   precision: 32
