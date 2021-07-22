@@ -10,6 +10,7 @@ import typer
 import wandb
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.plugins import DDPPlugin
 
 from fourierflow.common import Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
@@ -73,6 +74,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     lr_monitor = LearningRateMonitor(logging_interval='step')
     trainer = pl.Trainer(logger=wandb_logger,
                          callbacks=[lr_monitor, checkpoint_callback],
+                         plugins=DDPPlugin(find_unused_parameters=False),
                          **params.pop('trainer').as_dict())
     trainer.fit(experiment, datamodule=datastore)
     trainer.test(experiment, datamodule=datastore)

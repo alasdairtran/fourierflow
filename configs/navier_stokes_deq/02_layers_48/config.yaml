@@ -41,7 +41,8 @@ experiment:
     frequency: 1
     monitor: None
 trainer:
-  gpus: 1
+  gpus: 2
+  accelerator: ddp
   precision: 32
   max_epochs: 40
 checkpointer:
