@@ -2740,6 +2740,18 @@ numpy = "*"
 typing-extensions = "*"
 
 [[package]]
+name = "torchdiffeq"
+version = "0.2.2"
+description = "ODE solvers and adjoint sensitivity analysis in PyTorch."
+category = "main"
+optional = false
+python-versions = "~=3.6"
+
+[package.dependencies]
+scipy = ">=1.4.0"
+torch = ">=1.3.0"
+
+[[package]]
 name = "torchmetrics"
 version = "0.4.1"
 description = "PyTorch native Metrics"
@@ -3035,7 +3047,7 @@ test = ["zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.5"
-content-hash = "80419850ffa507c23a23864918501f8de40b8d76e5b0683053b7b61799a82d54"
+content-hash = "969cd73a99ad1650385fdabca741082cebd24b6cd3cee130ad47b503f728831c"
 
 [metadata.files]
 absl-py = [
@@ -4924,6 +4936,10 @@ torch = [
     {file = "torch-1.8.1-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:a50ea8ed900927fb30cadb63aa7a32fdd59c7d7abe5012348dfbe35a8355c083"},
     {file = "torch-1.8.1-cp39-cp39-win_amd64.whl", hash = "sha256:dac4d10494e74f7e553c92d7263e19ea501742c4825ddd26c4decfa27be95981"},
     {file = "torch-1.8.1-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:225ee4238c019b28369c71977327deeeb2bd1c6b8557e6fcf631b8866bdc5447"},
+]
+torchdiffeq = [
+    {file = "torchdiffeq-0.2.2-py3-none-any.whl", hash = "sha256:cd8cb409f5de02403087fc9dcf41da16fd2ef7366fba5e3449d96837d38309fe"},
+    {file = "torchdiffeq-0.2.2.tar.gz", hash = "sha256:02486c8efb005d5dca99a0bd4905c9d13d945f6e33bc23a99b2b008ccb824fa1"},
 ]
 torchmetrics = [
     {file = "torchmetrics-0.4.1-py3-none-any.whl", hash = "sha256:70c83f0fc804a4fe00a9e72dbd2960ff76e39ef62570a19bbdce0c15a1ee0d71"},
