@@ -61,6 +61,8 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     # code_artifact.add_file(config_path, 'config.yaml')
     # wandb_logger.experiment.log_artifact(code_artifact)
 
+    if debug:
+        params['datastore']['n_workers'] = 0
     datastore = Datastore.from_params(params['datastore'])
     experiment = Experiment.from_params(params['experiment'])
 
