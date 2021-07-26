@@ -39,14 +39,14 @@ class SpectralConv2d(nn.Module):
             nn.init.xavier_normal_(param, gain=1/(in_dim*out_dim))
 
         self.forecast_ff = nn.Sequential(
-            nn.Linear(out_dim, out_dim),
+            nn.Linear(out_dim, out_dim * 2),
             nn.ReLU(),
-            nn.Linear(out_dim, out_dim))
+            nn.Linear(out_dim * 2, out_dim))
 
         self.backcast_ff = nn.Sequential(
-            nn.Linear(out_dim, out_dim),
+            nn.Linear(out_dim, out_dim * 2),
             nn.ReLU(),
-            nn.Linear(out_dim, out_dim))
+            nn.Linear(out_dim * 2, out_dim))
 
     @staticmethod
     def complex_matmul_2d(a, b):
