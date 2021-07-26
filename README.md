@@ -5,11 +5,11 @@ Experiments with Fourier layers on simulation data.
 ## Getting Started
 
 ```sh
-# Set up pyenv and pin python version to 3.9.5
+# Set up pyenv and pin python version to 3.9.6
 curl https://pyenv.run | bash
 # Configure our shell's environment for pyenv
-pyenv install 3.9.5
-pyenv local 3.9.5
+pyenv install 3.9.6
+pyenv local 3.9.6
 
 # Set up poetry
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
