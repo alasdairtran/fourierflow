@@ -162,8 +162,8 @@ class DEQBlock(nn.Module):
                 z = self.f(z, x)
             return z
 
-        f_thres = 30
-        b_thres = 40
+        f_thres = 24
+        b_thres = 24
 
         # Forward pass
         with torch.no_grad():
@@ -178,16 +178,17 @@ class DEQBlock(nn.Module):
             # Jacobian-related computations, see additional step above. For instance:
             # jac_loss = jac_loss_estimate(new_z_star, z_star, vecs=1)
 
+            ggg = autograd.grad(new_z_star, z_star, z_star.new_ones(
+                *z_star.shape), retain_graph=True)[0]
+
             def backward_hook(grad):
-                if self.hook is not None:
-                    self.hook.remove()
-                    torch.cuda.synchronize()   # To avoid infinite recursion
+                # if self.hook is not None:
+                #     self.hook.remove()
+                #     torch.cuda.synchronize()   # To avoid infinite recursion
                 # Compute the fixed point of yJ + grad, where J=J_f is the Jacobian of f at z_star
 
                 def f(y):
-                    g = autograd.grad(new_z_star, z_star, y,
-                                      retain_graph=True)[0]
-                    return g + grad
+                    return ggg * y + grad
 
                 x0b = torch.zeros_like(grad)
                 new_grad = self.solver(f, x0b, b_thres)['result']
