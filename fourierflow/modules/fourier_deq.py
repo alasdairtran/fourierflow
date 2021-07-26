@@ -12,6 +12,30 @@ from fourierflow.modules.deq.jacobian import jac_loss_estimate
 from fourierflow.modules.deq.solvers import anderson, broyden
 
 
+class FeedForward(nn.Module):
+    def __init__(self, dim, weight_norm=False):
+        super().__init__()
+        self.linear_1 = nn.Linear(dim, dim * 2)
+        self.act = nn.ReLU()
+        self.linear_2 = nn.Linear(dim * 2, dim)
+        self.weight_norm = weight_norm
+        # self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.xavier_normal_(self.linear_1.weight)
+        nn.init.xavier_normal_(self.linear_2.weight)
+
+        # Weight normalization is a reparameterization that decouples the
+        # magnitude of a weight tensor from its direction. See Salimans and
+        # Kingma (2016): https://arxiv.org/abs/1602.07868.
+        if self.weight_norm:
+            nn.utils.weight_norm(self.linear_1)
+            nn.utils.weight_norm(self.linear_2)
+
+    def forward(self, x):
+        return self.linear_2(self.act(self.linear_1(x)))
+
+
 class SpectralConv2d(nn.Module):
     def __init__(self, in_dim, out_dim, n_modes, size, bilinear=False):
         super().__init__()
@@ -35,15 +59,8 @@ class SpectralConv2d(nn.Module):
             for param in self.fourier_weight:
                 nn.init.xavier_normal_(param, gain=1/(in_dim*out_dim))
 
-        self.forecast_ff = nn.Sequential(
-            nn.Linear(out_dim, out_dim * 2),
-            nn.ReLU(),
-            nn.Linear(out_dim * 2, out_dim))
-
-        self.backcast_ff = nn.Sequential(
-            nn.Linear(out_dim, out_dim * 2),
-            nn.ReLU(),
-            nn.Linear(out_dim * 2, out_dim))
+        self.forecast_ff = FeedForward(out_dim)
+        self.backcast_ff = FeedForward(out_dim)
 
     @staticmethod
     def complex_bilinear_matmul_2d(a, b0, b1):
