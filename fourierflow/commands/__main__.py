@@ -1,3 +1,6 @@
+from dotenv import load_dotenv  # isort:skip
+load_dotenv()  # noqa
+
 import os
 from copy import deepcopy
 from typing import IO, Callable, Dict, Optional, Union
@@ -14,13 +17,6 @@ from pytorch_lightning.plugins import DDPPlugin
 
 from fourierflow.common import Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
-
-# This is run in package root to provide defaults env vars for ${VAR} substitution
-# from dotenv import load_dotenv
-
-# # defaults for environment vars
-# load_dotenv()
-
 
 app = typer.Typer()
 
