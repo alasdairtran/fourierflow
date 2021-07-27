@@ -44,7 +44,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
 
     wandb_opts = params.pop('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=results_dir,
-                               mode='online',
+                               mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
                                **wandb_opts)
     # When uploading artifacts, we get a lot of random "Error while calling W&B
