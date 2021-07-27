@@ -46,6 +46,9 @@ fourierflow train configs/navier_stokes_trade_off/18_bilinear_24/config.yaml
 
 # Performance tradeoff evaluation. We use the Navier Stokes test set
 # as our benchmark dataset.
+
+# Train on gadi
+qsub -N 18_bilinear_24 -v CONFIG=configs/navier_stokes_trade_off/18_bilinear_24/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
 ```
 
 ## Meshgraphnet Experiments
