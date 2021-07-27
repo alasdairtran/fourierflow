@@ -1,6 +1,3 @@
-from dotenv import load_dotenv  # isort:skip
-load_dotenv()  # noqa
-
 import os
 from copy import deepcopy
 from typing import IO, Callable, Dict, Optional, Union
