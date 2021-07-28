@@ -3,6 +3,7 @@ from .decoders import MLPDecoder, ODEDecoder
 from .encoders import Encoder, MuSigmaEncoder
 from .fourier_2d import SimpleBlock2d
 from .fourier_2d_factorized import SimpleBlock2dFactorized
+from .fourier_2d_factorized_parallel import SimpleBlock2dFactorizedParallel
 from .fourier_2d_int import SimpleBlock2dIntegrate
 from .fourier_2d_shared import SimpleBlock2dShared
 from .fourier_2d_split import SimpleBlock2dSplit
