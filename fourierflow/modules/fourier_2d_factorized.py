@@ -6,6 +6,7 @@ to propagates in time.
 """
 
 
+import math
 from functools import partial
 
 import torch
@@ -30,7 +31,8 @@ class SpectralConv2d(nn.Module):
 
         self.fourier_weight = nn.ParameterList(fourier_weight)
         for param in self.fourier_weight:
-            nn.init.xavier_normal_(param)
+            std = math.sqrt(2 / (in_dim + out_dim))
+            nn.init._no_grad_normal_(param, 0, std)
 
         self.forecast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim * 2),
@@ -149,11 +151,8 @@ class SimpleBlock2dFactorized(nn.Module):
                                         out_dim=width,
                                         n_modes=modes)
 
-        # self.out = nn.Sequential(
-        #     nn.Linear(self.width, 128),
-        #     nn.Identity() if linear_out else nn.ReLU(),
-        #     nn.Linear(128, 1))
-        self.out = nn.Linear(self.width, 1)
+        self.out = nn.Sequential(nn.Linear(self.width, 128),
+                                 nn.Linear(128, 1))
 
     def forward(self, x):
         # x.shape == [n_batches, *dim_sizes, input_size]

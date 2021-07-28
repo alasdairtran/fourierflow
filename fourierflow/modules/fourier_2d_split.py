@@ -6,6 +6,7 @@ to propagates in time.
 """
 
 
+import math
 from functools import partial
 
 import torch
@@ -31,7 +32,8 @@ class SpectralConv2d(nn.Module):
 
         self.fourier_weight = nn.ParameterList(fourier_weight)
         for param in self.fourier_weight:
-            nn.init.xavier_normal_(param)
+            std = math.sqrt(2 / (in_dim + out_dim))
+            nn.init._no_grad_normal_(param, 0, std)
 
         self.forecast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim * 2),
@@ -97,7 +99,7 @@ class SpectralConv2d(nn.Module):
         return b, f, [x_ft, out_ft, self.fourier_weight]
 
 
-@Module.register('fourier_net_2d_split')
+@ Module.register('fourier_net_2d_split')
 class SimpleBlock2dSplit(nn.Module):
     def __init__(self, modes1, modes2, width, input_dim=12, dropout=0.1,
                  n_layers=4, weight_sharing: bool = False,
@@ -143,7 +145,8 @@ class SimpleBlock2dSplit(nn.Module):
                                         n_modes=modes1,
                                         dropout=dropout)
 
-        self.out = nn.Linear(self.width, 1)
+        self.out = nn.Sequential(nn.Linear(self.width, 128),
+                                 nn.Linear(128, 1))
 
     def forward(self, x):
         # x.shape == [n_batches, *dim_sizes, input_size]

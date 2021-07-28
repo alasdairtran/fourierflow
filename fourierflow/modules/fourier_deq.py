@@ -57,7 +57,8 @@ class SpectralConv2d(nn.Module):
 
         self.fourier_weight = nn.ParameterList(fourier_weight)
         for param in self.fourier_weight:
-            nn.init.xavier_normal_(param)
+            std = math.sqrt(2 / (in_dim + out_dim))
+            nn.init._no_grad_normal_(param, 0, std)
 
         self.forecast_ff = FeedForward(out_dim)
         self.backcast_ff = FeedForward(out_dim)
@@ -204,7 +205,8 @@ class SimpleBlock2dDEQ(nn.Module):
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
         self.deq_block = DEQBlock(modes, width, n_layers, size, pretraining)
-        self.out = nn.Linear(self.width, 1)
+        self.out = nn.Sequential(nn.Linear(self.width, 128),
+                                 nn.Linear(128, 1))
         self.solver = broyden
         self.gnorm = nn.GroupNorm(width // 16, width)
 
