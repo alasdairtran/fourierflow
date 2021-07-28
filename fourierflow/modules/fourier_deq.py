@@ -57,8 +57,7 @@ class SpectralConv2d(nn.Module):
 
         self.fourier_weight = nn.ParameterList(fourier_weight)
         for param in self.fourier_weight:
-            std = math.sqrt(2 / (in_dim + out_dim))
-            nn.init._no_grad_normal_(param, 0, std)
+            nn.init.xavier_normal_(param)
 
         self.forecast_ff = FeedForward(out_dim)
         self.backcast_ff = FeedForward(out_dim)
