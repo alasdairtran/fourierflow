@@ -21,7 +21,7 @@ class FeedForward(nn.Module):
         self.weight_norm = weight_norm
         self.dropout = dropout
         # self.reset_parameters()
-        self.gnorm = nn.GroupNorm(4, dim)
+        self.gnorm = nn.GroupNorm(dim // 16, dim)
 
     def reset_parameters(self):
         nn.init.xavier_normal_(self.linear_1.weight)
@@ -37,7 +37,9 @@ class FeedForward(nn.Module):
     def forward(self, x, res):
         x = self.linear_2(self.act(self.linear_1(x)))
         x = res + x
+        x = rearrange(x, 'b m n i -> b i m n')
         x = self.gnorm(x)
+        x = rearrange(x, 'b i m n -> b m n i')
         return x
 
 
@@ -204,17 +206,18 @@ class SimpleBlock2dDEQ(nn.Module):
         self.deq_block = DEQBlock(modes, width, n_layers, size, pretraining)
         self.out = nn.Linear(self.width, 1)
         self.solver = broyden
-        self.gnorm = nn.GroupNorm(4, width)
+        self.gnorm = nn.GroupNorm(width // 16, width)
 
     def forward(self, x):
         _, N, M, _ = x.shape
         # x.shape == [n_batches, *dim_sizes, input_size]
 
         x = self.in_proj(x)
+        x = rearrange(x, 'b m n w -> b w m n')
         x = self.gnorm(x)
         # x.shape == [n_batches, *dim_sizes, width]
 
-        x = rearrange(x, 'b n m w -> b (n m w) 1')
+        x = rearrange(x, 'b w m n -> b (m n w) 1')
         B, T, _ = x.shape
         # x.shape == [n_batches, flat_size, 1]
 
@@ -223,7 +226,7 @@ class SimpleBlock2dDEQ(nn.Module):
 
         new_z_star = self.deq_block(z0, x)
 
-        new_z_star = rearrange(new_z_star, 'b (k n m w) 1 -> b k n m w',
+        new_z_star = rearrange(new_z_star, 'b (k m n w) 1 -> b k m n w',
                                k=2, n=N, m=M, w=self.width)
 
         forecast = self.out(new_z_star[:, 1])
