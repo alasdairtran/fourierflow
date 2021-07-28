@@ -227,9 +227,12 @@ class SimpleBlock2dDEQ(nn.Module):
         self.deq_block = DEQBlock(
             modes, width, n_layers, size, bilinear, pretraining)
 
-        self.out = nn.Sequential(nn.Linear(self.width, 128),
-                                 nn.ReLU(),
-                                 nn.Linear(128, 1))
+        # self.out = nn.Sequential(
+        #     nn.LayerNorm(self.width) if norm else nn.Identity(),
+        #     nn.Linear(self.width, 128),
+        #     nn.Identity() if linear_out else nn.ReLU(),
+        #     nn.Linear(128, 1))
+        self.out = nn.Linear(self.width, 1)
 
         self.solver = broyden
 

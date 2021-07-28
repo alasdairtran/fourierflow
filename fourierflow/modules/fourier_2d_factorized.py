@@ -25,9 +25,12 @@ class SpectralConv2d(nn.Module):
         self.act = nn.ReLU()
         self.act2 = nn.ReLU()
 
-        self.fourier_weight = nn.Parameter(torch.FloatTensor(
-            2, in_dim, out_dim, n_modes, 2))
-        nn.init.xavier_normal_(self.fourier_weight, gain=1/(in_dim*out_dim))
+        fourier_weight = [nn.Parameter(torch.FloatTensor(
+            in_dim, out_dim, n_modes, 2)) for _ in range(2)]
+
+        self.fourier_weight = nn.ParameterList(fourier_weight)
+        for param in self.fourier_weight:
+            nn.init.xavier_normal_(param)
 
         self.forecast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim * 2),
@@ -146,10 +149,11 @@ class SimpleBlock2dFactorized(nn.Module):
                                         out_dim=width,
                                         n_modes=modes)
 
-        self.out = nn.Sequential(
-            nn.Linear(self.width, 128),
-            nn.Identity() if linear_out else nn.ReLU(),
-            nn.Linear(128, 1))
+        # self.out = nn.Sequential(
+        #     nn.Linear(self.width, 128),
+        #     nn.Identity() if linear_out else nn.ReLU(),
+        #     nn.Linear(128, 1))
+        self.out = nn.Linear(self.width, 1)
 
     def forward(self, x):
         # x.shape == [n_batches, *dim_sizes, input_size]
