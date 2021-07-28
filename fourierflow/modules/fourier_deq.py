@@ -21,7 +21,7 @@ class FeedForward(nn.Module):
         self.weight_norm = weight_norm
         self.dropout = dropout
         # self.reset_parameters()
-        self.gnrom = nn.GroupNorm(4, dim)
+        self.gnorm = nn.GroupNorm(4, dim)
 
     def reset_parameters(self):
         nn.init.xavier_normal_(self.linear_1.weight)
@@ -204,7 +204,7 @@ class SimpleBlock2dDEQ(nn.Module):
         self.deq_block = DEQBlock(modes, width, n_layers, size, pretraining)
         self.out = nn.Linear(self.width, 1)
         self.solver = broyden
-        self.gnrom = nn.GroupNorm(4, width)
+        self.gnorm = nn.GroupNorm(4, width)
 
     def forward(self, x):
         _, N, M, _ = x.shape
