@@ -27,6 +27,9 @@ poe install-torch-cuda11
 
 # set default paths
 cp example.env .env
+# The environmnet variables in .env will be loaded automatically when running
+# fourierflow train, but we can also load them manually in our terminal
+export $(cat .env | xargs)
 
 # Alternatively, you can pass the paths to the system using env vars, e.g.
 FNO_DATA_ROOT=/My/Data/Location fourierflow
