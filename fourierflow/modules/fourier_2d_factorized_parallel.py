@@ -18,7 +18,8 @@ from fourierflow.common import Module
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes):
+    def __init__(self, in_dim, out_dim, n_modes, forecast_ff, backcast_ff,
+                 fourier_weight):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -26,22 +27,27 @@ class SpectralConv2d(nn.Module):
         self.act = nn.ReLU()
         self.act2 = nn.ReLU()
 
-        fourier_weight = [nn.Parameter(torch.FloatTensor(
-            in_dim, out_dim, n_modes, 2)) for _ in range(2)]
+        self.fourier_weight = fourier_weight
+        if not self.fourier_weight:
+            w = [nn.Parameter(torch.FloatTensor(
+                in_dim, out_dim, n_modes, 2)) for _ in range(2)]
+            self.fourier_weight = nn.ParameterList(w)
+            for param in self.fourier_weight:
+                nn.init.xavier_normal_(param)
 
-        self.fourier_weight = nn.ParameterList(fourier_weight)
-        for param in self.fourier_weight:
-            nn.init.xavier_normal_(param)
+        self.forecast_ff = forecast_ff
+        if not self.forecast_ff:
+            self.forecast_ff = nn.Sequential(
+                nn.Linear(out_dim, out_dim * 2),
+                nn.ReLU(),
+                nn.Linear(out_dim * 2, out_dim))
 
-        self.forecast_ff = nn.Sequential(
-            nn.Linear(out_dim, out_dim * 2),
-            nn.ReLU(),
-            nn.Linear(out_dim * 2, out_dim))
-
-        self.backcast_ff = nn.Sequential(
-            nn.Linear(out_dim, out_dim * 2),
-            nn.ReLU(),
-            nn.Linear(out_dim * 2, out_dim))
+        self.backcast_ff = backcast_ff
+        if not self.backcast_ff:
+            self.backcast_ff = nn.Sequential(
+                nn.Linear(out_dim, out_dim * 2),
+                nn.ReLU(),
+                nn.Linear(out_dim * 2, out_dim))
 
     @staticmethod
     def complex_matmul_y_2d(a, b):
@@ -118,8 +124,8 @@ class SpectralConv2d(nn.Module):
 @Module.register('fourier_2d_factorized_parallel')
 class SimpleBlock2dFactorizedParallel(nn.Module):
     def __init__(self, modes, width, input_dim=12, dropout=0.1,
-                 n_layers=4, linear_out: bool = False, weight_sharing: bool = False,
-                 avg_outs=False, next_input='subtract'):
+                 n_layers=4, linear_out: bool = False, share_weight: bool = False,
+                 avg_outs=False, next_input='subtract', share_fork=False):
         super().__init__()
 
         """
@@ -140,20 +146,37 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         self.in_proj = nn.Linear(input_dim, self.width)
         self.next_input = next_input
         self.avg_outs = avg_outs
-        self.weight_sharing = weight_sharing
         self.n_layers = n_layers
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
-        if not weight_sharing:
-            self.spectral_layers = nn.ModuleList([])
-            for _ in range(n_layers):
-                self.spectral_layers.append(SpectralConv2d(in_dim=width,
-                                                           out_dim=width,
-                                                           n_modes=modes))
-        else:
-            self.layer = SpectralConv2d(in_dim=width,
-                                        out_dim=width,
-                                        n_modes=modes)
+        self.forecast_ff = self.backcast_ff = None
+        if share_fork:
+            self.forecast_ff = nn.Sequential(
+                nn.Linear(width, width * 2),
+                nn.ReLU(),
+                nn.Linear(width * 2, width))
+
+            self.backcast_ff = nn.Sequential(
+                nn.Linear(width, width * 2),
+                nn.ReLU(),
+                nn.Linear(width * 2, width))
+
+        self.fourier_weight = None
+        if share_weight:
+            fourier_weight = [nn.Parameter(torch.FloatTensor(
+                width, width, modes, 2)) for _ in range(2)]
+            self.fourier_weight = nn.ParameterList(fourier_weight)
+            for param in self.fourier_weight:
+                nn.init.xavier_normal_(param)
+
+        self.spectral_layers = nn.ModuleList([])
+        for _ in range(n_layers):
+            self.spectral_layers.append(SpectralConv2d(in_dim=width,
+                                                       out_dim=width,
+                                                       n_modes=modes,
+                                                       forecast_ff=self.forecast_ff,
+                                                       backcast_ff=self.backcast_ff,
+                                                       fourier_weight=self.fourier_weight))
 
         self.out = nn.Sequential(nn.Linear(self.width, 128),
                                  nn.Linear(128, 1))
@@ -165,7 +188,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         forecast_list = []
         out_fts = []
         for i in range(self.n_layers):
-            layer = self.layer if self.weight_sharing else self.spectral_layers[i]
+            layer = self.spectral_layers[i]
             b, f, out_ft = layer(x)
             out_fts.append(out_ft)
             f_out = self.out(f)
