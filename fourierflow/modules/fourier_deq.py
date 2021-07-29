@@ -85,7 +85,6 @@ class SpectralConv2d(nn.Module):
         self.backcast_ff = FeedForward(out_dim, norm_locs)
 
     def complex_matmul_y_2d(self, a, b):
-        b = b / torch.linalg.norm(b)
         op = partial(torch.einsum, "bixy,ioy->boxy")
         out = torch.stack([
             op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
@@ -98,7 +97,6 @@ class SpectralConv2d(nn.Module):
         return out
 
     def complex_matmul_x_2d(self, a, b):
-        b = b / torch.linalg.norm(b)
         op = partial(torch.einsum, "bixy,iox->boxy")
         out = torch.stack([
             op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
