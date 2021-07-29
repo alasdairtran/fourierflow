@@ -53,7 +53,7 @@ class SpectralConv2d(nn.Module):
         self.act2 = nn.ReLU()
 
         fourier_weight = [nn.Parameter(torch.FloatTensor(
-            in_dim, out_dim, n_modes, 2)) for _ in range(4)]
+            in_dim, out_dim, n_modes, 2)) for _ in range(2)]
 
         self.fourier_weight = nn.ParameterList(fourier_weight)
         for param in self.fourier_weight:
@@ -63,22 +63,21 @@ class SpectralConv2d(nn.Module):
         self.backcast_ff = FeedForward(out_dim)
 
     @staticmethod
-    def complex_matmul_2d(a, b0, b1):
-        # (batch, in_channel, x, y), (in_channel, out_channel, x, y) -> (batch, out_channel, x, y)
-
-        # (in_channel, out_channel, x), (batch, in_channel, x, y) -> (batch, out_channel, x, y)
-        op = partial(torch.einsum, "iox,bixy->boxy")
-        c = torch.stack([
-            op(b0[..., 0], a[..., 0]) - op(b0[..., 1], a[..., 1]),
-            op(b0[..., 1], a[..., 0]) + op(b0[..., 0], a[..., 1])
-        ], dim=-1)
-
+    def complex_matmul_y_2d(a, b):
         op = partial(torch.einsum, "bixy,ioy->boxy")
         out = torch.stack([
-            op(c[..., 0], b1[..., 0]) - op(c[..., 1], b1[..., 1]),
-            op(c[..., 1], b1[..., 0]) + op(c[..., 0], b1[..., 1])
+            op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+            op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
         ], dim=-1)
+        return out
 
+    @staticmethod
+    def complex_matmul_x_2d(a, b):
+        op = partial(torch.einsum, "bixy,iox->boxy")
+        out = torch.stack([
+            op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+            op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
+        ], dim=-1)
         return out
 
     def forward(self, z, x):
@@ -106,25 +105,44 @@ class SpectralConv2d(nn.Module):
         x = rearrange(x, 'b m n i -> b i m n')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
 
-        x_ft = torch.fft.rfft2(x, s=(M, N), norm='ortho')
-        # x_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size // 2 + 1]
+        # # # Dimesion Y # # #
+        x_fty = torch.fft.rfft(x, dim=-1, norm='ortho')
+        # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1]
 
-        x_ft = torch.stack([x_ft.real, x_ft.imag], dim=4)
+        x_fty = torch.stack([x_fty.real, x_fty.imag], dim=4)
         # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
         out_ft = torch.zeros(B, I, N, M // 2 + 1, 2, device=x.device)
         # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
-        out_ft[:, :, :self.n_modes, :self.n_modes] = self.complex_matmul_2d(
-            x_ft[:, :, :self.n_modes, :self.n_modes], self.fourier_weight[0], self.fourier_weight[1])
-
-        out_ft[:, :, -self.n_modes:, :self.n_modes] = self.complex_matmul_2d(
-            x_ft[:, :, -self.n_modes:, :self.n_modes], self.fourier_weight[2], self.fourier_weight[3])
+        out_ft[:, :, :, :self.n_modes] = self.complex_matmul_y_2d(
+            x_fty[:, :, :, :self.n_modes], self.fourier_weight[0])
 
         out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
 
-        x = torch.fft.irfft2(out_ft, s=(N, M), norm='ortho')
+        xy = torch.fft.irfft(out_ft, dim=-1, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
+
+        # # # Dimesion X # # #
+        x_ftx = torch.fft.rfft(x, dim=-2, norm='ortho')
+        # x_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size]
+
+        x_ftx = torch.stack([x_ftx.real, x_ftx.imag], dim=4)
+        # x_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size, 2]
+
+        out_ft = torch.zeros(B, I, N // 2 + 1, M, 2, device=x.device)
+        # out_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size, 2]
+
+        out_ft[:, :, :self.n_modes, :] = self.complex_matmul_x_2d(
+            x_ftx[:, :, :self.n_modes, :], self.fourier_weight[1])
+
+        out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
+
+        xx = torch.fft.irfft(out_ft, dim=-2, norm='ortho')
+        # x.shape == [batch_size, in_dim, grid_size, grid_size]
+
+        # # Combining Dimensions # #
+        x = xx + xy
 
         x = rearrange(x, 'b i m n -> b m n i')
         # x.shape == [batch_size, grid_size, grid_size, out_dim]
