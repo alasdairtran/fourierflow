@@ -21,7 +21,9 @@ class FeedForward(nn.Module):
         self.weight_norm = weight_norm
         self.dropout = dropout
         # self.reset_parameters()
-        self.gnorm = nn.GroupNorm(dim // 16, dim)
+        self.gnorm_1 = nn.GroupNorm(dim * 2 // 16, dim * 2)
+        self.gnorm_2 = nn.GroupNorm(dim // 16, dim)
+        self.gnorm_3 = nn.GroupNorm(dim // 16, dim)
         self.norm_locs = norm_locs
 
     def reset_parameters(self):
@@ -36,15 +38,23 @@ class FeedForward(nn.Module):
             nn.utils.weight_norm(self.linear_2)
 
     def forward(self, x, res):
-        x = self.linear_2(self.act(self.linear_1(x)))
-        if 'beforeres' in self.norm_locs:
+        x = self.linear_1(x)
+        if 'fork_1' in self.norm_locs:
             x = rearrange(x, 'b m n i -> b i m n')
-            x = self.gnorm(x)
+            x = self.gnorm_1(x)
             x = rearrange(x, 'b i m n -> b m n i')
-        x = res + x
-        if 'afterres' in self.norm_locs:
+
+        x = self.act(x)
+        x = self.linear_2(x)
+        if 'fork_2' in self.norm_locs:
             x = rearrange(x, 'b m n i -> b i m n')
-            x = self.gnorm(x)
+            x = self.gnorm_2(x)
+            x = rearrange(x, 'b i m n -> b m n i')
+
+        x = res + x
+        if 'fork_3' in self.norm_locs:
+            x = rearrange(x, 'b m n i -> b i m n')
+            x = self.gnorm_3(x)
             x = rearrange(x, 'b i m n -> b m n i')
         return x
 
@@ -57,6 +67,9 @@ class SpectralConv2d(nn.Module):
         self.n_modes = n_modes
         self.act = nn.ReLU()
         self.act2 = nn.ReLU()
+        self.norm_locs = norm_locs
+        self.gnorm_1 = nn.GroupNorm(out_dim // 16, out_dim)
+        self.gnorm_2 = nn.GroupNorm(out_dim // 16, out_dim)
 
         self.nonlinear = nonlinear
         n = 4 if nonlinear else 2
@@ -71,22 +84,30 @@ class SpectralConv2d(nn.Module):
         self.forecast_ff = FeedForward(out_dim, norm_locs)
         self.backcast_ff = FeedForward(out_dim, norm_locs)
 
-    @staticmethod
-    def complex_matmul_y_2d(a, b):
+    def complex_matmul_y_2d(self, a, b):
+        b = b / torch.linalg.norm(b)
         op = partial(torch.einsum, "bixy,ioy->boxy")
         out = torch.stack([
             op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
             op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
         ], dim=-1)
+
+        if 'fourier' in self.norm_locs:
+            out = self.gnorm_1(out)
+
         return out
 
-    @staticmethod
-    def complex_matmul_x_2d(a, b):
+    def complex_matmul_x_2d(self, a, b):
+        b = b / torch.linalg.norm(b)
         op = partial(torch.einsum, "bixy,iox->boxy")
         out = torch.stack([
             op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
             op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
         ], dim=-1)
+
+        if 'fourier' in self.norm_locs:
+            out = self.gnorm_2(out)
+
         return out
 
     def forward(self, z, x):
@@ -255,7 +276,7 @@ class SimpleBlock2dDEQ(nn.Module):
 
         x = self.in_proj(x)
         x = rearrange(x, 'b m n w -> b w m n')
-        if 'after_in' in self.norm_locs:
+        if 'in' in self.norm_locs:
             x = self.gnorm(x)
         # x.shape == [n_batches, *dim_sizes, width]
 
