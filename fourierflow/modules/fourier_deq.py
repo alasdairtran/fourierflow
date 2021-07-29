@@ -13,7 +13,7 @@ from fourierflow.modules.deq.solvers import anderson, broyden
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, dropout=0.0, weight_norm=False):
+    def __init__(self, dim, norm_locs, dropout=0.0, weight_norm=False):
         super().__init__()
         self.linear_1 = nn.Linear(dim, dim * 2)
         self.act = nn.ReLU()
@@ -22,6 +22,7 @@ class FeedForward(nn.Module):
         self.dropout = dropout
         # self.reset_parameters()
         self.gnorm = nn.GroupNorm(dim // 16, dim)
+        self.norm_locs = norm_locs
 
     def reset_parameters(self):
         nn.init.xavier_normal_(self.linear_1.weight)
@@ -36,15 +37,20 @@ class FeedForward(nn.Module):
 
     def forward(self, x, res):
         x = self.linear_2(self.act(self.linear_1(x)))
+        if 'beforeres' in self.norm_locs:
+            x = rearrange(x, 'b m n i -> b i m n')
+            x = self.gnorm(x)
+            x = rearrange(x, 'b i m n -> b m n i')
         x = res + x
-        x = rearrange(x, 'b m n i -> b i m n')
-        x = self.gnorm(x)
-        x = rearrange(x, 'b i m n -> b m n i')
+        if 'afterres' in self.norm_locs:
+            x = rearrange(x, 'b m n i -> b i m n')
+            x = self.gnorm(x)
+            x = rearrange(x, 'b i m n -> b m n i')
         return x
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes, size):
+    def __init__(self, in_dim, out_dim, n_modes, nonlinear, norm_locs):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -52,15 +58,18 @@ class SpectralConv2d(nn.Module):
         self.act = nn.ReLU()
         self.act2 = nn.ReLU()
 
+        self.nonlinear = nonlinear
+        n = 4 if nonlinear else 2
+
         fourier_weight = [nn.Parameter(torch.FloatTensor(
-            in_dim, out_dim, n_modes, 2)) for _ in range(2)]
+            in_dim, out_dim, n_modes, 2)) for _ in range(n)]
 
         self.fourier_weight = nn.ParameterList(fourier_weight)
         for param in self.fourier_weight:
             nn.init.xavier_normal_(param)
 
-        self.forecast_ff = FeedForward(out_dim)
-        self.backcast_ff = FeedForward(out_dim)
+        self.forecast_ff = FeedForward(out_dim, norm_locs)
+        self.backcast_ff = FeedForward(out_dim, norm_locs)
 
     @staticmethod
     def complex_matmul_y_2d(a, b):
@@ -118,6 +127,11 @@ class SpectralConv2d(nn.Module):
         out_ft[:, :, :, :self.n_modes] = self.complex_matmul_y_2d(
             x_fty[:, :, :, :self.n_modes], self.fourier_weight[0])
 
+        if self.nonlinear:
+            out_ft = F.relu(out_ft)
+            out_ft[:, :, :, :self.n_modes] = self.complex_matmul_y_2d(
+                out_ft[:, :, :, :self.n_modes], self.fourier_weight[2])
+
         out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
 
         xy = torch.fft.irfft(out_ft, dim=-1, norm='ortho')
@@ -135,6 +149,11 @@ class SpectralConv2d(nn.Module):
 
         out_ft[:, :, :self.n_modes, :] = self.complex_matmul_x_2d(
             x_ftx[:, :, :self.n_modes, :], self.fourier_weight[1])
+
+        if self.nonlinear:
+            out_ft = F.relu(out_ft)
+            out_ft[:, :, :self.n_modes, :] = self.complex_matmul_x_2d(
+                out_ft[:, :, :self.n_modes, :], self.fourier_weight[3])
 
         out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
 
@@ -159,7 +178,7 @@ class SpectralConv2d(nn.Module):
 
 
 class DEQBlock(nn.Module):
-    def __init__(self, modes, width, n_layers, size, pretraining):
+    def __init__(self, modes, width, n_layers, nonlinear, pretraining, norm_locs):
         super().__init__()
         self.n_layers = n_layers
         self.pretraining = pretraining
@@ -167,7 +186,8 @@ class DEQBlock(nn.Module):
         self.f = SpectralConv2d(in_dim=width,
                                 out_dim=width,
                                 n_modes=modes,
-                                size=size)
+                                nonlinear=nonlinear,
+                                norm_locs=norm_locs)
         self.solver = broyden
 
     def forward(self, z0, x):
@@ -217,15 +237,17 @@ class DEQBlock(nn.Module):
 
 @Module.register('fourier_net_2d_deq')
 class SimpleBlock2dDEQ(nn.Module):
-    def __init__(self, modes, width, input_dim, n_layers, size, pretraining=True):
+    def __init__(self, modes, width, input_dim, n_layers, nonlinear, pretraining, norm_locs):
         super().__init__()
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
-        self.deq_block = DEQBlock(modes, width, n_layers, size, pretraining)
+        self.deq_block = DEQBlock(
+            modes, width, n_layers, nonlinear, pretraining, norm_locs)
         self.out = nn.Sequential(nn.Linear(self.width, 128),
                                  nn.Linear(128, 1))
         self.solver = broyden
         self.gnorm = nn.GroupNorm(width // 16, width)
+        self.norm_locs = norm_locs
 
     def forward(self, x):
         _, N, M, _ = x.shape
@@ -233,7 +255,8 @@ class SimpleBlock2dDEQ(nn.Module):
 
         x = self.in_proj(x)
         x = rearrange(x, 'b m n w -> b w m n')
-        x = self.gnorm(x)
+        if 'after_in' in self.norm_locs:
+            x = self.gnorm(x)
         # x.shape == [n_batches, *dim_sizes, width]
 
         x = rearrange(x, 'b w m n -> b (m n w) 1')
