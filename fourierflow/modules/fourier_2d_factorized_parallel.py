@@ -19,7 +19,7 @@ from fourierflow.common import Module
 
 class SpectralConv2d(nn.Module):
     def __init__(self, in_dim, out_dim, n_modes, forecast_ff, backcast_ff,
-                 fourier_weight):
+                 fourier_weight, factor):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -38,16 +38,16 @@ class SpectralConv2d(nn.Module):
         self.forecast_ff = forecast_ff
         if not self.forecast_ff:
             self.forecast_ff = nn.Sequential(
-                nn.Linear(out_dim, out_dim * 2),
+                nn.Linear(out_dim, out_dim * factor),
                 nn.ReLU(),
-                nn.Linear(out_dim * 2, out_dim))
+                nn.Linear(out_dim * factor, out_dim))
 
         self.backcast_ff = backcast_ff
         if not self.backcast_ff:
             self.backcast_ff = nn.Sequential(
-                nn.Linear(out_dim, out_dim * 2),
+                nn.Linear(out_dim, out_dim * factor),
                 nn.ReLU(),
-                nn.Linear(out_dim * 2, out_dim))
+                nn.Linear(out_dim * factor, out_dim))
 
     @staticmethod
     def complex_matmul_y_2d(a, b):
@@ -125,7 +125,7 @@ class SpectralConv2d(nn.Module):
 class SimpleBlock2dFactorizedParallel(nn.Module):
     def __init__(self, modes, width, input_dim=12, dropout=0.1,
                  n_layers=4, linear_out: bool = False, share_weight: bool = False,
-                 avg_outs=False, next_input='subtract', share_fork=False):
+                 avg_outs=False, next_input='subtract', share_fork=False, factor=2):
         super().__init__()
 
         """
@@ -176,7 +176,8 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                                                        n_modes=modes,
                                                        forecast_ff=self.forecast_ff,
                                                        backcast_ff=self.backcast_ff,
-                                                       fourier_weight=self.fourier_weight))
+                                                       fourier_weight=self.fourier_weight,
+                                                       factor=factor))
 
         self.out = nn.Sequential(nn.Linear(self.width, 128),
                                  nn.Linear(128, 1))
