@@ -209,7 +209,7 @@ class DEQBlock(nn.Module):
                                 n_modes=modes,
                                 nonlinear=nonlinear,
                                 norm_locs=norm_locs)
-        self.solver = broyden
+        self.solver = anderson
 
     def forward(self, z0, x, global_step):
         # z0.shape == [n_batches, width, flat_size]
