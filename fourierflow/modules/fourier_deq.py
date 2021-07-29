@@ -213,7 +213,7 @@ class DEQBlock(nn.Module):
 
     def forward(self, z0, x, global_step):
         # z0.shape == [n_batches, width, flat_size]
-        if global_step <= self.pretraining_steps:
+        if global_step < self.pretraining_steps:
             z = z0
             for _ in range(self.n_layers):
                 z = self.f(z, x)
