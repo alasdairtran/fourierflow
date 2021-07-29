@@ -114,7 +114,7 @@ class Fourier2DDEQExperiment(Experiment):
         xx = rearrange(xx, 'b ... t e -> (b t) ... e')
         # xx.shape == [batch_size * time, *dim_sizes, 3]
 
-        im = self.conv(xx)
+        im = self.conv(xx, self.global_step)
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
         BN = im.shape[0]
@@ -160,7 +160,7 @@ class Fourier2DDEQExperiment(Experiment):
                 x = im
             # x.shape == [batch_size, *dim_sizes, 3]
 
-            im = self.conv(x)
+            im = self.conv(x, self.global_step)
             # im.shape == [batch_size, *dim_sizes, 1]
 
             y = yy[..., t]
@@ -210,7 +210,7 @@ class Fourier2DDEQExperiment(Experiment):
                 x = im
             # x.shape == [batch_size, *dim_sizes, 3]
 
-            im = self.conv(x)
+            im = self.conv(x, self.global_step)
             # im.shape == [batch_size, *dim_sizes, 1]
 
             y = yy[..., t]

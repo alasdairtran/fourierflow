@@ -178,10 +178,10 @@ class SpectralConv2d(nn.Module):
 
 
 class DEQBlock(nn.Module):
-    def __init__(self, modes, width, n_layers, nonlinear, pretraining, norm_locs):
+    def __init__(self, modes, width, n_layers, nonlinear, pretraining_steps, norm_locs):
         super().__init__()
         self.n_layers = n_layers
-        self.pretraining = pretraining
+        self.pretraining_steps = pretraining_steps
         self.width = width
         self.f = SpectralConv2d(in_dim=width,
                                 out_dim=width,
@@ -190,16 +190,16 @@ class DEQBlock(nn.Module):
                                 norm_locs=norm_locs)
         self.solver = broyden
 
-    def forward(self, z0, x):
+    def forward(self, z0, x, global_step):
         # z0.shape == [n_batches, width, flat_size]
-        if self.pretraining:
+        if global_step <= self.pretraining_steps:
             z = z0
             for _ in range(self.n_layers):
                 z = self.f(z, x)
             return z
 
-        f_thres = 24
-        b_thres = 24
+        f_thres = 30
+        b_thres = 40
 
         # Forward pass
         with torch.no_grad():
@@ -237,19 +237,19 @@ class DEQBlock(nn.Module):
 
 @Module.register('fourier_net_2d_deq')
 class SimpleBlock2dDEQ(nn.Module):
-    def __init__(self, modes, width, input_dim, n_layers, nonlinear, pretraining, norm_locs):
+    def __init__(self, modes, width, input_dim, n_layers, nonlinear, pretraining_steps, norm_locs):
         super().__init__()
         self.width = width
         self.in_proj = nn.Linear(input_dim, self.width)
         self.deq_block = DEQBlock(
-            modes, width, n_layers, nonlinear, pretraining, norm_locs)
+            modes, width, n_layers, nonlinear, pretraining_steps, norm_locs)
         self.out = nn.Sequential(nn.Linear(self.width, 128),
                                  nn.Linear(128, 1))
         self.solver = broyden
         self.gnorm = nn.GroupNorm(width // 16, width)
         self.norm_locs = norm_locs
 
-    def forward(self, x):
+    def forward(self, x, global_step=None):
         _, N, M, _ = x.shape
         # x.shape == [n_batches, *dim_sizes, input_size]
 
@@ -266,7 +266,7 @@ class SimpleBlock2dDEQ(nn.Module):
         z0 = x.new_zeros([B, 2 * T, 1])
         # z0.shape == [n_batches, 2 * flat_size, 1]
 
-        new_z_star = self.deq_block(z0, x)
+        new_z_star = self.deq_block(z0, x, global_step)
 
         new_z_star = rearrange(new_z_star, 'b (k m n w) 1 -> b k m n w',
                                k=2, n=N, m=M, w=self.width)
