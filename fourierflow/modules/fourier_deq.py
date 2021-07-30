@@ -219,7 +219,7 @@ class DEQBlock(nn.Module):
             return z
 
         f_thres = 30
-        b_thres = 40
+        b_thres = 30
 
         # Forward pass
         with torch.no_grad():
