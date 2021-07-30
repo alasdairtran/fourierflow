@@ -16,7 +16,7 @@ class FeedForward(nn.Module):
     def __init__(self, dim, norm_locs, factor, dropout=0.0, weight_norm=False):
         super().__init__()
         self.linear_1 = nn.Linear(dim, dim * factor)
-        self.act = nn.ReLU()
+        self.act = nn.ReLU(inplace=True)
         self.linear_2 = nn.Linear(dim * factor, dim)
         self.weight_norm = weight_norm
         self.dropout = dropout
@@ -65,8 +65,6 @@ class SpectralConv2d(nn.Module):
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
-        self.act = nn.ReLU()
-        self.act2 = nn.ReLU()
         self.norm_locs = norm_locs
         self.gnorm_1 = nn.GroupNorm(out_dim // 16, out_dim)
         self.gnorm_2 = nn.GroupNorm(out_dim // 16, out_dim)

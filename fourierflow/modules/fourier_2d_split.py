@@ -23,8 +23,6 @@ class SpectralConv2d(nn.Module):
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
-        self.act = nn.ReLU()
-        self.act2 = nn.ReLU()
         self.dropout = dropout
 
         fourier_weight = [nn.Parameter(torch.FloatTensor(
@@ -36,12 +34,12 @@ class SpectralConv2d(nn.Module):
 
         self.forecast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim * 2),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(out_dim * 2, out_dim))
 
         self.backcast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim * 2),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(out_dim * 2, out_dim))
 
     @staticmethod

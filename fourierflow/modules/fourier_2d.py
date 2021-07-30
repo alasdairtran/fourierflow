@@ -23,7 +23,7 @@ class SpectralConv2d(nn.Module):
         self.n_modes = n_modes
         self.linear = nn.Linear(in_dim, out_dim)
         self.residual = resdiual
-        self.act = nn.ReLU()
+        self.act = nn.ReLU(inplace=True)
 
         fourier_weight = [nn.Parameter(torch.FloatTensor(
             in_dim, out_dim, n_modes, n_modes, 2)) for _ in range(2)]
@@ -112,7 +112,7 @@ class SimpleBlock2d(nn.Module):
 
         self.feedforward = nn.Sequential(
             nn.Linear(self.width, 128),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(128, 1))
 
     def forward(self, x):

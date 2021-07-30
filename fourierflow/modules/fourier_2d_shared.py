@@ -23,17 +23,15 @@ class SpectralConv2d(nn.Module):
         self.out_dim = out_dim
         self.n_modes = n_modes
         self.fourier_weight = w
-        self.act = nn.ReLU()
-        self.act2 = nn.ReLU()
 
         self.forecast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(out_dim, out_dim))
 
         self.backcast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(out_dim, out_dim))
 
     @staticmethod
@@ -126,7 +124,7 @@ class SimpleBlock2dShared(nn.Module):
 
         self.out = nn.Sequential(
             nn.Linear(self.width, 128),
-            nn.Identity() if linear_out else nn.ReLU(),
+            nn.Identity() if linear_out else nn.ReLU(inplace=True),
             nn.Linear(128, 1))
 
     def forward(self, x):

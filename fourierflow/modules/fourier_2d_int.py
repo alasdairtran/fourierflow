@@ -26,8 +26,7 @@ class SpectralConv2d(nn.Module):
         self.n_modes = n_modes
         self.linear = nn.Linear(in_dim, out_dim)
         self.residual = resdiual
-        self.act = nn.ReLU()
-        self.act2 = nn.ReLU()
+        self.act = nn.ReLU(inplace=True)
         n = 2
 
         fourier_weight = [nn.Parameter(torch.FloatTensor(
@@ -38,12 +37,12 @@ class SpectralConv2d(nn.Module):
 
         self.forecast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(out_dim, out_dim))
 
         self.backcast_ff = nn.Sequential(
             nn.Linear(out_dim, out_dim),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(out_dim, out_dim))
 
     @staticmethod
@@ -133,7 +132,7 @@ class SimpleBlock2dIntegrate(nn.Module):
         self.out = nn.Sequential(
             nn.LayerNorm(self.width) if norm else nn.Identity(),
             nn.Linear(self.width, 128),
-            nn.Identity() if linear_out else nn.ReLU(),
+            nn.Identity() if linear_out else nn.ReLU(inplace=True),
             nn.Linear(128, 1))
 
     def forward(self, x):

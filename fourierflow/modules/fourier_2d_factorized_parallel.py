@@ -24,8 +24,6 @@ class SpectralConv2d(nn.Module):
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
-        self.act = nn.ReLU()
-        self.act2 = nn.ReLU()
 
         self.fourier_weight = fourier_weight
         if not self.fourier_weight:
@@ -39,14 +37,14 @@ class SpectralConv2d(nn.Module):
         if not self.forecast_ff:
             self.forecast_ff = nn.Sequential(
                 nn.Linear(out_dim, out_dim * factor),
-                nn.ReLU(),
+                nn.ReLU(inplace=True),
                 nn.Linear(out_dim * factor, out_dim))
 
         self.backcast_ff = backcast_ff
         if not self.backcast_ff:
             self.backcast_ff = nn.Sequential(
                 nn.Linear(out_dim, out_dim * factor),
-                nn.ReLU(),
+                nn.ReLU(inplace=True),
                 nn.Linear(out_dim * factor, out_dim))
 
     @staticmethod
@@ -153,12 +151,12 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         if share_fork:
             self.forecast_ff = nn.Sequential(
                 nn.Linear(width, width * 2),
-                nn.ReLU(),
+                nn.ReLU(inplace=True),
                 nn.Linear(width * 2, width))
 
             self.backcast_ff = nn.Sequential(
                 nn.Linear(width, width * 2),
-                nn.ReLU(),
+                nn.ReLU(inplace=True),
                 nn.Linear(width * 2, width))
 
         self.fourier_weight = None
