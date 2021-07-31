@@ -48,11 +48,14 @@ class SpectralConv2d(nn.Module):
 
         self.fourier_weight = fourier_weight
         if not self.fourier_weight:
-            w = [nn.Parameter(torch.FloatTensor(
-                in_dim, out_dim, n_modes, 2)) for _ in range(2)]
-            self.fourier_weight = nn.ParameterList(w)
-            for param in self.fourier_weight:
+            self.fourier_weight = nn.ParameterList([])
+            for _ in range(2):
+                weight = torch.complex(
+                    torch.FloatTensor(in_dim, out_dim, n_modes),
+                    torch.FloatTensor(in_dim, out_dim, n_modes))
+                param = nn.Parameter(weight)
                 nn.init.xavier_normal_(param)
+                self.fourier_weight.append(param)
 
         self.forecast_ff = forecast_ff
         if not self.forecast_ff:
@@ -79,7 +82,7 @@ class SpectralConv2d(nn.Module):
         out_ft[:, :, :, :self.n_modes] = torch.einsum(
             "bixy,ioy->boxy",
             x_fty[:, :, :, :self.n_modes],
-            torch.complex(self.fourier_weight[0][..., 0], self.fourier_weight[0][..., 1]))
+            self.fourier_weight[0])
 
         xy = torch.fft.irfft(out_ft, dim=-1, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -94,7 +97,7 @@ class SpectralConv2d(nn.Module):
         out_ft[:, :, :self.n_modes, :] = torch.einsum(
             "bixy,iox->boxy",
             x_ftx[:, :, :self.n_modes, :],
-            torch.complex(self.fourier_weight[1][..., 0], self.fourier_weight[1][..., 1]))
+            self.fourier_weight[1])
 
         xx = torch.fft.irfft(out_ft, dim=-2, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -147,11 +150,13 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
 
         self.fourier_weight = None
         if share_weight:
-            fourier_weight = [nn.Parameter(torch.FloatTensor(
-                width, width, modes, 2)) for _ in range(2)]
-            self.fourier_weight = nn.ParameterList(fourier_weight)
-            for param in self.fourier_weight:
+            self.fourier_weight = nn.ParameterList([])
+            for _ in range(2):
+                weight = torch.complex(torch.FloatTensor(width, width, modes),
+                                       torch.FloatTensor(width, width, modes))
+                param = nn.Parameter(weight)
                 nn.init.xavier_normal_(param)
+                self.fourier_weight.append(param)
 
         self.spectral_layers = nn.ModuleList([])
         for _ in range(n_layers):
