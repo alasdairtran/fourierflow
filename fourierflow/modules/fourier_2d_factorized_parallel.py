@@ -13,17 +13,38 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
+from torch.nn.utils import weight_norm
 
 from fourierflow.common import Module
 
 
+def wnorm(module, active):
+    return weight_norm(module) if active else module
+
+
+class FeedForward(nn.Module):
+    def __init__(self, dim, factor, ff_weight_norm):
+        super().__init__()
+        self.linear_1 = wnorm(nn.Linear(dim, dim * factor), ff_weight_norm)
+        self.act = nn.ReLU(inplace=True)
+        self.linear_2 = wnorm(nn.Linear(dim * factor, dim), ff_weight_norm)
+
+    def forward(self, x):
+        x = self.linear_1(x)
+        x = self.act(x)
+        x = self.linear_2(x)
+        return x
+
+
 class SpectralConv2d(nn.Module):
     def __init__(self, in_dim, out_dim, n_modes, forecast_ff, backcast_ff,
-                 fourier_weight, factor):
+                 fourier_weight, factor, norm_locs, group_width, ff_weight_norm):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
+        self.norm_locs = norm_locs
+        self.group_width = group_width
 
         self.fourier_weight = fourier_weight
         if not self.fourier_weight:
@@ -35,17 +56,11 @@ class SpectralConv2d(nn.Module):
 
         self.forecast_ff = forecast_ff
         if not self.forecast_ff:
-            self.forecast_ff = nn.Sequential(
-                nn.Linear(out_dim, out_dim * factor),
-                nn.ReLU(inplace=True),
-                nn.Linear(out_dim * factor, out_dim))
+            self.forecast_ff = FeedForward(out_dim, factor, ff_weight_norm)
 
         self.backcast_ff = backcast_ff
         if not self.backcast_ff:
-            self.backcast_ff = nn.Sequential(
-                nn.Linear(out_dim, out_dim * factor),
-                nn.ReLU(inplace=True),
-                nn.Linear(out_dim * factor, out_dim))
+            self.backcast_ff = FeedForward(out_dim, factor, ff_weight_norm)
 
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
@@ -99,7 +114,8 @@ class SpectralConv2d(nn.Module):
 class SimpleBlock2dFactorizedParallel(nn.Module):
     def __init__(self, modes, width, input_dim=12, dropout=0.1,
                  n_layers=4, linear_out: bool = False, share_weight: bool = False,
-                 avg_outs=False, next_input='subtract', share_fork=False, factor=2):
+                 avg_outs=False, next_input='subtract', share_fork=False, factor=2,
+                 norm_locs=[], group_width=16, ff_weight_norm=False):
         super().__init__()
 
         """
@@ -117,23 +133,17 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
 
         self.modes = modes
         self.width = width
-        self.in_proj = nn.Linear(input_dim, self.width)
+        self.in_proj = wnorm(nn.Linear(input_dim, self.width), ff_weight_norm)
         self.next_input = next_input
         self.avg_outs = avg_outs
         self.n_layers = n_layers
+        self.norm_locs = norm_locs
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
         self.forecast_ff = self.backcast_ff = None
         if share_fork:
-            self.forecast_ff = nn.Sequential(
-                nn.Linear(width, width * 2),
-                nn.ReLU(inplace=True),
-                nn.Linear(width * 2, width))
-
-            self.backcast_ff = nn.Sequential(
-                nn.Linear(width, width * 2),
-                nn.ReLU(inplace=True),
-                nn.Linear(width * 2, width))
+            self.forecast_ff = FeedForward(width, factor, ff_weight_norm)
+            self.backcast_ff = FeedForward(width, factor, ff_weight_norm)
 
         self.fourier_weight = None
         if share_weight:
@@ -151,10 +161,14 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                                                        forecast_ff=self.forecast_ff,
                                                        backcast_ff=self.backcast_ff,
                                                        fourier_weight=self.fourier_weight,
-                                                       factor=factor))
+                                                       factor=factor,
+                                                       norm_locs=norm_locs,
+                                                       group_width=group_width,
+                                                       ff_weight_norm=ff_weight_norm))
 
-        self.out = nn.Sequential(nn.Linear(self.width, 128),
-                                 nn.Linear(128, 1))
+        self.out = nn.Sequential(
+            wnorm(nn.Linear(self.width, 128), ff_weight_norm),
+            wnorm(nn.Linear(128, 1), ff_weight_norm))
 
     def forward(self, x):
         # x.shape == [n_batches, *dim_sizes, input_size]
