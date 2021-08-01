@@ -23,7 +23,7 @@ def wnorm(module, active):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, factor, ff_weight_norm, n_layers, layer_norm):
+    def __init__(self, dim, factor, ff_weight_norm, n_layers, layer_norm, dropout):
         super().__init__()
         self.layers = nn.ModuleList([])
         for i in range(n_layers):
@@ -31,6 +31,7 @@ class FeedForward(nn.Module):
             out_dim = dim if i == n_layers - 1 else dim * factor
             self.layers.append(nn.Sequential(
                 wnorm(nn.Linear(in_dim, out_dim), ff_weight_norm),
+                nn.Dropout(dropout),
                 nn.ReLU(inplace=True) if i < n_layers - 1 else nn.Identity(),
                 nn.LayerNorm(out_dim) if layer_norm and i == n_layers -
                 1 else nn.Identity(),
@@ -44,7 +45,8 @@ class FeedForward(nn.Module):
 
 class SpectralConv2d(nn.Module):
     def __init__(self, in_dim, out_dim, n_modes, forecast_ff, backcast_ff,
-                 fourier_weight, factor, norm_locs, group_width, ff_weight_norm, n_ff_layers, layer_norm):
+                 fourier_weight, factor, norm_locs, group_width, ff_weight_norm,
+                 n_ff_layers, layer_norm, dropout):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -66,12 +68,12 @@ class SpectralConv2d(nn.Module):
         self.forecast_ff = forecast_ff
         if not self.forecast_ff:
             self.forecast_ff = FeedForward(
-                out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm)
+                out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
         self.backcast_ff = backcast_ff
         if not self.backcast_ff:
             self.backcast_ff = FeedForward(
-                out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm)
+                out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
@@ -123,7 +125,7 @@ class SpectralConv2d(nn.Module):
 
 @Module.register('fourier_2d_factorized_parallel')
 class SimpleBlock2dFactorizedParallel(nn.Module):
-    def __init__(self, modes, width, input_dim=12, dropout=0.1,
+    def __init__(self, modes, width, input_dim=12, dropout=0.0, in_dropout=0.0,
                  n_layers=4, linear_out: bool = False, share_weight: bool = False,
                  avg_outs=False, next_input='subtract', share_fork=False, factor=2,
                  norm_locs=[], group_width=16, ff_weight_norm=False, n_ff_layers=2,
@@ -146,6 +148,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         self.modes = modes
         self.width = width
         self.in_proj = wnorm(nn.Linear(input_dim, self.width), ff_weight_norm)
+        self.drop = nn.Dropout(in_dropout)
         self.next_input = next_input
         self.avg_outs = avg_outs
         self.n_layers = n_layers
@@ -155,9 +158,9 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         self.forecast_ff = self.backcast_ff = None
         if share_fork:
             self.forecast_ff = FeedForward(
-                width, factor, ff_weight_norm, n_ff_layers, layer_norm)
+                width, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
             self.backcast_ff = FeedForward(
-                width, factor, ff_weight_norm, n_ff_layers, layer_norm)
+                width, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
         self.fourier_weight = None
         if share_weight:
@@ -182,7 +185,8 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                                                        group_width=group_width,
                                                        ff_weight_norm=ff_weight_norm,
                                                        n_ff_layers=n_ff_layers,
-                                                       layer_norm=layer_norm))
+                                                       layer_norm=layer_norm,
+                                                       dropout=dropout))
 
         self.out = nn.Sequential(
             wnorm(nn.Linear(self.width, 128), ff_weight_norm),
@@ -192,6 +196,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         # x.shape == [n_batches, *dim_sizes, input_size]
         forecast = 0
         x = self.in_proj(x)
+        x = self.drop(x)
         forecast_list = []
         out_fts = []
         for i in range(self.n_layers):
