@@ -46,13 +46,14 @@ class FeedForward(nn.Module):
 class SpectralConv2d(nn.Module):
     def __init__(self, in_dim, out_dim, n_modes, forecast_ff, backcast_ff,
                  fourier_weight, factor, norm_locs, group_width, ff_weight_norm,
-                 n_ff_layers, layer_norm, dropout):
+                 n_ff_layers, layer_norm, dropout, mode):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
         self.norm_locs = norm_locs
         self.group_width = group_width
+        self.mode = mode
 
         self.fourier_weight = fourier_weight
         if not self.fourier_weight:
@@ -89,10 +90,13 @@ class SpectralConv2d(nn.Module):
         out_ft = x_fty.new_zeros(B, I, N, M // 2 + 1)
         # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
-        out_ft[:, :, :, :self.n_modes] = torch.einsum(
-            "bixy,ioy->boxy",
-            x_fty[:, :, :, :self.n_modes],
-            self.fourier_weight[0])
+        if self.mode == 'full':
+            out_ft[:, :, :, :self.n_modes] = torch.einsum(
+                "bixy,ioy->boxy",
+                x_fty[:, :, :, :self.n_modes],
+                self.fourier_weight[0])
+        elif self.mode == 'low-pass':
+            out_ft[:, :, :, :self.n_modes] = x_fty[:, :, :, :self.n_modes]
 
         xy = torch.fft.irfft(out_ft, dim=-1, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -104,10 +108,13 @@ class SpectralConv2d(nn.Module):
         out_ft = x_ftx.new_zeros(B, I, N // 2 + 1, M)
         # out_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size, 2]
 
-        out_ft[:, :, :self.n_modes, :] = torch.einsum(
-            "bixy,iox->boxy",
-            x_ftx[:, :, :self.n_modes, :],
-            self.fourier_weight[1])
+        if self.mode == 'full':
+            out_ft[:, :, :self.n_modes, :] = torch.einsum(
+                "bixy,iox->boxy",
+                x_ftx[:, :, :self.n_modes, :],
+                self.fourier_weight[1])
+        elif self.mode == 'low-pass':
+            out_ft[:, :, :self.n_modes, :] = x_ftx[:, :, :self.n_modes, :]
 
         xx = torch.fft.irfft(out_ft, dim=-2, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -129,7 +136,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                  n_layers=4, linear_out: bool = False, share_weight: bool = False,
                  avg_outs=False, next_input='subtract', share_fork=False, factor=2,
                  norm_locs=[], group_width=16, ff_weight_norm=False, n_ff_layers=2,
-                 gain=1, layer_norm=False):
+                 gain=1, layer_norm=False, mode='full'):
         super().__init__()
 
         """
@@ -186,7 +193,8 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                                                        ff_weight_norm=ff_weight_norm,
                                                        n_ff_layers=n_ff_layers,
                                                        layer_norm=layer_norm,
-                                                       dropout=dropout))
+                                                       dropout=dropout,
+                                                       mode=mode))
 
         self.out = nn.Sequential(
             wnorm(nn.Linear(self.width, 128), ff_weight_norm),
