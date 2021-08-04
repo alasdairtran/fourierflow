@@ -6,18 +6,23 @@ import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
+from torch.nn.utils import weight_norm
 
 from fourierflow.common import Module
 from fourierflow.modules.deq.jacobian import jac_loss_estimate
 from fourierflow.modules.deq.solvers import anderson, broyden
 
 
+def wnorm(module, active):
+    return weight_norm(module) if active else module
+
+
 class FeedForward(nn.Module):
-    def __init__(self, dim, norm_locs, factor, dropout=0.0, weight_norm=False):
+    def __init__(self, dim, norm_locs, factor, dropout=0.0, weight_norm=False, ff_weight_norm=True):
         super().__init__()
-        self.linear_1 = nn.Linear(dim, dim * factor)
+        self.linear_1 = wnorm(nn.Linear(dim, dim * factor), ff_weight_norm)
         self.act = nn.ReLU(inplace=True)
-        self.linear_2 = nn.Linear(dim * factor, dim)
+        self.linear_2 = wnorm(nn.Linear(dim * factor, dim), ff_weight_norm)
         self.weight_norm = weight_norm
         self.dropout = dropout
         # self.reset_parameters()
@@ -60,7 +65,7 @@ class FeedForward(nn.Module):
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes, nonlinear, norm_locs, factor):
+    def __init__(self, in_dim, out_dim, n_modes, norm_locs, factor):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -69,42 +74,16 @@ class SpectralConv2d(nn.Module):
         self.gnorm_1 = nn.GroupNorm(out_dim // 16, out_dim)
         self.gnorm_2 = nn.GroupNorm(out_dim // 16, out_dim)
 
-        self.nonlinear = nonlinear
-        n = 4 if nonlinear else 2
-
-        fourier_weight = [nn.Parameter(torch.FloatTensor(
-            in_dim, out_dim, n_modes, 2)) for _ in range(n)]
-
-        self.fourier_weight = nn.ParameterList(fourier_weight)
-        for param in self.fourier_weight:
-            nn.init.xavier_normal_(param)
+        self.fourier_weight = nn.ParameterList([])
+        for _ in range(2):
+            weight = torch.complex(torch.FloatTensor(in_dim, out_dim, n_modes),
+                                   torch.FloatTensor(in_dim, out_dim, n_modes))
+            param = nn.Parameter(weight)
+            nn.init.xavier_normal_(param, gain=0.1)
+            self.fourier_weight.append(param)
 
         self.forecast_ff = FeedForward(out_dim, norm_locs, factor)
         self.backcast_ff = FeedForward(out_dim, norm_locs, factor)
-
-    def complex_matmul_y_2d(self, a, b):
-        op = partial(torch.einsum, "bixy,ioy->boxy")
-        out = torch.stack([
-            op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
-            op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
-        ], dim=-1)
-
-        if 'fourier' in self.norm_locs:
-            out = self.gnorm_1(out)
-
-        return out
-
-    def complex_matmul_x_2d(self, a, b):
-        op = partial(torch.einsum, "bixy,iox->boxy")
-        out = torch.stack([
-            op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
-            op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
-        ], dim=-1)
-
-        if 'fourier' in self.norm_locs:
-            out = self.gnorm_2(out)
-
-        return out
 
     def forward(self, z, x):
         # z.shape == [n_batches, 2 * flat_size, 1]
@@ -125,7 +104,7 @@ class SpectralConv2d(nn.Module):
         backcast, forecast = z[0], z[1]
 
         # Subtract away things that we've already used for previous predictions
-        x = x - backcast
+        x = x + backcast
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
 
         x = rearrange(x, 'b m n i -> b i m n')
@@ -135,21 +114,13 @@ class SpectralConv2d(nn.Module):
         x_fty = torch.fft.rfft(x, dim=-1, norm='ortho')
         # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1]
 
-        x_fty = torch.stack([x_fty.real, x_fty.imag], dim=4)
-        # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
-
-        out_ft = torch.zeros(B, I, N, M // 2 + 1, 2, device=x.device)
+        out_ft = x_fty.new_zeros(B, I, N, M // 2 + 1)
         # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
-        out_ft[:, :, :, :self.n_modes] = self.complex_matmul_y_2d(
-            x_fty[:, :, :, :self.n_modes], self.fourier_weight[0])
-
-        if self.nonlinear:
-            out_ft = F.relu(out_ft)
-            out_ft[:, :, :, :self.n_modes] = self.complex_matmul_y_2d(
-                out_ft[:, :, :, :self.n_modes], self.fourier_weight[2])
-
-        out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
+        out_ft[:, :, :, :self.n_modes] = torch.einsum(
+            "bixy,ioy->boxy",
+            x_fty[:, :, :, :self.n_modes],
+            self.fourier_weight[0])
 
         xy = torch.fft.irfft(out_ft, dim=-1, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -158,21 +129,13 @@ class SpectralConv2d(nn.Module):
         x_ftx = torch.fft.rfft(x, dim=-2, norm='ortho')
         # x_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size]
 
-        x_ftx = torch.stack([x_ftx.real, x_ftx.imag], dim=4)
-        # x_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size, 2]
-
-        out_ft = torch.zeros(B, I, N // 2 + 1, M, 2, device=x.device)
+        out_ft = x_ftx.new_zeros(B, I, N // 2 + 1, M)
         # out_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size, 2]
 
-        out_ft[:, :, :self.n_modes, :] = self.complex_matmul_x_2d(
-            x_ftx[:, :, :self.n_modes, :], self.fourier_weight[1])
-
-        if self.nonlinear:
-            out_ft = F.relu(out_ft)
-            out_ft[:, :, :self.n_modes, :] = self.complex_matmul_x_2d(
-                out_ft[:, :, :self.n_modes, :], self.fourier_weight[3])
-
-        out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
+        out_ft[:, :, :self.n_modes, :] = torch.einsum(
+            "bixy,iox->boxy",
+            x_ftx[:, :, :self.n_modes, :],
+            self.fourier_weight[1])
 
         xx = torch.fft.irfft(out_ft, dim=-2, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -195,7 +158,7 @@ class SpectralConv2d(nn.Module):
 
 
 class DEQBlock(nn.Module):
-    def __init__(self, modes, width, n_layers, nonlinear, pretraining_steps, norm_locs, factor):
+    def __init__(self, modes, width, n_layers, pretraining_steps, norm_locs, factor):
         super().__init__()
         self.n_layers = n_layers
         self.pretraining_steps = pretraining_steps
@@ -203,7 +166,6 @@ class DEQBlock(nn.Module):
         self.f = SpectralConv2d(in_dim=width,
                                 out_dim=width,
                                 n_modes=modes,
-                                nonlinear=nonlinear,
                                 norm_locs=norm_locs,
                                 factor=factor)
         self.solver = anderson
@@ -255,14 +217,14 @@ class DEQBlock(nn.Module):
 
 @Module.register('fourier_net_2d_deq')
 class SimpleBlock2dDEQ(nn.Module):
-    def __init__(self, modes, width, input_dim, n_layers, nonlinear, pretraining_steps, norm_locs, factor=2):
+    def __init__(self, modes, width, input_dim, n_layers, pretraining_steps, norm_locs, ff_weight_norm=True, factor=2):
         super().__init__()
         self.width = width
-        self.in_proj = nn.Linear(input_dim, self.width)
+        self.in_proj = wnorm(nn.Linear(input_dim, self.width), ff_weight_norm)
         self.deq_block = DEQBlock(
-            modes, width, n_layers, nonlinear, pretraining_steps, norm_locs, factor)
-        self.out = nn.Sequential(nn.Linear(self.width, 128),
-                                 nn.Linear(128, 1))
+            modes, width, n_layers, pretraining_steps, norm_locs, factor)
+        self.out = nn.Sequential(wnorm(nn.Linear(self.width, 128), ff_weight_norm),
+                                 wnorm(nn.Linear(128, 1), ff_weight_norm))
         self.solver = broyden
         self.gnorm = nn.GroupNorm(width // 16, width)
         self.norm_locs = norm_locs
