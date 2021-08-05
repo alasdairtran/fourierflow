@@ -18,6 +18,21 @@
                     "remoteRoot": "."
                 }
             ]
+        },
+        {
+            "name": "Python: meshgraphnets",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/meshgraphnets",
+                    "remoteRoot": "."
+                }
+            ]
         }
     ]
 }
