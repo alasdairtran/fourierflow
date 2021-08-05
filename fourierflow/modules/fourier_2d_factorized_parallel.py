@@ -66,10 +66,10 @@ class SpectralConv2d(nn.Module):
                 nn.init.xavier_normal_(param)
                 self.fourier_weight.append(param)
 
-        self.forecast_ff = forecast_ff
-        if not self.forecast_ff:
-            self.forecast_ff = FeedForward(
-                out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
+        # self.forecast_ff = forecast_ff
+        # if not self.forecast_ff:
+        #     self.forecast_ff = FeedForward(
+        #         out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
         self.backcast_ff = backcast_ff
         if not self.backcast_ff:
@@ -126,8 +126,8 @@ class SpectralConv2d(nn.Module):
         # x.shape == [batch_size, grid_size, grid_size, out_dim]
 
         b = self.backcast_ff(x)
-        f = self.forecast_ff(x)
-        return b, f, []
+        # f = self.forecast_ff(x)
+        return b, None, []
 
 
 @Module.register('fourier_2d_factorized_parallel')
@@ -209,16 +209,17 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         out_fts = []
         for i in range(self.n_layers):
             layer = self.spectral_layers[i]
-            b, f, out_ft = layer(x)
+            b, _, out_ft = layer(x)
             out_fts.append(out_ft)
-            f_out = self.out(f)
-            forecast = forecast + f_out
-            forecast_list.append(f_out)
+            # f_out = self.out(f)
+            # forecast = forecast + f_out
+            # forecast_list.append(f_out)
             if self.next_input == 'subtract':
                 x = x - b
             elif self.next_input == 'add':
                 x = x + b
 
+        forecast = self.out(b)
         if self.avg_outs:
             forecast = forecast / len(self.spectral_layers)
 

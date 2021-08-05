@@ -82,7 +82,7 @@ class SpectralConv2d(nn.Module):
             nn.init.xavier_normal_(param, gain=0.1)
             self.fourier_weight.append(param)
 
-        self.forecast_ff = FeedForward(out_dim, norm_locs, factor)
+        # self.forecast_ff = FeedForward(out_dim, norm_locs, factor)
         self.backcast_ff = FeedForward(out_dim, norm_locs, factor)
 
     def forward(self, z, x):
@@ -98,10 +98,10 @@ class SpectralConv2d(nn.Module):
         B, M, N, I = x.shape
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
 
-        z = rearrange(z, 'b (k m n i) 1 -> k b m n i', k=2, m=M, n=N, i=I)
-        # z.shape == [2, batch_size, grid_size, grid_size, in_dim]
+        z = rearrange(z, 'b (m n i) 1 -> b m n i', m=M, n=N, i=I)
+        # z.shape == [batch_size, grid_size, grid_size, in_dim]
 
-        backcast, forecast = z[0], z[1]
+        backcast = z
 
         # Subtract away things that we've already used for previous predictions
         x = x + backcast
@@ -147,12 +147,12 @@ class SpectralConv2d(nn.Module):
         # x.shape == [batch_size, grid_size, grid_size, out_dim]
 
         backcast = self.backcast_ff(x, backcast)
-        forecast = self.forecast_ff(x, forecast)
+        # forecast = self.forecast_ff(x, forecast)
 
-        out = torch.stack([backcast, forecast], dim=1)
+        # out = torch.stack([backcast, forecast], dim=1)
         # out.shape == [batch_size, 2, grid_size, grid_size, out_dim]
 
-        out = rearrange(out, 'b k m n i -> b (k m n i) 1')
+        out = rearrange(backcast, 'b m n i -> b (m n i) 1')
 
         return out
 
@@ -243,14 +243,14 @@ class SimpleBlock2dDEQ(nn.Module):
         B, T, _ = x.shape
         # x.shape == [n_batches, flat_size, 1]
 
-        z0 = x.new_zeros([B, 2 * T, 1])
-        # z0.shape == [n_batches, 2 * flat_size, 1]
+        z0 = x.new_zeros([B, T, 1])
+        # z0.shape == [n_batches, flat_size, 1]
 
         new_z_star = self.deq_block(z0, x, global_step)
 
-        new_z_star = rearrange(new_z_star, 'b (k m n w) 1 -> b k m n w',
-                               k=2, n=N, m=M, w=self.width)
+        new_z_star = rearrange(new_z_star, 'b (m n w) 1 -> b m n w',
+                               n=N, m=M, w=self.width)
 
-        forecast = self.out(new_z_star[:, 1])
+        forecast = self.out(new_z_star)
 
         return forecast
