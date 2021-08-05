@@ -44,14 +44,14 @@ fourierflow download-fno-examples
 # Reproducing SOA model on Navier Stokes
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
 
-# With Radflow
-fourierflow train configs/navier_stokes_trade_off/18_bilinear_24/config.yaml
+# With our mest model
+fourierflow train configs/navier_stokes_4/02_best/config.yaml
 
 # Performance tradeoff evaluation. We use the Navier Stokes test set
 # as our benchmark dataset.
 
 # Train on gadi
-qsub -N 18_bilinear_24 -v CONFIG=configs/navier_stokes_trade_off/18_bilinear_24/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
+qsub -N 02_best -v CONFIG=configs/navier_stokes_4/02_best/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
 ```
 
 ## Meshgraphnet Experiments
@@ -69,6 +69,9 @@ sh download_dataset.sh flag_dynamic_sizing data
 sh download_dataset.sh sphere_simple data
 sh download_dataset.sh sphere_dynamic data
 sh download_dataset.sh sphere_dynamic_sizing data
+
+# Convert to HDF5 format
+python scripts/convert.py cylinder-flow
 
 # Create index files
 python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/train.tfrecord data/cylinder_flow/train.index

@@ -1,29 +1,37 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 64_li_layers_24
+  name: 02_best_large
   tags:
     - pde
     - navier-stokes
     - fourier
-  notes: Reproduced experiment of Li et al (2020)
+  notes: ""
 datastore:
-  type: navier_stokes
+  type: navier_stokes_2
   data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
   train_size: 1000
   test_size: 200
   ssr: 1 # sub-sampling rate
-  n_steps: 10
-  batch_size: 4
+  batch_size: 2
   n_workers: 4
 experiment:
-  type: fourier_2d
+  type: fourier_2d_single
   conv:
-    type: fourier_net_2d
-    modes1: 16
-    modes2: 16
-    width: 32
+    type: fourier_2d_factorized_parallel
+    modes: 16
+    width: 64
+    linear_out: true
     n_layers: 24
+    input_dim: 3
+    share_weight: true
+    factor: 4
+    ff_weight_norm: true
+    next_input: add
+    gain: 0.1
+    dropout: 0.0
+    in_dropout: 0.0
+    avg_outs: true
   n_steps: 10
   optimizer:
     type: adamw
@@ -31,8 +39,8 @@ experiment:
     weight_decay: 0.0001
   scheduler:
     type: cosine_with_warmup
-    num_warmup_steps: 500
-    num_training_steps: 12500
+    num_warmup_steps: 1000
+    num_training_steps: 40000
     num_cycles: 0.5
   scheduler_config:
     name: learning_rate
@@ -42,6 +50,12 @@ experiment:
 trainer:
   gpus: 1
   precision: 32
-  max_epochs: 50
+  max_epochs: 80
 checkpointer:
+  save_last: true
+  save_top_k: 4
   validation_metric: valid_loss
+  mode: min
+  every_n_train_steps: None
+  every_n_val_epochs: 1
+  period: 1
