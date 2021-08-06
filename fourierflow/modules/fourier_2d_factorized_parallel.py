@@ -56,12 +56,11 @@ class SpectralConv2d(nn.Module):
         self.mode = mode
 
         self.fourier_weight = fourier_weight
+        # Can't use complex type yet. See https://github.com/pytorch/pytorch/issues/59998
         if not self.fourier_weight:
             self.fourier_weight = nn.ParameterList([])
             for _ in range(2):
-                weight = torch.complex(
-                    torch.FloatTensor(in_dim, out_dim, n_modes),
-                    torch.FloatTensor(in_dim, out_dim, n_modes))
+                weight = torch.FloatTensor(in_dim, out_dim, n_modes, 2)
                 param = nn.Parameter(weight)
                 nn.init.xavier_normal_(param)
                 self.fourier_weight.append(param)
@@ -94,7 +93,7 @@ class SpectralConv2d(nn.Module):
             out_ft[:, :, :, :self.n_modes] = torch.einsum(
                 "bixy,ioy->boxy",
                 x_fty[:, :, :, :self.n_modes],
-                self.fourier_weight[0])
+                torch.complex(self.fourier_weight[0][..., 0], self.fourier_weight[0][..., 1]))
         elif self.mode == 'low-pass':
             out_ft[:, :, :, :self.n_modes] = x_fty[:, :, :, :self.n_modes]
 
@@ -112,7 +111,7 @@ class SpectralConv2d(nn.Module):
             out_ft[:, :, :self.n_modes, :] = torch.einsum(
                 "bixy,iox->boxy",
                 x_ftx[:, :, :self.n_modes, :],
-                self.fourier_weight[1])
+                torch.complex(self.fourier_weight[1][..., 0], self.fourier_weight[1][..., 1]))
         elif self.mode == 'low-pass':
             out_ft[:, :, :self.n_modes, :] = x_ftx[:, :, :self.n_modes, :]
 
@@ -173,8 +172,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         if share_weight:
             self.fourier_weight = nn.ParameterList([])
             for _ in range(2):
-                weight = torch.complex(torch.FloatTensor(width, width, modes),
-                                       torch.FloatTensor(width, width, modes))
+                weight = torch.FloatTensor(width, width, modes, 2)
                 param = nn.Parameter(weight)
                 nn.init.xavier_normal_(param, gain=gain)
                 self.fourier_weight.append(param)
