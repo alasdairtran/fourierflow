@@ -1,6 +1,8 @@
 from .autoregressive_wrapper import AutoregressiveWrapper
 from .decoders import MLPDecoder, ODEDecoder
 from .encoders import Encoder, MuSigmaEncoder
+from .fourier_1d import SimpleBlock1d
+from .fourier_1d_factorized import SimpleBlock1dFactorized
 from .fourier_2d import SimpleBlock2d
 from .fourier_2d_factorized import SimpleBlock2dFactorized
 from .fourier_2d_factorized_parallel import SimpleBlock2dFactorizedParallel
