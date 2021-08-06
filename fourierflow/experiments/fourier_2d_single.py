@@ -78,20 +78,10 @@ class Fourier2DSingleExperiment(Experiment):
 
         return fourier_feats
 
-    def _training_step(self, data):
-        B, *dim_sizes, T = data.shape
-        X, Y = dim_sizes
-        # data.shape == [batch_size, *dim_sizes, total_steps]
-
-        yy = data[:, ..., 1:]
-        # yy.shape == [batch_size, *dim_sizes, n_steps]
-
-        # Batch up time dimension
-        yy = rearrange(yy, 'b ... t -> (b t) ...')
-        # yy.shape == [batch_size * time, *dim_sizes]
-
-        xx = repeat(data, '... -> ... 1')
-        # xx.shape == [batch_size, *dim_sizes, total_steps, 1]
+    def _training_step(self, batch):
+        x, y = batch
+        B, *dim_sizes, _ = x.shape
+        # data.shape == [batch_size, *dim_sizes]
 
         if self.use_position:
             pos_feats = self.encode_positions(
@@ -101,24 +91,14 @@ class Fourier2DSingleExperiment(Experiment):
             pos_feats = repeat(pos_feats, '... -> b ...', b=B)
             # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
 
-            all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
+            x = torch.cat([x, pos_feats], dim=-1)
+            # xx.shape == [batch_size, *dim_sizes, 3]
 
-            xx = torch.cat([xx, all_pos_feats], dim=-1)
-            # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
-
-        # Ignore final steps since there is no ground-truth output
-        xx = xx[..., :-1, :]
-        # xx.shape == [batch_size, *dim_sizes, total_steps - 1, 3]
-
-        # Batch up step dimension
-        xx = rearrange(xx, 'b ... t e -> (b t) ... e')
-        # xx.shape == [batch_size * time, *dim_sizes, 3]
-
-        im, _, _ = self.conv(xx)
+        im, _, _ = self.conv(x)
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
         BN = im.shape[0]
-        loss = self.l2_loss(im.reshape(BN, -1), yy.reshape(BN, -1))
+        loss = self.l2_loss(im.reshape(BN, -1), y.reshape(BN, -1))
 
         return loss
 
