@@ -98,7 +98,7 @@ class SpectralConv2d(nn.Module):
         elif self.mode == 'low-pass':
             out_ft[:, :, :, :self.n_modes] = x_fty[:, :, :, :self.n_modes]
 
-        xy = torch.fft.irfft(out_ft, dim=-1, norm='ortho')
+        xy = torch.fft.irfft(out_ft, n=N, dim=-1, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
 
         # # # Dimesion X # # #
@@ -116,7 +116,7 @@ class SpectralConv2d(nn.Module):
         elif self.mode == 'low-pass':
             out_ft[:, :, :self.n_modes, :] = x_ftx[:, :, :self.n_modes, :]
 
-        xx = torch.fft.irfft(out_ft, dim=-2, norm='ortho')
+        xx = torch.fft.irfft(out_ft, n=M, dim=-2, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
 
         # # Combining Dimensions # #
@@ -204,12 +204,14 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         # x.shape == [n_batches, *dim_sizes, input_size]
         forecast = 0
         x = self.in_proj(x)
+        # temp = x
         x = self.drop(x)
         forecast_list = []
         out_fts = []
         for i in range(self.n_layers):
             layer = self.spectral_layers[i]
             b, _, out_ft = layer(x)
+            # b, _, out_ft = layer(temp)
             out_fts.append(out_ft)
             # f_out = self.out(f)
             # forecast = forecast + f_out
@@ -218,6 +220,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                 x = x - b
             elif self.next_input == 'add':
                 x = x + b
+                # temp = x + b
 
         forecast = self.out(b)
         if self.avg_outs:

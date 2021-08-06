@@ -1,0 +1,46 @@
+wandb:
+  project: darcy-flow-421
+  group:
+  name: 01_fourier_li
+  tags:
+    - pde
+    - darcy-flow
+    - fourier
+  notes: ""
+datastore:
+  type: darcy_flow
+  train_path: ${FNO_DATA_ROOT}/piececonst_r421_N1024_smooth1.mat
+  test_path: ${FNO_DATA_ROOT}/piececonst_r421_N1024_smooth2.mat
+  train_size: 1000
+  test_size: 100
+  r: 5 # sub-sampling rate
+  batch_size: 20
+  n_workers: 4
+experiment:
+  type: fourier_2d_darcy
+  conv:
+    type: fourier_net_2d
+    modes1: 12
+    modes2: 12
+    width: 32
+    input_dim: 3
+  n_steps: 10
+  optimizer:
+    type: adamw
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    type: step_lr
+    step_size: 100
+    gamma: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: None
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 500
+checkpointer:
+  validation_metric: valid_loss
