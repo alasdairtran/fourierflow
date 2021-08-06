@@ -93,7 +93,7 @@ class SpectralConv2d(nn.Module):
             out_ft[:, :, :, :self.n_modes] = torch.einsum(
                 "bixy,ioy->boxy",
                 x_fty[:, :, :, :self.n_modes],
-                torch.complex(self.fourier_weight[0][..., 0], self.fourier_weight[0][..., 1]))
+                torch.view_as_complex(self.fourier_weight[0]))
         elif self.mode == 'low-pass':
             out_ft[:, :, :, :self.n_modes] = x_fty[:, :, :, :self.n_modes]
 
@@ -111,7 +111,7 @@ class SpectralConv2d(nn.Module):
             out_ft[:, :, :self.n_modes, :] = torch.einsum(
                 "bixy,iox->boxy",
                 x_ftx[:, :, :self.n_modes, :],
-                torch.complex(self.fourier_weight[1][..., 0], self.fourier_weight[1][..., 1]))
+                torch.view_as_complex(self.fourier_weight[1]))
         elif self.mode == 'low-pass':
             out_ft[:, :, :self.n_modes, :] = x_ftx[:, :, :self.n_modes, :]
 
