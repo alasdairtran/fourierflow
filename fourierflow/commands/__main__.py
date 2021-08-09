@@ -140,6 +140,7 @@ def download_fno_examples(
 
     startdir = os.getcwd()
     workdir = os.path.expandvars('$FNO_DATA_ROOT')
+    os.makedirs(workdir, exist_ok=True)
     try:
         os.chdir(workdir)
         for shareid, fname in fno_datasets.items():
