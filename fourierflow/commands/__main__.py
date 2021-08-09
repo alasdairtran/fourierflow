@@ -2,12 +2,11 @@ import os
 import uuid
 from copy import deepcopy
 from glob import glob
-from typing import IO, Callable, Dict, Optional, Union
+from typing import Optional
 
 import gdown
 import ptvsd
 import pytorch_lightning as pl
-import torch
 import typer
 import wandb
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
@@ -22,28 +21,30 @@ app = typer.Typer()
 
 @app.command()
 def train(config_path: str, overrides: str = '', debug: bool = False):
-    """Train a model."""
+    """Train a Pytorch Lightning experiment."""
+    params = yaml_to_params(config_path, overrides)
+
+    # This debug mode is for those who use VS Code's internal debugger.
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
 
+    # Determine the path where the experimental results will be saved.
     parts = config_path.split('/')
     i = parts.index('configs')
-    root_dir = '.' if i == 0 else os.path.join(*parts[:i])
-
-    params = yaml_to_params(config_path, overrides)
-
     save_dir = os.path.expandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
 
+    # Model checkpoints will also be saved under the results directory.
     checkpoint_params = params.pop('checkpointer')
     metric = checkpoint_params.pop('validation_metric')
     checkpoint_callback = ModelCheckpoint(
         dirpath=os.path.join(results_dir, 'checkpoints'),
         monitor=metric)
 
+    # We use Weights & Biases to track our experiments.
     wandb_opts = params.pop('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=results_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
@@ -51,11 +52,12 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
                                id=str(uuid.uuid4()),
                                **wandb_opts)
 
-    # To ensure reproduciblity, we seed the whole Pytorch Lightning pipeline
+    # To ensure reproduciblity, we seed the whole Pytorch Lightning pipeline.
     seed = params.get('seed', '38124')
     os.environ['PL_GLOBAL_SEED'] = seed
     os.environ['PL_SEED_WORKERS'] = '1'
 
+    # Upload all Python code for save the exact state of the experiment code.
     code_artifact = wandb.Artifact('fourierflow', type='code')
     code_artifact.add_file(config_path, 'config.yaml')
     paths = glob('fourierflow/**/*.py')
@@ -63,15 +65,18 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
         code_artifact.add_file(path, path)
     wandb_logger.experiment.log_artifact(code_artifact)
 
+    # ptvsd doesn't play well with multiple processes.
     if debug:
         params['datastore']['n_workers'] = 0
     datastore = Datastore.from_params(params['datastore'])
     experiment = Experiment.from_params(params['experiment'])
 
+    # Support fine-tuning mode if a pretrained model path is supplied.
     pretrained_path = params.pop('pretrained_path', None)
     if pretrained_path:
         experiment.load_lightning_model_state(pretrained_path)
 
+    # Start the main training and testing pipeline.
     lr_monitor = LearningRateMonitor(logging_interval='step')
     multi_gpus = params.get('trainer').get('gpus', 0) > 1
     plugins = DDPPlugin(find_unused_parameters=False) if multi_gpus else None
@@ -89,25 +94,35 @@ def test(config_path: str,
          overrides: str = '',
          map_location: Optional[str] = None,
          debug: bool = False):
-    """Test a model."""
+    """Test a Pytorch Lightning experiment."""
     params = yaml_to_params(config_path, overrides)
+
+    # This debug mode is for those who use VS Code's internal debugger.
+    if debug:
+        ptvsd.enable_attach(address=('0.0.0.0', 5678))
+        ptvsd.wait_for_attach()
+
     datastore = Datastore.from_params(params['datastore'])
     experiment = Experiment.from_params(params['experiment'])
     experiment.load_lightning_model_state(checkpoint_path, map_location)
 
+    # Determine the path where the experimental test results will be saved.
     parts = config_path.split('/')
     i = parts.index('configs')
-
     save_dir = os.path.expandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
 
+    # We use Weights & Biases to track our experiments.
     wandb_opts = params.pop('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=results_dir,
                                mode='online',
                                config=deepcopy(params.as_dict()),
+                               id=str(uuid.uuid4()),
                                **wandb_opts)
+
+    # Start the main testing pipeline.
     trainer = pl.Trainer(logger=wandb_logger,
                          **params.pop('trainer').as_dict())
     trainer.test(experiment, datamodule=datastore)
@@ -152,12 +167,9 @@ def download_fno_examples(
     try:
         os.chdir(workdir)
         for shareid, fname in fno_datasets.items():
-            # This is slightly faster with cached_download
-            # but CSIRO HPC hates the massive cache folder
-            gdown.download(
-                "https://drive.google.com/uc?id={shareid}".format(
-                    shareid=shareid),
-                fname)
+            # This is slightly faster with cached_download but CSIRO HPC hates
+            # the massive cache folder.
+            gdown.download(f'https://drive.google.com/uc?id={shareid}', fname)
             gdown.extractall(fname)
             os.unlink(fname)
     finally:
