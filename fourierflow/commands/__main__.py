@@ -48,7 +48,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     wandb_logger = WandbLogger(save_dir=results_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
-                               version=str(uuid.uuid4()),
+                               id=str(uuid.uuid4()),
                                **wandb_opts)
 
     # To ensure reproduciblity, we seed the whole Pytorch Lightning pipeline
