@@ -1,5 +1,7 @@
 import os
+import uuid
 from copy import deepcopy
+from glob import glob
 from typing import IO, Callable, Dict, Optional, Union
 
 import gdown
@@ -46,14 +48,15 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     wandb_logger = WandbLogger(save_dir=results_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
+                               version=str(uuid.uuid4()),
                                **wandb_opts)
-    # When uploading artifacts, we get a lot of random "Error while calling W&B
-    # API: Error 1213: Deadlock found when trying to get lock; try restarting
-    # transaction (<Response [500]>)". Probably related to:
-    # code_artifact = wandb.Artifact('fourierflow', type='code')
-    # code_artifact.add_dir(os.path.join(root_dir, 'fourierflow'))
-    # code_artifact.add_file(config_path, 'config.yaml')
-    # wandb_logger.experiment.log_artifact(code_artifact)
+
+    code_artifact = wandb.Artifact('fourierflow', type='code')
+    code_artifact.add_file(config_path, 'config.yaml')
+    paths = glob('fourierflow/**/*.py')
+    for path in paths:
+        code_artifact.add_file(path, path)
+    wandb_logger.experiment.log_artifact(code_artifact)
 
     if debug:
         params['datastore']['n_workers'] = 0
