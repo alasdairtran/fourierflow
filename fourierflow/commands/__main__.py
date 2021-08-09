@@ -51,6 +51,11 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
                                version=str(uuid.uuid4()),
                                **wandb_opts)
 
+    # To ensure reproduciblity, we seed the whole Pytorch Lightning pipeline
+    seed = params.get('seed', '38124')
+    os.environ['PL_GLOBAL_SEED'] = seed
+    os.environ['PL_SEED_WORKERS'] = '1'
+
     code_artifact = wandb.Artifact('fourierflow', type='code')
     code_artifact.add_file(config_path, 'config.yaml')
     paths = glob('fourierflow/**/*.py')
