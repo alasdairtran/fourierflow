@@ -9,11 +9,13 @@ import ptvsd
 import pytorch_lightning as pl
 import typer
 import wandb
+from allennlp.common import from_params
+from pytorch_lightning import callbacks
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins import DDPPlugin
 
-from fourierflow.common import Datastore, Experiment
+from fourierflow.common import Callback, Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
 
 app = typer.Typer()
@@ -69,17 +71,12 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     if pretrained_path:
         experiment.load_lightning_model_state(pretrained_path)
 
-    # Initialize callbacks to monitor learning rate and create checkpoints.
-    lr_monitor = LearningRateMonitor(logging_interval='step')
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=os.path.join(results_dir, 'checkpoints'),
-        **params.pop('checkpointer'))
-
     # Initialize the main trainer.
+    callbacks = [Callback.from_params(p) for p in params.pop('callbacks', [])]
     multi_gpus = params.get('trainer').get('gpus', 0) > 1
     plugins = DDPPlugin(find_unused_parameters=False) if multi_gpus else None
     trainer = pl.Trainer(logger=wandb_logger,
-                         callbacks=[lr_monitor, checkpoint_callback],
+                         callbacks=callbacks,
                          plugins=plugins,
                          **params.pop('trainer').as_dict())
 
