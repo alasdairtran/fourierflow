@@ -82,6 +82,7 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
                          callbacks=[lr_monitor, checkpoint_callback],
                          plugins=plugins,
                          **params.pop('trainer').as_dict())
+    trainer.tune(experiment, datamodule=datastore)
     trainer.fit(experiment, datamodule=datastore)
     trainer.test(experiment, datamodule=datastore)
 
