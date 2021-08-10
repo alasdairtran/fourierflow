@@ -75,13 +75,16 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
         dirpath=os.path.join(results_dir, 'checkpoints'),
         **params.pop('checkpointer'))
 
-    # Start the main training and testing pipeline.
+    # Initialize the main trainer.
     multi_gpus = params.get('trainer').get('gpus', 0) > 1
     plugins = DDPPlugin(find_unused_parameters=False) if multi_gpus else None
     trainer = pl.Trainer(logger=wandb_logger,
                          callbacks=[lr_monitor, checkpoint_callback],
                          plugins=plugins,
                          **params.pop('trainer').as_dict())
+
+    # Tuning only has an effect when either auto_scale_batch_size or
+    # auto_lr_find is set to true.
     trainer.tune(experiment, datamodule=datastore)
     trainer.fit(experiment, datamodule=datastore)
     trainer.test(experiment, datamodule=datastore)
