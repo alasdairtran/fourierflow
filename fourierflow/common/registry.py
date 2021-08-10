@@ -1,6 +1,5 @@
-from typing import IO
-from typing import Callable, Dict, Optional, Type, TypeVar, Union, cast
 import os
+from typing import IO, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 import torch
 import torch.nn as nn
@@ -28,7 +27,11 @@ class Experiment(Registrable, LightningModule):
     def configure_optimizers(self):
         parameters = [[n, p] for n, p in self.named_parameters()
                       if p.requires_grad]
-        opt = self.optimizer.construct(model_parameters=parameters)
+        if hasattr(self, 'lr') and self.lr:
+            opt = self.optimizer.construct(model_parameters=parameters,
+                                           lr=self.lr)
+        else:
+            opt = self.optimizer.construct(model_parameters=parameters)
 
         if self.scheduler:
             scheduler = {'scheduler': self.scheduler.construct(optimizer=opt),

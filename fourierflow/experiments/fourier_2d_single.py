@@ -46,6 +46,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.freq_base = freq_base
         self.low = low
         self.high = high
+        self.lr = None
         self.register_buffer('_float', torch.FloatTensor([0.1]))
 
     def forward(self, x):
