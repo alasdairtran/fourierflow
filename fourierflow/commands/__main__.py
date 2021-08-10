@@ -37,13 +37,6 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
 
-    # Model checkpoints will also be saved under the results directory.
-    checkpoint_params = params.pop('checkpointer')
-    metric = checkpoint_params.pop('validation_metric')
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=os.path.join(results_dir, 'checkpoints'),
-        monitor=metric)
-
     # We use Weights & Biases to track our experiments.
     wandb_opts = params.pop('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=results_dir,
@@ -76,8 +69,13 @@ def train(config_path: str, overrides: str = '', debug: bool = False):
     if pretrained_path:
         experiment.load_lightning_model_state(pretrained_path)
 
-    # Start the main training and testing pipeline.
+    # Initialize callbacks to monitor learning rate and create checkpoints.
     lr_monitor = LearningRateMonitor(logging_interval='step')
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=os.path.join(results_dir, 'checkpoints'),
+        **params.pop('checkpointer'))
+
+    # Start the main training and testing pipeline.
     multi_gpus = params.get('trainer').get('gpus', 0) > 1
     plugins = DDPPlugin(find_unused_parameters=False) if multi_gpus else None
     trainer = pl.Trainer(logger=wandb_logger,
