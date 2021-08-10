@@ -41,17 +41,17 @@ FNO_DATA_ROOT=/My/Data/Location fourierflow
 # Download Navier Stokes datasets
 fourierflow download-fno-examples
 
-# Reproducing SOA model on Navier Stokes
+# Reproducing SOA model on Navier Stokes.
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
 
 # Train with our best model
-fourierflow train configs/navier_stokes_4/02_best_large/config.yaml
+fourierflow train configs/navier_stokes_4/02_best_200/config.yaml
 
 # Performance tradeoff evaluation. We use the Navier Stokes test set
 # as our benchmark dataset.
 
 # Train on gadi
-qsub -N 02_best_large -v CONFIG=configs/navier_stokes_4/02_best_large/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
+qsub -N 02_best_200 -v CONFIG=configs/navier_stokes_4/02_best_200/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
 ```
 
 ## Meshgraphnet Experiments

@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
   group:
-  name: 02_best_large
+  name: 03_best_100
   tags:
     - pde
     - navier-stokes
@@ -13,7 +13,7 @@ datastore:
   train_size: 1000
   test_size: 200
   ssr: 1 # sub-sampling rate
-  batch_size: 2
+  batch_size: 38
   n_workers: 4
 experiment:
   type: fourier_2d_single
@@ -39,8 +39,8 @@ experiment:
     weight_decay: 0.0001
   scheduler:
     type: cosine_with_warmup
-    num_warmup_steps: 1000
-    num_training_steps: 40000
+    num_warmup_steps: 500
+    num_training_steps: 50000
     num_cycles: 0.5
   scheduler_config:
     name: learning_rate
@@ -50,12 +50,16 @@ experiment:
 trainer:
   gpus: 1
   precision: 32
-  max_epochs: 80
+  max_epochs: 100
+  weights_summary: full
+  # Debugging parameters
+  log_gpu_memory: None # all
+  track_grad_norm: -1 # 2
+  fast_dev_run: false # 2
 checkpointer:
-  save_last: true
-  save_top_k: 4
-  validation_metric: valid_loss
+  save_top_k: 1
+  save_last: false # not needed when save_top_k == 1
+  monitor: None # valid_loss
   mode: min
   every_n_train_steps: None
-  every_n_val_epochs: 1
-  period: 1
+  every_n_epochs: 1

@@ -42,4 +42,4 @@ trainer:
   precision: 32
   max_epochs: 500
 checkpointer:
-  validation_metric: valid_loss
+  monitor: valid_loss
