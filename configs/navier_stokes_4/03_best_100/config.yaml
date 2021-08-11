@@ -51,6 +51,9 @@ trainer:
   gpus: 1
   precision: 32
   max_epochs: 100
+  gradient_clip_val: 0.1
+  gradient_clip_algorithm: value
+  stochastic_weight_avg: false
   weights_summary: full
   # Debugging parameters
   log_gpu_memory: None # all
