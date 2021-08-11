@@ -39,7 +39,7 @@ FNO_DATA_ROOT=/My/Data/Location fourierflow
 
 ```sh
 # Download Navier Stokes datasets
-fourierflow download-fno-examples
+fourierflow download fno
 
 # Reproducing SOA model on Navier Stokes.
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
