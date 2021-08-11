@@ -9,9 +9,6 @@ import ptvsd
 import pytorch_lightning as pl
 import typer
 import wandb
-from allennlp.common import from_params
-from pytorch_lightning import callbacks
-from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins import DDPPlugin
 
