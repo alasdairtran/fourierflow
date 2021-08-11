@@ -35,7 +35,8 @@ class StochasticWeightAveraging(Callback):
                  swa_step_start: float = 0.75,
                  swa_lr: float = 0.025,
                  annealing_strategy: str = "cos",
-                 avg_fn: Optional[_AVG_FN] = None):
+                 avg_fn: Optional[_AVG_FN] = None,
+                 offset: int = 0):
         self._total_steps = total_steps
         self._swa_step_start = int(total_steps * swa_step_start)
         rank_zero_info(f'Starting SWA at step {self._swa_step_start}.')
@@ -44,6 +45,7 @@ class StochasticWeightAveraging(Callback):
         self._avg_fn = avg_fn or self.avg_fn
         self._model_contains_batch_norm = None
         self._average_model = None
+        self._offset = offset
 
     @property
     def swa_start(self) -> int:
@@ -99,6 +101,7 @@ class StochasticWeightAveraging(Callback):
                 anneal_steps=self._total_steps - self._swa_step_start,
                 anneal_strategy=self._annealing_strategy,
                 last_epoch=trainer.max_epochs if self._annealing_strategy == "cos" else -1,
+                offset=self._offset
             )
             new_scheduler = {
                 'scheduler': self._swa_scheduler,
