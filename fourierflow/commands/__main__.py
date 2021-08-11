@@ -15,7 +15,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins import DDPPlugin
 
-from fourierflow.common import Callback, Datastore, Experiment
+from fourierflow.registry import Callback, Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
 
 app = typer.Typer()

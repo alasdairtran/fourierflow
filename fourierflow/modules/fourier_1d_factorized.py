@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from einops import rearrange
 from torch.nn.utils import weight_norm
 
-from fourierflow.common import Module
+from fourierflow.registry import Module
 
 
 def wnorm(module, active):

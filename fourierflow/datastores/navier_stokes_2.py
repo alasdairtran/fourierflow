@@ -7,7 +7,7 @@ from einops import rearrange, repeat
 from einops.einops import rearrange
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.common import Datastore
+from fourierflow.registry import Datastore
 
 
 @Datastore.register('navier_stokes_2')

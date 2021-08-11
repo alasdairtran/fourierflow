@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import einsum, nn
 
-from fourierflow.common import Module
+from fourierflow.registry import Module
 from fourierflow.utils import cache_fn, default, exists
 
 from .attention import Attention

@@ -8,7 +8,7 @@ from allennlp.training.learning_rate_schedulers import LinearWithWarmup
 from allennlp.training.optimizers import Optimizer
 from einops import repeat
 
-from fourierflow.common import Experiment, Module, Scheduler
+from fourierflow.registry import Experiment, Module, Scheduler
 
 
 @Experiment.register('radflow')

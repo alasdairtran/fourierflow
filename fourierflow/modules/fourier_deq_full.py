@@ -7,9 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 
-from fourierflow.common import Module
 from fourierflow.modules.deq.jacobian import jac_loss_estimate
 from fourierflow.modules.deq.solvers import anderson, broyden
+from fourierflow.registry import Module
 
 
 class FeedForward(nn.Module):

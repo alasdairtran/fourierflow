@@ -1,9 +1,9 @@
 import torch
 import torch.nn.functional as F
+
 from fourierflow.modules.fourier import SimpleBlock1d
 from fourierflow.modules.loss import LpLoss
-
-from fourierflow.common import Experiment
+from fourierflow.registry import Experiment
 
 
 @Experiment.register('fourier_1d')

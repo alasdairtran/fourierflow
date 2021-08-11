@@ -2,12 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from fourierflow.common import Experiment, Module
+from fourierflow.registry import Experiment, Module
 
 from .viz import plot_deterministic_forecasts
 
 # from torchdiffeq import odeint
 # import torchcde
+
 
 class CDEFunc(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels):

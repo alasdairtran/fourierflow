@@ -10,7 +10,7 @@ import torch
 import torchaudio
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.common import Datastore
+from fourierflow.registry import Datastore
 
 
 @Datastore.register('speech_commands')

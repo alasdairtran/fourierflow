@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 
-from fourierflow.common import Module
+from fourierflow.registry import Module
 
 
 class SpectralConv2d(nn.Module):

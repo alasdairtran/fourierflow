@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.distributions import Normal
 
-from fourierflow.common import Module
+from fourierflow.registry import Module
 
 
 @Module.register('neural_process')

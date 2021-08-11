@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from fourierflow.common import Module
+from fourierflow.registry import Module
 
 from .attention import Attention
 from .rotary import SinusoidalEmbeddings

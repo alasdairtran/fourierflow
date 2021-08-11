@@ -56,10 +56,13 @@ trainer:
   log_gpu_memory: None # all
   track_grad_norm: -1 # 2
   fast_dev_run: false # 2
-checkpointer:
-  save_top_k: 1
-  save_last: false # not needed when save_top_k == 1
-  monitor: None # valid_loss
-  mode: min
-  every_n_train_steps: None
-  every_n_epochs: 1
+callbacks:
+  - type: model_checkpoint
+    save_top_k: 1
+    save_last: false # not needed when save_top_k == 1
+    monitor: None # valid_loss
+    mode: min
+    every_n_train_steps: None
+    every_n_epochs: 1
+  - type: learning_rate_monitor
+    logging_interval: step

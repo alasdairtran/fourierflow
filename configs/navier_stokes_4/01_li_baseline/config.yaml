@@ -41,5 +41,8 @@ trainer:
   gpus: 1
   precision: 32
   max_epochs: 500
-checkpointer:
-  monitor: valid_loss
+callbacks:
+  - type: model_checkpoint
+    monitor: valid_loss
+  - type: learning_rate_monitor
+    logging_interval: step

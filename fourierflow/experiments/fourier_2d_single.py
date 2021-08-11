@@ -12,9 +12,9 @@ from allennlp.training.optimizers import Optimizer
 from einops import rearrange, repeat
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from fourierflow.common import Experiment, Module, Scheduler
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
+from fourierflow.registry import Experiment, Module, Scheduler
 
 
 @Experiment.register('fourier_2d_single')

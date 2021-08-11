@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 
-from fourierflow.common import Module
+from fourierflow.registry import Module
 
 # from torchdiffeq import odeint
 
