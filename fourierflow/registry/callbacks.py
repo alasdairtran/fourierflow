@@ -2,8 +2,9 @@ from allennlp.common import Registrable
 from pytorch_lightning.callbacks import Callback as LightingCallback
 from pytorch_lightning.callbacks import (EarlyStopping, GPUStatsMonitor,
                                          GradientAccumulationScheduler,
-                                         LearningRateMonitor, ModelCheckpoint,
-                                         StochasticWeightAveraging)
+                                         LearningRateMonitor, ModelCheckpoint)
+
+from fourierflow.callbacks import StochasticWeightAveraging
 
 
 class Callback(Registrable, LightingCallback):
