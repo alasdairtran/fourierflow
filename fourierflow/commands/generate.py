@@ -16,7 +16,7 @@ app = Typer()
 def navier_stokes(
     path: str = Argument(..., help='Path to store the generated samples'),
     n: int = Option(1200, help='Number of solutions to generate'),
-    s: int = Option(64, help='Width of the solution grid'),
+    s: int = Option(256, help='Width of the solution grid'),
     t: int = Option(20, help='Final time step'),
     steps: int = Option(20, help='Number of snapshots from solution'),
     mu: float = Option(1e-5, help='Viscoity'),
