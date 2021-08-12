@@ -1,14 +1,7 @@
 import math
-from timeit import default_timer
 
-import h5py
-import numpy as np
 import torch
 from tqdm import tqdm
-
-from .random_fields import GaussianRF
-
-# from drawnow import drawnow, figure
 
 
 # w0: initial vorticity
@@ -123,61 +116,3 @@ def navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
             c += 1
 
     return sol, sol_t
-
-
-device = torch.device('cuda')
-
-# Resolution
-s = 256
-sub = 1
-
-# Number of solutions to generate
-N = 1200
-
-# Set up 2d GRF with covariance parameters
-GRF = GaussianRF(2, s, alpha=2.5, tau=7, device=device)
-
-# Forcing function: 0.1*(sin(2pi(x+y)) + cos(2pi(x+y)))
-t = torch.linspace(0, 1, s+1, device=device)
-t = t[0:-1]
-
-X, Y = torch.meshgrid(t, t)
-f = 0.1*(torch.sin(2 * math.pi * (X + Y)) + torch.cos(2 * math.pi * (X + Y)))
-
-# Number of snapshots from solution
-record_steps = 50
-
-# Inputs
-a = torch.zeros(N, s, s)
-# Solutions
-u = torch.zeros(N, s, s, record_steps)
-
-# Solve equations in batches (order of magnitude speed-up)
-
-# Batch size
-bsize = 100
-
-c = 0
-t0 = default_timer()
-viscosity = 1e-6
-data_path = 'ns_data_1e-6.h5'
-data_f = h5py.File(data_path, 'a')
-data_f.create_dataset('a', (N, s, s), np.float32)
-data_f.create_dataset('u', (N, s, s, record_steps), np.float32)
-
-for j in range(N//bsize):
-
-    # Sample random feilds
-    w0 = GRF.sample(bsize)
-
-    # Solve NS
-    with torch.no_grad():
-        sol, sol_t = navier_stokes_2d(w0, f, viscosity,
-                                      50.0, 1e-4, record_steps)
-
-    data_f['a'][c:(c+bsize), ...] = w0.cpu().numpy()
-    data_f['u'][c:(c+bsize), ...] = sol.cpu().numpy()
-
-    c += bsize
-    t1 = default_timer()
-    print(j, c, t1-t0)
