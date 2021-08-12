@@ -1,7 +1,6 @@
 import math
 import os
 from enum import Enum
-from timeit import default_timer
 
 import h5py
 import numpy as np
@@ -19,7 +18,7 @@ class Force(str, Enum):
     random = "random"
 
 
-def get_random_force(b, s, device, cycles):
+def get_random_force(b, s, device, cycles, scaling):
     ft = torch.linspace(0, 1, s+1).to(device)
     ft = ft[0:-1]
     X, Y = torch.meshgrid(ft, ft)
@@ -38,7 +37,7 @@ def get_random_force(b, s, device, cycles):
         f += torch.rand(b, 1, 1).to(device) * torch.sin(k * (X + Y))
         f += torch.rand(b, 1, 1).to(device) * torch.cos(k * (X + Y))
 
-    f = f * 0.1
+    f = f * scaling
 
     return f
 
@@ -56,6 +55,7 @@ def navier_stokes(
     b: int = Option(200, help='Batch size'),
     force: Force = Option(Force.li, help='Type of forcing function'),
     cycles: int = Option(2, help='Number of cycles in forcing function'),
+    scaling: float = Option(0.1, help='Scaling of forcing function'),
 ):
 
     device = torch.device('cuda')
@@ -89,7 +89,7 @@ def navier_stokes(
             w0 = GRF.sample(b)
 
             if force == Force.random:
-                f = get_random_force(b, s, device, cycles)
+                f = get_random_force(b, s, device, cycles, scaling)
 
             sol, _ = solve_navier_stokes_2d(w0, f, mu, t, delta, steps)
             data_f['a'][c:(c+b), ...] = w0.cpu().numpy()
