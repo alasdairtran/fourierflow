@@ -47,6 +47,7 @@ def navier_stokes(
     data_f.create_dataset('a', (n, s, s), np.float32)
     data_f.create_dataset('u', (n, s, s, steps), np.float32)
 
+    batch_size = min(n, batch_size)
     with torch.no_grad():
         for j in range(n//batch_size):
             w0 = GRF.sample(batch_size)
