@@ -80,7 +80,10 @@ class NavierStokesTrainingDataset(Dataset):
         return self.x.shape[0]
 
     def __getitem__(self, idx):
-        return self.x[idx], self.y[idx]
+        return {
+            'x': self.x[idx],
+            'y': self.y[idx],
+        }
 
 
 class NavierStokesDataset(Dataset):
@@ -91,4 +94,6 @@ class NavierStokesDataset(Dataset):
         return self.data.shape[0]
 
     def __getitem__(self, idx):
-        return self.data[idx]
+        return {
+            'data': self.data[idx],
+        }

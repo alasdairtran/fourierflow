@@ -80,7 +80,7 @@ class Fourier2DSingleExperiment(Experiment):
         return fourier_feats
 
     def _training_step(self, batch):
-        x, y = batch
+        x, y = batch['x'], batch['y']
         B, *dim_sizes, _ = x.shape
         # data.shape == [batch_size, *dim_sizes]
 
@@ -103,7 +103,8 @@ class Fourier2DSingleExperiment(Experiment):
 
         return loss
 
-    def _valid_step(self, data, split):
+    def _valid_step(self, batch, split):
+        data = batch['data']
         B, *dim_sizes, T = data.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
@@ -158,7 +159,8 @@ class Fourier2DSingleExperiment(Experiment):
 
         return loss, loss_full, pred, pred_layer_list, out_fts_list
 
-    def _test_step(self, data, split):
+    def _test_step(self, batch, split):
+        data = batch['data']
         B, *dim_sizes, T = data.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
@@ -226,7 +228,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.log('valid_loss_full', loss_full)
 
         if batch_idx == 0:
-            data = batch
+            data = batch['data']
             expt = self.logger.experiment
             log_imshow(expt, data[0, :, :, 9], 'gt t=9')
             log_imshow(expt, data[0, :, :, 19], 'gt t=19')
