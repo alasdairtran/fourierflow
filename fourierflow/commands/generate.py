@@ -26,7 +26,9 @@ def navier_stokes(
 ):
 
     device = torch.device('cuda')
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    if os.path.dirname(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
     # Set up 2d GRF with covariance parameters
     GRF = GaussianRF(2, s, alpha=2.5, tau=7, device=device, seed=seed)
