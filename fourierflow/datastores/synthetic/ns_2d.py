@@ -10,7 +10,7 @@ from tqdm import tqdm
 # T: final time
 # delta_t: internal time-step for solve (descrease if blow-up)
 # record_steps: number of in-time snapshots to record
-def navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
+def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
 
     # Grid size - must be power of 2
     N = w0.size()[-1]

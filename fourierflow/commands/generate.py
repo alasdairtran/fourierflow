@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from typer import Argument, Option, Typer
 
-from fourierflow.datastores.synthetic import GaussianRF, navier_stokes_2d
+from fourierflow.datastores.synthetic import GaussianRF, solve_navier_stokes_2d
 
 app = Typer()
 
@@ -41,34 +41,21 @@ def navier_stokes(
     f = 0.1*(torch.sin(2 * math.pi * (X + Y)) +
              torch.cos(2 * math.pi * (X + Y)))
 
-    # Inputs
-    a = torch.zeros(n, s, s)
-    # Solutions
-    u = torch.zeros(n, s, s, steps)
-
-    # Solve equations in batches (order of magnitude speed-up)
-
     c = 0
     t0 = default_timer()
     data_f = h5py.File(path, 'a')
     data_f.create_dataset('a', (n, s, s), np.float32)
     data_f.create_dataset('u', (n, s, s, steps), np.float32)
 
-    for j in range(n//batch_size):
-
-        # Sample random feilds
-        w0 = GRF.sample(batch_size)
-
-        # Solve NS
-        with torch.no_grad():
-            sol, sol_t = navier_stokes_2d(w0, f, mu, t, delta, steps)
-
-        data_f['a'][c:(c+batch_size), ...] = w0.cpu().numpy()
-        data_f['u'][c:(c+batch_size), ...] = sol.cpu().numpy()
-
-        c += batch_size
-        t1 = default_timer()
-        print(j, c, t1-t0)
+    with torch.no_grad():
+        for j in range(n//batch_size):
+            w0 = GRF.sample(batch_size)
+            sol, sol_t = solve_navier_stokes_2d(w0, f, mu, t, delta, steps)
+            data_f['a'][c:(c+batch_size), ...] = w0.cpu().numpy()
+            data_f['u'][c:(c+batch_size), ...] = sol.cpu().numpy()
+            c += batch_size
+            t1 = default_timer()
+            print(j, c, t1-t0)
 
 
 if __name__ == "__main__":
