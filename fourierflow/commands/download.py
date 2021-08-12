@@ -1,9 +1,9 @@
 import os
 
 import gdown
-import typer
+from typer import Typer
 
-app = typer.Typer()
+app = Typer()
 
 
 @app.command()
