@@ -5,4 +5,5 @@ import fourierflow.callbacks
 import fourierflow.datastores
 import fourierflow.experiments
 import fourierflow.modules
+import fourierflow.optimizers
 import fourierflow.schedulers
