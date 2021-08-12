@@ -4,11 +4,10 @@ import torch
 
 
 class GaussianRF:
-    def __init__(self, n_dims, size, alpha=2, tau=3, sigma=None, device=None, seed=None):
+    def __init__(self, n_dims, size, alpha=2, tau=3, sigma=None, device=None):
 
         self.n_dims = n_dims
         self.device = device
-        torch.manual_seed(seed)
 
         if sigma is None:
             sigma = tau**(0.5*(2*alpha - self.n_dims))

@@ -41,6 +41,9 @@ FNO_DATA_ROOT=/My/Data/Location fourierflow
 # Download Navier Stokes datasets
 fourierflow download fno
 
+# Generate Navier Stokes toruses with different forcing functions
+fourierflow generate navier-stokes --force random data/navier-stokes/random_force.h5
+
 # Reproducing SOA model on Navier Stokes.
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
 
