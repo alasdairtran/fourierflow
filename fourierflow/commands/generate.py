@@ -19,7 +19,7 @@ class Force(str, Enum):
     random = "random"
 
 
-def get_random_force(b, s, device):
+def get_random_force(b, s, device, cycles):
     ft = torch.linspace(0, 1, s+1).to(device)
     ft = ft[0:-1]
     X, Y = torch.meshgrid(ft, ft)
@@ -27,7 +27,7 @@ def get_random_force(b, s, device):
     Y = repeat(Y, 'x y -> b x y', b=b)
 
     f = 0
-    for p in [1, 2]:
+    for p in range(1, cycles + 1):
         k = 2 * math.pi * p
         f += torch.rand(b, 1, 1).to(device) * torch.sin(k * X)
         f += torch.rand(b, 1, 1).to(device) * torch.cos(k * X)
@@ -54,7 +54,8 @@ def navier_stokes(
     seed: int = Option(23893, help='Seed value for reproducibility'),
     delta: float = Option(1e-4, help='Internal time step for sovler'),
     b: int = Option(200, help='Batch size'),
-    force: Force = Option(Force.li, help='Type of forcing function')
+    force: Force = Option(Force.li, help='Type of forcing function'),
+    cycles: int = Option(2, help='Number of cycles in forcing function'),
 ):
 
     device = torch.device('cuda')
@@ -88,7 +89,7 @@ def navier_stokes(
             w0 = GRF.sample(b)
 
             if force == Force.random:
-                f = get_random_force(b, s, device)
+                f = get_random_force(b, s, device, cycles)
 
             sol, _ = solve_navier_stokes_2d(w0, f, mu, t, delta, steps)
             data_f['a'][c:(c+b), ...] = w0.cpu().numpy()
