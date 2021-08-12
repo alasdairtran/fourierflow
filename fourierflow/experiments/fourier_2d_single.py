@@ -31,6 +31,7 @@ class Fourier2DSingleExperiment(Experiment):
                  low: float = 0,
                  high: float = 1,
                  use_position: bool = True,
+                 append_force: bool = False,
                  use_fourier_position: bool = False):
         super().__init__()
         self.conv = conv
@@ -44,6 +45,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.max_freq = max_freq
         self.num_freq_bands = num_freq_bands
         self.freq_base = freq_base
+        self.append_force = append_force
         self.low = low
         self.high = high
         self.lr = None
@@ -95,6 +97,9 @@ class Fourier2DSingleExperiment(Experiment):
             x = torch.cat([x, pos_feats], dim=-1)
             # xx.shape == [batch_size, *dim_sizes, 3]
 
+        if self.append_force:
+            x = torch.cat([x, batch['f']], dim=-1)
+
         im, _, _ = self.conv(x)
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
@@ -128,6 +133,10 @@ class Fourier2DSingleExperiment(Experiment):
         xx = xx[..., -self.n_steps-1:-1, :]
         # xx.shape == [batch_size, *dim_sizes, n_steps, 3]
 
+        if self.append_force:
+            force = repeat(batch['f'], 'b m n -> b m n t 1', t=xx.shape[-2])
+            xx = torch.cat([xx, force], dim=-1)
+
         yy = data[:, ..., -self.n_steps:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
@@ -138,6 +147,8 @@ class Fourier2DSingleExperiment(Experiment):
         for t in range(self.n_steps):
             if t == 0:
                 x = xx[..., t, :]
+            elif self.use_position and self.append_force:
+                x = torch.cat([im, pos_feats, force[..., t, :]], dim=-1)
             elif self.use_position:
                 x = torch.cat([im, pos_feats], dim=-1)
             else:
@@ -184,6 +195,10 @@ class Fourier2DSingleExperiment(Experiment):
         xx = xx[..., :1, :]
         # xx.shape == [batch_size, *dim_sizes, n_steps, 3]
 
+        if self.append_force:
+            force = repeat(batch['f'], 'b m n -> b m n t 1', t=xx.shape[-2])
+            xx = torch.cat([xx, force], dim=-1)
+
         yy = data[:, ..., 1:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
@@ -194,6 +209,8 @@ class Fourier2DSingleExperiment(Experiment):
         for t in range(19):
             if t == 0:
                 x = xx[..., t, :]
+            elif self.use_position and self.append_force:
+                x = torch.cat([im, pos_feats, force[..., t, :]], dim=-1)
             elif self.use_position:
                 x = torch.cat([im, pos_feats], dim=-1)
             else:
