@@ -25,7 +25,7 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
     w_h = torch.fft.fftn(w0, dim=[1, 2], norm='backward')
 
     # Forcing to Fourier space
-    f_h = torch.fft.fftn(f, dim=[0, 1], norm='backward')
+    f_h = torch.fft.fftn(f, dim=[-2, -1], norm='backward')
 
     # If same forcing for the whole batch
     if len(f_h.size()) < len(w_h.size()):
