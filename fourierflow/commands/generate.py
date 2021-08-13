@@ -92,6 +92,7 @@ def navier_stokes(
                 f = get_random_force(b, s, device, cycles, scaling)
 
             sol, _ = solve_navier_stokes_2d(w0, f, mu, t, delta, steps)
+            assert not sol.isnan().any().item(), 'nan value found'
             data_f['a'][c:(c+b), ...] = w0.cpu().numpy()
             data_f['u'][c:(c+b), ...] = sol.cpu().numpy()
 
