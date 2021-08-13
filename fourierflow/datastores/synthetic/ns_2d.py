@@ -1,6 +1,7 @@
 import math
 
 import torch
+from einops import rearrange
 from tqdm import tqdm
 
 
@@ -13,13 +14,13 @@ from tqdm import tqdm
 def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
 
     # Grid size - must be power of 2
-    N = w0.size()[-1]
+    N = w0.shape[-1]
 
     # Maximum frequency
-    k_max = math.floor(N/2.0)
+    k_max = math.floor(N / 2)
 
     # Number of steps to final time
-    steps = math.ceil(T/delta_t)
+    steps = math.ceil(T / delta_t)
 
     # Initial vorticity to Fourier space
     w_h = torch.fft.fftn(w0, dim=[1, 2], norm='backward')
@@ -28,11 +29,11 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
     f_h = torch.fft.fftn(f, dim=[-2, -1], norm='backward')
 
     # If same forcing for the whole batch
-    if len(f_h.size()) < len(w_h.size()):
-        f_h = torch.unsqueeze(f_h, 0)
+    if len(f_h.shape) < len(w_h.shape):
+        f_h = rearrange(f_h, '... -> 1 ...')
 
     # Record solution every this number of steps
-    record_time = math.floor(steps/record_steps)
+    record_time = math.floor(steps / record_steps)
 
     # Wavenumbers in y-direction
     k_y = torch.cat((
@@ -41,14 +42,16 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
         0).repeat(N, 1)
     # Wavenumbers in x-direction
     k_x = k_y.transpose(0, 1)
+
     # Negative Laplacian in Fourier space
     lap = 4 * (math.pi**2) * (k_x**2 + k_y**2)
     lap[0, 0] = 1.0
+
     # Dealiasing mask
     dealias = torch.unsqueeze(
         torch.logical_and(
             torch.abs(k_y) <= (2.0 / 3.0) * k_max,
-            torch.abs(k_x) <= (2.0 / 3.0)*k_max
+            torch.abs(k_x) <= (2.0 / 3.0) * k_max
         ).float(), 0)
 
     # Saving solution and time
