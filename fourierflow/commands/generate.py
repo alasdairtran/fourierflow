@@ -4,6 +4,7 @@ from enum import Enum
 
 import h5py
 import numpy as np
+import ptvsd
 import torch
 from einops import repeat
 from typer import Argument, Option, Typer
@@ -50,13 +51,20 @@ def navier_stokes(
     t: int = Option(20, help='Final time step'),
     steps: int = Option(20, help='Number of snapshots from solution'),
     mu: float = Option(1e-5, help='Viscoity'),
+    k_min: int = Option(5, help='Minimium exponent of viscoity'),
+    k_max: int = Option(5, help='Maximum exponent of viscoity'),
     seed: int = Option(23893, help='Seed value for reproducibility'),
     delta: float = Option(1e-5, help='Internal time step for sovler'),
-    b: int = Option(200, help='Batch size'),
+    b: int = Option(100, help='Batch size'),
     force: Force = Option(Force.li, help='Type of forcing function'),
     cycles: int = Option(2, help='Number of cycles in forcing function'),
     scaling: float = Option(0.1, help='Scaling of forcing function'),
+    debug: bool = Option(False, help='Enable debugging mode with ptvsd'),
 ):
+    # This debug mode is for those who use VS Code's internal debugger.
+    if debug:
+        ptvsd.enable_attach(address=('0.0.0.0', 5678))
+        ptvsd.wait_for_attach()
 
     device = torch.device('cuda')
     torch.manual_seed(seed)
@@ -81,6 +89,7 @@ def navier_stokes(
     data_f.create_dataset('a', (n, s, s), np.float32)
     data_f.create_dataset('f', (n, s, s), np.float32)
     data_f.create_dataset('u', (n, s, s, steps), np.float32)
+    data_f.create_dataset('mu', (n,), np.float32)
 
     b = min(n, b)
     with torch.no_grad():
@@ -91,12 +100,18 @@ def navier_stokes(
             if force == Force.random:
                 f = get_random_force(b, s, device, cycles, scaling)
 
+            if k_min != k_max:
+                k = np.random.rand(b) * (k_max - k_min) + k_min
+                mu = 10.0**-k
+
             sol, _ = solve_navier_stokes_2d(w0, f, mu, t, delta, steps)
             data_f['a'][c:(c+b), ...] = w0.cpu().numpy()
             data_f['u'][c:(c+b), ...] = sol.cpu().numpy()
 
             if force == Force.random:
                 data_f['f'][c:(c+b), ...] = f.cpu().numpy()
+
+            data_f['mu'][c:(c+b)] = mu
 
             c += b
 

@@ -1,7 +1,8 @@
 import math
 
+import numpy as np
 import torch
-from einops import rearrange
+from einops import rearrange, repeat
 from tqdm import tqdm
 
 
@@ -11,7 +12,7 @@ from tqdm import tqdm
 # T: final time
 # delta_t: internal time-step for solve (descrease if blow-up)
 # record_steps: number of in-time snapshots to record
-def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
+def solve_navier_stokes_2d(w0, f, visc, T, delta_t, record_steps):
 
     # Grid size - must be power of 2
     N = w0.shape[-1]
@@ -46,6 +47,11 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
     # Negative Laplacian in Fourier space
     lap = 4 * (math.pi**2) * (k_x**2 + k_y**2)
     lap[0, 0] = 1.0
+
+    if isinstance(visc, np.ndarray):
+        visc = torch.from_numpy(visc).to(w0.device)
+        visc = repeat(visc, 'b -> b m n', m=N, n=N)
+        lap = repeat(lap, 'm n -> b m n', b=w0.shape[0])
 
     # Dealiasing mask
     dealias = torch.unsqueeze(
