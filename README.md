@@ -44,7 +44,8 @@ fourierflow download fno
 # Generate Navier Stokes toruses with different forcing functions
 fourierflow generate navier-stokes --force random --cycles 1 data/navier-stokes/random_force_1.h5
 fourierflow generate navier-stokes --force random --cycles 2 data/navier-stokes/random_force_2.h5
-fourierflow generate navier-stokes --force random --cycles 2 --k-min 3 --k-max 5 --steps 200 --delta 5e-5 data/navier-stokes/random_force_mu.h5
+fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 --mu-max 1e-4 --steps 200 --delta 1e-4 data/navier-stokes/random_force_mu.h5
+fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 --mu-max 1e-4 --steps 200 --delta 1e-5 data/navier-stokes/random_force_mu_small_delta.h5
 
 # Reproducing SOA model on Navier Stokes.
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml

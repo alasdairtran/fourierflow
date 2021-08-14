@@ -51,8 +51,8 @@ def navier_stokes(
     t: int = Option(20, help='Final time step'),
     steps: int = Option(20, help='Number of snapshots from solution'),
     mu: float = Option(1e-5, help='Viscoity'),
-    k_min: int = Option(5, help='Minimium exponent of viscoity'),
-    k_max: int = Option(5, help='Maximum exponent of viscoity'),
+    mu_min: float = Option(1e-5, help='Minimium viscoity'),
+    mu_max: float = Option(1e-5, help='Maximum viscoity'),
     seed: int = Option(23893, help='Seed value for reproducibility'),
     delta: float = Option(1e-4, help='Internal time step for sovler'),
     b: int = Option(100, help='Batch size'),
@@ -100,13 +100,12 @@ def navier_stokes(
             if force == Force.random:
                 f = get_random_force(b, s, device, cycles, scaling)
 
-            if k_min != k_max:
-                k = np.random.rand(b) * (k_max - k_min) + k_min
-                mu = 10.0**-k
+            if mu_min != mu_max:
+                mu = np.random.rand(b) * (mu_max - mu_min) + mu_min
 
             sol, _ = solve_navier_stokes_2d(w0, f, mu, t, delta, steps)
             data_f['a'][c:(c+b), ...] = w0.cpu().numpy()
-            data_f['u'][c:(c+b), ...] = sol.cpu().numpy()
+            data_f['u'][c:(c+b), ...] = sol
 
             if force == Force.random:
                 data_f['f'][c:(c+b), ...] = f.cpu().numpy()

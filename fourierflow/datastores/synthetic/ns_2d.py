@@ -127,4 +127,4 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t, record_steps):
 
             c += 1
 
-    return sol, sol_t
+    return sol.cpu().numpy(), sol_t.cpu().numpy()
