@@ -51,7 +51,7 @@ def navier_stokes(
     steps: int = Option(20, help='Number of snapshots from solution'),
     mu: float = Option(1e-5, help='Viscoity'),
     seed: int = Option(23893, help='Seed value for reproducibility'),
-    delta: float = Option(1e-4, help='Internal time step for sovler'),
+    delta: float = Option(1e-5, help='Internal time step for sovler'),
     b: int = Option(200, help='Batch size'),
     force: Force = Option(Force.li, help='Type of forcing function'),
     cycles: int = Option(2, help='Number of cycles in forcing function'),
