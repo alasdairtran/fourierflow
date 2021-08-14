@@ -111,6 +111,8 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
         if (j + 1) % record_time == 0:
             # Solution in physical space
             w = torch.fft.ifftn(w_h, dim=[1, 2], norm='backward').real
+            if w.isnan().any().item():
+                raise ValueError('NaN values found.')
 
             # Record solution and time
             sol[..., c] = w
