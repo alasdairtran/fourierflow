@@ -62,62 +62,65 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
     c = 0
     # Physical time
     t = 0.0
-    for j in tqdm(range(steps)):
-        # Stream function in Fourier space: solve Poisson equation
-        psi_h = w_h / lap
+    with tqdm(total=record_steps) as pbar:
+        for j in range(steps):
+            # Stream function in Fourier space: solve Poisson equation
+            psi_h = w_h / lap
 
-        # Velocity field in x-direction = psi_y
-        q = psi_h.clone()
-        q_real_temp = q.real.clone()
-        q.real = -2 * math.pi * k_y * q.imag
-        q.imag = 2 * math.pi * k_y * q_real_temp
-        q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
+            # Velocity field in x-direction = psi_y
+            q = psi_h.clone()
+            q_real_temp = q.real.clone()
+            q.real = -2 * math.pi * k_y * q.imag
+            q.imag = 2 * math.pi * k_y * q_real_temp
+            q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
 
-        # Velocity field in y-direction = -psi_x
-        v = psi_h.clone()
-        v_real_temp = v.real.clone()
-        v.real = 2 * math.pi * k_x * v.imag
-        v.imag = -2 * math.pi * k_x * v_real_temp
-        v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
+            # Velocity field in y-direction = -psi_x
+            v = psi_h.clone()
+            v_real_temp = v.real.clone()
+            v.real = 2 * math.pi * k_x * v.imag
+            v.imag = -2 * math.pi * k_x * v_real_temp
+            v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
 
-        # Partial x of vorticity
-        w_x = w_h.clone()
-        w_x_temp = w_x.real.clone()
-        w_x.real = -2 * math.pi * k_x * w_x.imag
-        w_x.imag = 2 * math.pi * k_x * w_x_temp
-        w_x = torch.fft.ifftn(w_x, dim=[1, 2], norm='backward').real
+            # Partial x of vorticity
+            w_x = w_h.clone()
+            w_x_temp = w_x.real.clone()
+            w_x.real = -2 * math.pi * k_x * w_x.imag
+            w_x.imag = 2 * math.pi * k_x * w_x_temp
+            w_x = torch.fft.ifftn(w_x, dim=[1, 2], norm='backward').real
 
-        # Partial y of vorticity
-        w_y = w_h.clone()
-        w_y_temp = w_y.real.clone()
-        w_y.real = -2 * math.pi * k_y * w_y.imag
-        w_y.imag = 2 * math.pi * k_y * w_y_temp
-        w_y = torch.fft.ifftn(w_y, dim=[1, 2], norm='backward').real
+            # Partial y of vorticity
+            w_y = w_h.clone()
+            w_y_temp = w_y.real.clone()
+            w_y.real = -2 * math.pi * k_y * w_y.imag
+            w_y.imag = 2 * math.pi * k_y * w_y_temp
+            w_y = torch.fft.ifftn(w_y, dim=[1, 2], norm='backward').real
 
-        # Non-linear term (u.grad(w)): compute in physical space then back to Fourier space
-        F_h = torch.fft.fftn(q * w_x + v * w_y, dim=[1, 2], norm='backward')
+            # Non-linear term (u.grad(w)): compute in physical space then back to Fourier space
+            F_h = torch.fft.fftn(q * w_x + v * w_y,
+                                 dim=[1, 2], norm='backward')
 
-        # Dealias
-        F_h *= dealias
+            # Dealias
+            F_h *= dealias
 
-        # Cranck-Nicholson update
-        factor = 0.5 * delta_t * visc * lap
-        num = -delta_t * F_h + delta_t * f_h + (1.0 - factor) * w_h
-        w_h = num / (1.0 + factor)
+            # Cranck-Nicholson update
+            factor = 0.5 * delta_t * visc * lap
+            num = -delta_t * F_h + delta_t * f_h + (1.0 - factor) * w_h
+            w_h = num / (1.0 + factor)
 
-        # Update real time (used only for recording)
-        t += delta_t
+            # Update real time (used only for recording)
+            t += delta_t
 
-        if (j + 1) % record_time == 0:
-            # Solution in physical space
-            w = torch.fft.ifftn(w_h, dim=[1, 2], norm='backward').real
-            if w.isnan().any().item():
-                raise ValueError('NaN values found.')
+            if (j + 1) % record_time == 0:
+                # Solution in physical space
+                w = torch.fft.ifftn(w_h, dim=[1, 2], norm='backward').real
+                if w.isnan().any().item():
+                    raise ValueError('NaN values found.')
 
-            # Record solution and time
-            sol[..., c] = w
-            sol_t[c] = t
+                # Record solution and time
+                sol[..., c] = w
+                sol_t[c] = t
+                pbar.update(1)
 
-            c += 1
+                c += 1
 
     return sol, sol_t
