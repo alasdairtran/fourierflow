@@ -54,7 +54,7 @@ def navier_stokes(
     k_min: int = Option(5, help='Minimium exponent of viscoity'),
     k_max: int = Option(5, help='Maximum exponent of viscoity'),
     seed: int = Option(23893, help='Seed value for reproducibility'),
-    delta: float = Option(1e-5, help='Internal time step for sovler'),
+    delta: float = Option(1e-4, help='Internal time step for sovler'),
     b: int = Option(100, help='Batch size'),
     force: Force = Option(Force.li, help='Type of forcing function'),
     cycles: int = Option(2, help='Number of cycles in forcing function'),
