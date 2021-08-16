@@ -147,7 +147,7 @@ class Fourier2DSingleExperiment(Experiment):
                 force = repeat(batch['f'], 'b m n -> b m n t 1',
                                t=xx.shape[-2])
             elif len(batch['f'].shape) == 4:
-                f = batch['f'][..., -self.n_steps:, :]
+                f = batch['f'][..., -self.n_steps:]
                 force = repeat(f, 'b m n t -> b m n t 1')
 
             xx = torch.cat([xx, force], dim=-1)
