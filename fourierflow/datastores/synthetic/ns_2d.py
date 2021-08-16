@@ -1,9 +1,15 @@
 import math
+from enum import Enum
 
 import numpy as np
 import torch
 from einops import rearrange, repeat
 from tqdm import tqdm
+
+
+class Force(str, Enum):
+    li = "li"
+    random = "random"
 
 
 # w0: initial vorticity
@@ -12,7 +18,9 @@ from tqdm import tqdm
 # T: final time
 # delta_t: internal time-step for solve (descrease if blow-up)
 # record_steps: number of in-time snapshots to record
-def solve_navier_stokes_2d(w0, f, visc, T, delta_t, record_steps):
+def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles,
+                           scaling, t_scaling, force, varying_force):
+    seed = np.random.randint(1, 1000000000)
 
     # Grid size - must be power of 2
     N = w0.shape[-1]
@@ -26,12 +34,24 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t, record_steps):
     # Initial vorticity to Fourier space
     w_h = torch.fft.fftn(w0, dim=[1, 2], norm='backward')
 
-    # Forcing to Fourier space
-    f_h = torch.fft.fftn(f, dim=[-2, -1], norm='backward')
+    if force == Force.li:
+        # Forcing function: 0.1*(sin(2pi(x+y)) + cos(2pi(x+y)))
+        ft = torch.linspace(0, 1, N+1, device=w0.device)
+        ft = ft[0:-1]
+        X, Y = torch.meshgrid(ft, ft)
+        f = 0.1*(torch.sin(2 * math.pi * (X + Y)) +
+                 torch.cos(2 * math.pi * (X + Y)))
+    elif force == Force.random and not varying_force:
+        f = get_random_force(
+            w0.shape[0], N, w0.device, cycles, scaling, 0, 0, seed)
 
-    # If same forcing for the whole batch
-    if len(f_h.shape) < len(w_h.shape):
-        f_h = rearrange(f_h, '... -> 1 ...')
+    # Forcing to Fourier space
+    if not varying_force:
+        f_h = torch.fft.fftn(f, dim=[-2, -1], norm='backward')
+
+        # If same forcing for the whole batch
+        if len(f_h.shape) < len(w_h.shape):
+            f_h = rearrange(f_h, '... -> 1 ...')
 
     # Record solution every this number of steps
     record_time = math.floor(steps / record_steps)
@@ -63,11 +83,14 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t, record_steps):
     # Saving solution and time
     sol = torch.zeros(*w0.size(), record_steps, device=w0.device)
     sol_t = torch.zeros(record_steps, device=w0.device)
+    if varying_force:
+        fs = torch.zeros(*w0.size(), record_steps, device=w0.device)
 
     # Record counter
     c = 0
     # Physical time
     t = 0.0
+
     for j in tqdm(range(steps)):
         # Stream function in Fourier space: solve Poisson equation
         psi_h = w_h / lap
@@ -107,6 +130,11 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t, record_steps):
         # Dealias
         F_h *= dealias
 
+        if varying_force:
+            f = get_random_force(w0.shape[0], N, w0.device, cycles,
+                                 scaling, t, t_scaling, seed)
+            f_h = torch.fft.fftn(f, dim=[-2, -1], norm='backward')
+
         # Cranck-Nicholson update
         factor = 0.5 * delta_t * visc * lap
         num = -delta_t * F_h + delta_t * f_h + (1.0 - factor) * w_h
@@ -123,8 +151,50 @@ def solve_navier_stokes_2d(w0, f, visc, T, delta_t, record_steps):
 
             # Record solution and time
             sol[..., c] = w
+            if varying_force:
+                fs[..., c] = f
             sol_t[c] = t
 
             c += 1
 
-    return sol.cpu().numpy(), sol_t.cpu().numpy()
+    if varying_force:
+        f = fs
+
+    return sol.cpu().numpy(), f.cpu().numpy()
+
+
+def get_random_force(b, s, device, cycles, scaling, t, t_scaling, seed):
+    ft = torch.linspace(0, 1, s+1).to(device)
+    ft = ft[0:-1]
+    X, Y = torch.meshgrid(ft, ft)
+    X = repeat(X, 'x y -> b x y', b=b)
+    Y = repeat(Y, 'x y -> b x y', b=b)
+
+    gen = torch.Generator(device)
+    gen.manual_seed(seed)
+
+    f = 0
+    for p in range(1, cycles + 1):
+        k = 2 * math.pi * p
+
+        alpha = torch.rand(b, 1, 1, generator=gen, device=device)
+        f += alpha * torch.sin(k * X + t_scaling * t)
+
+        alpha = torch.rand(b, 1, 1, generator=gen, device=device)
+        f += alpha * torch.cos(k * X + t_scaling * t)
+
+        alpha = torch.rand(b, 1, 1, generator=gen, device=device)
+        f += alpha * torch.sin(k * Y + t_scaling * t)
+
+        alpha = torch.rand(b, 1, 1, generator=gen, device=device)
+        f += alpha * torch.cos(k * Y + t_scaling * t)
+
+        alpha = torch.rand(b, 1, 1, generator=gen, device=device)
+        f += alpha * torch.sin(k * (X + Y) + t_scaling * t)
+
+        alpha = torch.rand(b, 1, 1, generator=gen, device=device)
+        f += alpha * torch.cos(k * (X + Y) + t_scaling * t)
+
+    f = f * scaling
+
+    return f
