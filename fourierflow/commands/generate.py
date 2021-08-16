@@ -32,7 +32,7 @@ def navier_stokes(
     cycles: int = Option(2, help='Number of cycles in forcing function'),
     scaling: float = Option(0.1, help='Scaling of forcing function'),
     t_scaling: float = Option(0.2, help='Scaling of time variable'),
-    varying_force: bool = Option(False, help='Enable time-varing force'),
+    varying_force: bool = Option(False, help='Enable time-varying force'),
     debug: bool = Option(False, help='Enable debugging mode with ptvsd'),
 ):
     # This debug mode is for those who use VS Code's internal debugger.

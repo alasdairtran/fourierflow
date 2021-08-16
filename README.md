@@ -41,11 +41,19 @@ FNO_DATA_ROOT=/My/Data/Location fourierflow
 # Download Navier Stokes datasets
 fourierflow download fno
 
-# Generate Navier Stokes toruses with different forcing functions
-fourierflow generate navier-stokes --force random --cycles 1 data/navier-stokes/random_force_1.h5
-fourierflow generate navier-stokes --force random --cycles 2 data/navier-stokes/random_force_2.h5
-fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 --mu-max 1e-4 --steps 200 --delta 1e-4 data/navier-stokes/random_force_mu.h5
-fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 --mu-max 1e-4 --steps 200 --delta 1e-5 data/navier-stokes/random_force_mu_small_delta.h5
+# Generate Navier Stokes on toruses with a different forcing function and
+# viscosity for each sample. Takes 14 hours.
+fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
+    --mu-max 1e-4 --steps 200 --delta 1e-4 \
+    data/navier-stokes/random_force_mu.h5
+# Generate Navier Stokes on toruses with a different time-varying forcing
+# function and a different viscosity for each sample. Takes 21 hours.
+fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
+    --mu-max 1e-4 --steps 200 --delta 1e-4 --varying-force \
+    data/navier-stokes/random_varying_force_mu.h5
+# If we decrease delta from 1e-4 to 1e-5, generating the same dataset would now
+# take 10 times as long, while the differnece between the solutions in step 20
+# is only 0.04%.
 
 # Reproducing SOA model on Navier Stokes.
 fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
