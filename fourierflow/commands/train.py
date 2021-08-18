@@ -1,4 +1,5 @@
 import os
+import shutil
 import uuid
 from copy import deepcopy
 from glob import glob
@@ -17,7 +18,7 @@ app = Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(config_path: str, overrides: str = '', debug: bool = False):
+def main(config_path: str, overrides: str = '', force: bool = False, debug: bool = False):
     """Train a Pytorch Lightning experiment."""
     params = yaml_to_params(config_path, overrides)
 
@@ -33,6 +34,14 @@ def main(config_path: str, overrides: str = '', debug: bool = False):
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
+
+    # Delete existing checkpoints and wandb logs if --force is enabled.
+    wandb_dir = os.path.join(results_dir, 'wandb')
+    chkpt_dir = os.path.join(results_dir, 'checkpoints')
+    if force and os.path.exists(wandb_dir):
+        shutil.rmtree(wandb_dir)
+    if force and os.path.exists(chkpt_dir):
+        shutil.rmtree(chkpt_dir)
 
     # We use Weights & Biases to track our experiments.
     wandb_opts = params.pop('wandb').as_dict()
