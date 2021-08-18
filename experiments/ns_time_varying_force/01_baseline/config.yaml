@@ -1,20 +1,19 @@
 wandb:
-  project: navier-stokes-4
+  project: ns-time-varying-force
   group:
-  name: 03_best_100
+  name: 01_baseline
   tags:
     - pde
     - navier-stokes
     - fourier
   notes: ""
 datastore:
-  type: navier_stokes_2
-  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
-  train_size: 1000
-  test_size: 200
-  ssr: 1 # sub-sampling rate
+  type: navier_stokes_3
+  data_path: ${DATA_ROOT}/navier-stokes/random_varying_force_mu.h5
+  ssr: 4 # sub-sampling rate
+  k: 10 # the number of steps between input and output
   batch_size: 38
-  n_workers: 4
+  n_workers: 16
 experiment:
   type: fourier_2d_single
   conv:
@@ -23,7 +22,7 @@ experiment:
     width: 64
     linear_out: true
     n_layers: 24
-    input_dim: 3
+    input_dim: 5
     share_weight: true
     factor: 4
     ff_weight_norm: true
@@ -33,6 +32,8 @@ experiment:
     in_dropout: 0.0
     avg_outs: true
   n_steps: 10
+  append_force: true
+  append_mu: true
   optimizer:
     type: adamw
     lr: 0.0025
@@ -50,22 +51,23 @@ experiment:
 trainer:
   gpus: 1
   precision: 32
-  max_epochs: 100
+  max_epochs: 10
   gradient_clip_val: 0.1
   gradient_clip_algorithm: value
   stochastic_weight_avg: false
   weights_summary: full
+  val_check_interval: 500
   # Debugging parameters
   log_gpu_memory: None # all
   track_grad_norm: -1 # 2
   fast_dev_run: false # 2
 callbacks:
   - type: model_checkpoint
-    save_top_k: 1
-    save_last: false # not needed when save_top_k == 1
-    monitor: None # valid_loss
+    filename: "{epoch}-{step}-{valid_loss_full:.4f}"
+    save_top_k: 4
+    save_last: true
+    monitor: valid_loss_full
     mode: min
-    every_n_train_steps: None
-    every_n_epochs: 1
+    auto_insert_metric_name: true
   - type: learning_rate_monitor
     logging_interval: step

@@ -1,0 +1,72 @@
+wandb:
+  project: navier-stokes-4
+  group:
+  name: 04_12_layers
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+datastore:
+  type: navier_stokes_2
+  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
+  train_size: 1000
+  test_size: 200
+  ssr: 1 # sub-sampling rate
+  batch_size: 38
+  n_workers: 4
+experiment:
+  type: fourier_2d_single
+  conv:
+    type: fourier_2d_factorized_parallel
+    modes: 16
+    width: 64
+    linear_out: true
+    n_layers: 12
+    input_dim: 3
+    share_weight: true
+    factor: 4
+    ff_weight_norm: true
+    next_input: add
+    gain: 0.1
+    dropout: 0.0
+    in_dropout: 0.0
+    avg_outs: true
+  n_steps: 10
+  optimizer:
+    type: adamw
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    type: cosine_with_warmup
+    num_warmup_steps: 500
+    num_training_steps: 50000
+    num_cycles: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: None
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 100
+  gradient_clip_val: 0.1
+  gradient_clip_algorithm: value
+  stochastic_weight_avg: false
+  weights_summary: full
+  # Debugging parameters
+  log_gpu_memory: None # all
+  track_grad_norm: -1 # 2
+  fast_dev_run: false # 2
+callbacks:
+  - type: model_checkpoint
+    filename: "{epoch}-{step}-{valid_loss_full:.4f}"
+    save_top_k: 1
+    save_last: false # not needed when save_top_k == 1
+    monitor: None # valid_loss_full
+    mode: min
+    every_n_train_steps: None
+    every_n_epochs: 1
+  - type: learning_rate_monitor
+    logging_interval: step

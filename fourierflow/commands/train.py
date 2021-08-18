@@ -28,7 +28,7 @@ def main(config_path: str, overrides: str = '', debug: bool = False):
 
     # Determine the path where the experimental results will be saved.
     parts = config_path.split('/')
-    i = parts.index('configs')
+    i = parts.index('experiments')
     save_dir = os.path.expandvars('$SM_MODEL_DIR')
     results_dir = os.path.join(save_dir, *parts[i+1:-1])
     if not os.path.exists(results_dir):
@@ -73,6 +73,7 @@ def main(config_path: str, overrides: str = '', debug: bool = False):
     trainer = pl.Trainer(logger=wandb_logger,
                          callbacks=callbacks,
                          plugins=plugins,
+                         weights_save_path=results_dir,
                          **params.pop('trainer').as_dict())
 
     # Tuning only has an effect when either auto_scale_batch_size or
