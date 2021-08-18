@@ -85,7 +85,7 @@ class FeedForward(nn.Module):
 class SpectralConv2d(nn.Module):
     def __init__(self, in_dim, out_dim, n_modes, forecast_ff, backcast_ff,
                  fourier_weight, factor, norm_locs, group_width, ff_weight_norm,
-                 n_ff_layers, layer_norm, dropout, mode):
+                 n_ff_layers, layer_norm, use_fork, dropout, mode):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -93,6 +93,7 @@ class SpectralConv2d(nn.Module):
         self.norm_locs = norm_locs
         self.group_width = group_width
         self.mode = mode
+        self.use_fork = use_fork
 
         self.fourier_weight = fourier_weight
         # Can't use complex type yet. See https://github.com/pytorch/pytorch/issues/59998
@@ -104,10 +105,11 @@ class SpectralConv2d(nn.Module):
                 nn.init.xavier_normal_(param)
                 self.fourier_weight.append(param)
 
-        # self.forecast_ff = forecast_ff
-        # if not self.forecast_ff:
-        #     self.forecast_ff = FeedForward(
-        #         out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
+        if use_fork:
+            self.forecast_ff = forecast_ff
+            if not self.forecast_ff:
+                self.forecast_ff = FeedForward(
+                    out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
         self.backcast_ff = backcast_ff
         if not self.backcast_ff:
@@ -116,21 +118,17 @@ class SpectralConv2d(nn.Module):
 
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
-
-        x = rearrange(x, 'b m n i -> b i m n')
-        # x.shape == [batch_size, in_dim, grid_size, grid_size]
-
         if self.mode != 'no-fourier':
             x = self.forward_fourier(x)
 
-        x = rearrange(x, 'b i m n -> b m n i')
-        # x.shape == [batch_size, grid_size, grid_size, out_dim]
-
         b = self.backcast_ff(x)
-        # f = self.forecast_ff(x)
-        return b, None, []
+        f = self.forecast_ff(x) if self.use_fork else None
+        return b, f, []
 
     def forward_fourier(self, x):
+        x = rearrange(x, 'b m n i -> b i m n')
+        # x.shape == [batch_size, in_dim, grid_size, grid_size]
+
         B, I, M, N = x.shape
 
         # # # Dimesion Y # # #
@@ -172,6 +170,9 @@ class SpectralConv2d(nn.Module):
         # # Combining Dimensions # #
         x = xx + xy
 
+        x = rearrange(x, 'b i m n -> b m n i')
+        # x.shape == [batch_size, grid_size, grid_size, out_dim]
+
         return x
 
 
@@ -181,7 +182,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                  n_layers=4, linear_out: bool = False, share_weight: bool = False,
                  avg_outs=False, next_input='subtract', share_fork=False, factor=2,
                  norm_locs=[], group_width=16, ff_weight_norm=False, n_ff_layers=2,
-                 gain=1, layer_norm=False, mode='full'):
+                 gain=1, layer_norm=False, use_fork=False, mode='full'):
         super().__init__()
 
         """
@@ -205,6 +206,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         self.avg_outs = avg_outs
         self.n_layers = n_layers
         self.norm_locs = norm_locs
+        self.use_fork = use_fork
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
         self.forecast_ff = self.backcast_ff = None
@@ -237,6 +239,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                                                        ff_weight_norm=ff_weight_norm,
                                                        n_ff_layers=n_ff_layers,
                                                        layer_norm=layer_norm,
+                                                       use_fork=use_fork,
                                                        dropout=dropout,
                                                        mode=mode))
 
@@ -254,19 +257,23 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         out_fts = []
         for i in range(self.n_layers):
             layer = self.spectral_layers[i]
-            b, _, out_ft = layer(x)
+            b, f, out_ft = layer(x)
             # b, _, out_ft = layer(temp)
             out_fts.append(out_ft)
-            # f_out = self.out(f)
-            # forecast = forecast + f_out
-            # forecast_list.append(f_out)
+
+            if self.use_fork:
+                f_out = self.out(f)
+                forecast = forecast + f_out
+                forecast_list.append(f_out)
+
             if self.next_input == 'subtract':
                 x = x - b
             elif self.next_input == 'add':
                 x = x + b
                 # temp = x + b
 
-        forecast = self.out(b)
+        if not self.use_fork:
+            forecast = self.out(b)
         if self.avg_outs:
             forecast = forecast / len(self.spectral_layers)
 
