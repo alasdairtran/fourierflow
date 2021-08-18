@@ -116,10 +116,22 @@ class SpectralConv2d(nn.Module):
 
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
-        B, M, N, I = x.shape
 
         x = rearrange(x, 'b m n i -> b i m n')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
+
+        if self.mode != 'no-fourier':
+            x = self.forward_fourier(x)
+
+        x = rearrange(x, 'b i m n -> b m n i')
+        # x.shape == [batch_size, grid_size, grid_size, out_dim]
+
+        b = self.backcast_ff(x)
+        # f = self.forecast_ff(x)
+        return b, None, []
+
+    def forward_fourier(self, x):
+        B, I, M, N = x.shape
 
         # # # Dimesion Y # # #
         x_fty = torch.fft.rfft(x, dim=-1, norm='ortho')
@@ -160,12 +172,7 @@ class SpectralConv2d(nn.Module):
         # # Combining Dimensions # #
         x = xx + xy
 
-        x = rearrange(x, 'b i m n -> b m n i')
-        # x.shape == [batch_size, grid_size, grid_size, out_dim]
-
-        b = self.backcast_ff(x)
-        # f = self.forecast_ff(x)
-        return b, None, []
+        return x
 
 
 @Module.register('fourier_2d_factorized_parallel')
