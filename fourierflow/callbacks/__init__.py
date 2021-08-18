@@ -1,1 +1,2 @@
+from .model_checkpoint import CustomModelCheckpoint
 from .stochastic_weight_averaging import StochasticWeightAveraging

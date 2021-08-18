@@ -2,9 +2,10 @@ from allennlp.common import Registrable
 from pytorch_lightning.callbacks import Callback as LightingCallback
 from pytorch_lightning.callbacks import (EarlyStopping, GPUStatsMonitor,
                                          GradientAccumulationScheduler,
-                                         LearningRateMonitor, ModelCheckpoint)
+                                         LearningRateMonitor)
 
-from fourierflow.callbacks import StochasticWeightAveraging
+from fourierflow.callbacks import (CustomModelCheckpoint,
+                                   StochasticWeightAveraging)
 
 
 class Callback(Registrable, LightingCallback):
@@ -16,6 +17,6 @@ Registrable._registry[Callback] = {
     'gpu_stats_monitor': (GPUStatsMonitor, None),
     'gradient_accumulation_scheduler': (GradientAccumulationScheduler, None),
     'learning_rate_monitor': (LearningRateMonitor, None),
-    'model_checkpoint': (ModelCheckpoint, None),
+    'model_checkpoint': (CustomModelCheckpoint, None),
     'stochastic_weight_averaging': (StochasticWeightAveraging, None),
 }
