@@ -56,16 +56,16 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # is only 0.04%.
 
 # Reproducing SOA model on Navier Stokes.
-fourierflow train configs/navier_stokes_4/01_li_baseline/config.yaml
+fourierflow train experiments/navier_stokes_4/01_li_baseline/config.yaml
 
 # Train with our best model
-fourierflow train configs/navier_stokes_4/02_best_200/config.yaml
+fourierflow train experiments/navier_stokes_4/02_best_200/config.yaml
 
 # Performance tradeoff evaluation. We use the Navier Stokes test set
 # as our benchmark dataset.
 
 # Train on gadi
-qsub -N 02_best_200 -v CONFIG=configs/navier_stokes_4/02_best_200/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
+qsub -N 02_best_200 -v CONFIG=experiments/navier_stokes_4/02_best_200/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
 ```
 
 ## Meshgraphnet Experiments
@@ -117,8 +117,8 @@ python plot_cfd.py --rollout_path=data/cylinder_flow/rollout_flag.pkl
 cd data/mimiciii/1.4 && gzip -d *gz
 
 # Vevo experiments
-fourierflow train configs/vevo/02_nbeats/config.yaml
-fourierflow train configs/vevo/03_radflow/config.yaml
+fourierflow train experiments/vevo/02_nbeats/config.yaml
+fourierflow train experiments/vevo/03_radflow/config.yaml
 # N-BEATS with fourier layer - similar performance
-fourierflow train configs/54_vevo_perceiver/config.yaml
+fourierflow train experiments/54_vevo_perceiver/config.yaml
 ```
