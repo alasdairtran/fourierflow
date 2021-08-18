@@ -18,6 +18,8 @@ __pycache__
 events.out.tfevents.*
 *.pbtxt
 checkpoint
+checkpoints
+wandb
 *.pkl
 
 # Packaging
