@@ -61,6 +61,7 @@ trainer:
   log_gpu_memory: None # all
   track_grad_norm: -1 # 2
   fast_dev_run: false # 2
+  limit_train_batches: 1.0
 callbacks:
   - type: model_checkpoint
     filename: "{epoch}-{step}-{valid_loss:.5f}"
