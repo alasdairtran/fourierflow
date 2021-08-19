@@ -206,7 +206,7 @@ class Fourier2DSingleExperiment(Experiment):
     def validation_step(self, batch, batch_idx):
         loss, loss_full, preds, pred_list, _ = self._valid_step(batch, 'valid')
         self.log('valid_loss_avg', loss)
-        self.log('valid_loss', loss_full)
+        self.log('valid_loss', loss_full, prog_bar=True)
 
         if batch_idx == 0:
             data = batch['data']
