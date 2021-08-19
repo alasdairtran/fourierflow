@@ -57,7 +57,7 @@ trainer:
   gradient_clip_algorithm: value
   stochastic_weight_avg: false
   weights_summary: full
-  val_check_interval: 500
+  val_check_interval: 1000
   # Debugging parameters
   log_gpu_memory: None # all
   track_grad_norm: -1 # 2
