@@ -184,9 +184,13 @@ class Fourier2DSingleExperiment(Experiment):
             out_fts_list.append(out_fts)
 
             y = yy[..., t]
-            loss += self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
+            l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
+            loss += l
             pred = im if t == 0 else torch.cat((pred, im), dim=-1)
             pred_layer_list.append(im_list)
+
+            if t == self.n_steps - 1:
+                self.log(f'{split}_loss_last', l)
 
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
