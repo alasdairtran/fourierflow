@@ -54,7 +54,7 @@ trainer:
   max_epochs: 200
 checkpointer:
   save_last: true
-  save_top_k: 4
+  save_top_k: 1
   validation_metric: valid_loss
   mode: min
   every_n_train_steps: None

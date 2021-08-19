@@ -64,7 +64,7 @@ trainer:
 callbacks:
   - type: model_checkpoint
     filename: "{epoch}-{step}-{valid_loss:.5f}"
-    save_top_k: 4
+    save_top_k: 1
     save_last: true
     monitor: valid_loss
     mode: min
