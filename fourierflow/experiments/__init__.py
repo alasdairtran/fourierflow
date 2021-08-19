@@ -7,7 +7,6 @@ from .fourier_1d_burgers import Fourier1DBurgersExperiment
 from .fourier_2d import Fourier2DExperiment
 from .fourier_2d_darcy import Fourier2DDarcyExperiment
 from .fourier_2d_deq import Fourier2DDEQExperiment
-from .fourier_2d_parallel import Fourier2DParallelExperiment
 from .fourier_2d_scales import Fourier2DScalesExperiment
 from .fourier_2d_single import Fourier2DSingleExperiment
 from .nbeats import NBEATSExperiment
