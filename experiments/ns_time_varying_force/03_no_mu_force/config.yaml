@@ -12,7 +12,7 @@ datastore:
   data_path: ${DATA_ROOT}/navier-stokes/random_varying_force_mu.h5
   ssr: 4 # sub-sampling rate
   k: 10 # the number of steps between input and output
-  batch_size: 38
+  batch_size: 19
   n_workers: 16
 experiment:
   type: fourier_2d_single
@@ -41,7 +41,7 @@ experiment:
   scheduler:
     type: cosine_with_warmup
     num_warmup_steps: 500
-    num_training_steps: 50000
+    num_training_steps: 100000
     num_cycles: 0.5
   scheduler_config:
     name: learning_rate

@@ -14,7 +14,7 @@ datastore:
   train_size: 1000
   test_size: 200
   ssr: 1 # sub-sampling rate
-  batch_size: 38
+  batch_size: 19
   n_workers: 4
 experiment:
   type: fourier_2d_single
@@ -41,7 +41,7 @@ experiment:
   scheduler:
     type: cosine_with_warmup
     num_warmup_steps: 500
-    num_training_steps: 50000
+    num_training_steps: 100000
     num_cycles: 0.5
   scheduler_config:
     name: learning_rate
