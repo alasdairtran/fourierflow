@@ -33,7 +33,7 @@ class Normalizer(nn.Module):
         if self.training and self.n_accumulations < self.max_accumulations:
             self._accumulate(x)
 
-        x = (x - self._mean) / self._std
+        x = (x - self.mean) / self.std
 
         if len(dim_sizes) == 1:
             x = rearrange(x, '(b m) h -> b m h', m=dim_sizes[0])
@@ -44,15 +44,15 @@ class Normalizer(nn.Module):
         return x
 
     def inverse(self, x):
-        return x * self._std + self._mean
+        return x * self.std + self.mean
 
     @property
-    def _mean(self):
+    def mean(self):
         safe_count = max(self.count, self.one)
         return self.sum / safe_count
 
     @property
-    def _std(self):
+    def std(self):
         safe_count = max(self.count, self.one)
         std = torch.sqrt(self.sum_squared / safe_count - self.mean**2)
         return torch.maximum(std, self.std_epsilon)
