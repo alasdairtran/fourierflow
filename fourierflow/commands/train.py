@@ -1,9 +1,10 @@
 import os
 import shutil
-import uuid
 from copy import deepcopy
 from datetime import datetime
 from glob import glob
+from pathlib import Path
+from typing import Optional
 
 import ptvsd
 import pytorch_lightning as pl
@@ -22,11 +23,11 @@ app = Typer()
 
 def delete_old_results(results_dir, force):
     """Delete existing checkpoints and wandb logs if --force is enabled."""
-    wandb_dir = os.path.join(results_dir, 'wandb')
-    chkpt_dir = os.path.join(results_dir, 'checkpoints')
-    if force and os.path.exists(wandb_dir):
+    wandb_dir = Path(results_dir) / 'wandb'
+    chkpt_dir = Path(results_dir) / 'checkpoints'
+    if force and wandb_dir.exists():
         shutil.rmtree(wandb_dir)
-    if force and os.path.exists(chkpt_dir):
+    if force and chkpt_dir.exists():
         shutil.rmtree(chkpt_dir)
 
 
@@ -40,8 +41,18 @@ def upload_code_to_wandb(config_path, wandb_logger):
     wandb_logger.experiment.log_artifact(code_artifact)
 
 
+def get_experiment_id(checkpoint_id, save_dir, resume):
+    chkpt_dir = Path(save_dir) / 'checkpoints'
+    if resume and not checkpoint_id and chkpt_dir.exists:
+        paths = chkpt_dir.glob('*/last.ckpt')
+        checkpoint_id = next(paths).parent.name
+    return checkpoint_id or datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+
+
 @app.callback(invoke_without_command=True)
-def main(config_path: str, overrides: str = '', force: bool = False, debug: bool = False):
+def main(config_path: str, overrides: str = '', force: bool = False,
+         resume: bool = False, checkpoint_id: Optional[str] = None,
+         debug: bool = False):
     """Train a Pytorch Lightning experiment."""
     params = yaml_to_params(config_path, overrides)
 
@@ -57,11 +68,12 @@ def main(config_path: str, overrides: str = '', force: bool = False, debug: bool
     delete_old_results(save_dir, force)
 
     # We use Weights & Biases to track our experiments.
+    wandb_id = get_experiment_id(checkpoint_id, save_dir, resume)
     wandb_opts = params.pop('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=save_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
-                               id=datetime.now().strftime('%Y%m%d-%H%M%S-%f'),
+                               id=wandb_id,
                                **wandb_opts)
 
     # Set seed and upload code for reproducibility.
@@ -78,6 +90,13 @@ def main(config_path: str, overrides: str = '', force: bool = False, debug: bool
     if pretrained_path:
         experiment.load_lightning_model_state(pretrained_path)
 
+    # Resume from last checkpoint. We assume that the checkpoint file is from
+    # the end of the previous epoch. The trainer will start the next epoch.
+    # Resuming from the middle of an epoch is not yet supported. See:
+    # https://github.com/PyTorchLightning/pytorch-lightning/issues/5325
+    chkpt_path = Path(save_dir) / 'checkpoints' / wandb_id / 'last.ckpt' \
+        if resume else None
+
     # Initialize the main trainer.
     callbacks = [Callback.from_params(p) for p in params.pop('callbacks', [])]
     multi_gpus = params.get('trainer').get('gpus', 0) > 1
@@ -86,6 +105,7 @@ def main(config_path: str, overrides: str = '', force: bool = False, debug: bool
                          callbacks=callbacks,
                          plugins=plugins,
                          weights_save_path=save_dir,
+                         resume_from_checkpoint=chkpt_path,
                          **params.pop('trainer').as_dict())
 
     # Tuning only has an effect when either auto_scale_batch_size or

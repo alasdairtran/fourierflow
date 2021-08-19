@@ -43,7 +43,7 @@ def main(config_path: str,
     # We use Weights & Biases to track our experiments.
     wandb_opts = params.pop('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=save_dir,
-                               mode='online',
+                               mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
                                id=datetime.now().strftime('%Y%m%d-%H%M%S-%f'),
                                **wandb_opts)
