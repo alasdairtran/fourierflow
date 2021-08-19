@@ -151,8 +151,8 @@ class Fourier2DExperiment(Experiment):
 
     def validation_step(self, batch, batch_idx):
         loss, loss_full, preds, pred_list = self._learning_step(batch)
-        self.log('valid_loss', loss)
-        self.log('valid_loss_full', loss_full)
+        self.log('valid_loss_avg', loss)
+        self.log('valid_loss', loss_full)
 
         if batch_idx == 0:
             xx, yy = batch
@@ -168,8 +168,8 @@ class Fourier2DExperiment(Experiment):
 
     def test_step(self, batch, batch_idx):
         loss, loss_full, _, _ = self._learning_step(batch)
-        self.log('test_loss', loss)
-        self.log('test_loss_full', loss_full)
+        self.log('test_loss_avg', loss)
+        self.log('test_loss', loss_full)
 
 
 class MidpointNormalize(mpl.colors.Normalize):

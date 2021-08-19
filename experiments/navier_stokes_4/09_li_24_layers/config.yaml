@@ -43,6 +43,6 @@ trainer:
   max_epochs: 500
 callbacks:
   - type: model_checkpoint
-    filename: "{epoch}-{step}-{valid_loss_full:.5f}"
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
   - type: learning_rate_monitor
     logging_interval: step

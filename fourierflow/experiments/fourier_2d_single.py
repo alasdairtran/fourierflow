@@ -207,8 +207,8 @@ class Fourier2DSingleExperiment(Experiment):
 
     def validation_step(self, batch, batch_idx):
         loss, loss_full, preds, pred_list, _ = self._valid_step(batch, 'valid')
-        self.log('valid_loss', loss)
-        self.log('valid_loss_full', loss_full)
+        self.log('valid_loss_avg', loss)
+        self.log('valid_loss', loss_full)
 
         if batch_idx == 0:
             data = batch['data']
@@ -226,8 +226,8 @@ class Fourier2DSingleExperiment(Experiment):
         loss, loss_full, preds, pred_list, out_fts_list = self._valid_step(
             batch, 'test')
         # loss, loss_full, _, _ = self._test_step(batch, 'test')
-        self.log('test_loss', loss)
-        self.log('test_loss_full', loss_full)
+        self.log('test_loss_avg', loss)
+        self.log('test_loss', loss_full)
 
         # import pickle
         # with open('R.pkl', 'wb') as f:
