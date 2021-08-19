@@ -109,7 +109,6 @@ class Fourier2DSingleExperiment(Experiment):
 
         x = self.normalizer(x)
         im, _, _ = self.conv(x)
-        im = self.normalizer.inverse(im, channel=0)
 
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
@@ -181,7 +180,6 @@ class Fourier2DSingleExperiment(Experiment):
 
             x = self.normalizer(x)
             im, im_list, out_fts = self.conv(x)
-            im = self.normalizer.inverse(im, channel=0)
             # im.shape == [batch_size, *dim_sizes, 1]
 
             out_fts_list.append(out_fts)
