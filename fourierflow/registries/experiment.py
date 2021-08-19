@@ -9,8 +9,10 @@ from pytorch_lightning.utilities.cloud_io import load as pl_load
 class Experiment(Registrable, LightningModule):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # n = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        # self.log('n_params', n)
+
+    def on_train_start(self):
+        n = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        self.log('n_params', n)
 
     def configure_optimizers(self):
         parameters = [[n, p] for n, p in self.named_parameters()
