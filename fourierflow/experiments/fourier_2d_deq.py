@@ -1,11 +1,9 @@
-import math
 from typing import Any, Dict
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
 import wandb
 from allennlp.common import Lazy
 from allennlp.training.optimizers import Optimizer

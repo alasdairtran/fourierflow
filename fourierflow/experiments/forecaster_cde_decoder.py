@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from fourierflow.registry import Experiment, Module
+from fourierflow.registry import Experiment
 
 from .viz import plot_deterministic_forecasts
 

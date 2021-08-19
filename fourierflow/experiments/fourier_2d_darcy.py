@@ -1,20 +1,12 @@
 from typing import Any, Dict
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
 import torch
-import torch.nn as nn
-import wandb
 from allennlp.common import Lazy
 from allennlp.training.optimizers import Optimizer
 from einops import rearrange, repeat
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
-from fourierflow.modules.perceiver import (Attention, FeedForward, PreNorm,
-                                           cache_fn)
 from fourierflow.registry import Experiment, Module, Scheduler
 
 

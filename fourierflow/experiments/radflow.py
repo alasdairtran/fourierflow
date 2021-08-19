@@ -1,12 +1,8 @@
 from typing import Any, Dict
 
-import matplotlib.pyplot as plt
 import torch
-import wandb
 from allennlp.common import Lazy
-from allennlp.training.learning_rate_schedulers import LinearWithWarmup
 from allennlp.training.optimizers import Optimizer
-from einops import repeat
 
 from fourierflow.registry import Experiment, Module, Scheduler
 
