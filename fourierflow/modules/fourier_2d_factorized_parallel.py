@@ -200,6 +200,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
 
         self.modes = modes
         self.width = width
+        self.input_dim = input_dim
         self.in_proj = WNLinear(input_dim, self.width, wnorm=ff_weight_norm)
         self.drop = nn.Dropout(in_dropout)
         self.next_input = next_input

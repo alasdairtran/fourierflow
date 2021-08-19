@@ -53,7 +53,6 @@ class Fourier2DSingleExperiment(Experiment):
         self.lr = None
         self.normalizer = Normalizer([conv.input_dim])
         self.register_buffer('_float', torch.FloatTensor([0.1]))
-        self.automatic_optimization = False  # activates manual optimization
 
     def forward(self, x):
         x = self.conv(x)
@@ -112,6 +111,8 @@ class Fourier2DSingleExperiment(Experiment):
 
         x = self.normalizer(x)
         im, _, _ = self.conv(x)
+        im = self.normalizer.inverse(im, channel=0)
+
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
         BN = im.shape[0]
@@ -182,6 +183,7 @@ class Fourier2DSingleExperiment(Experiment):
 
             x = self.normalizer(x)
             im, im_list, out_fts = self.conv(x)
+            im = self.normalizer.inverse(im, channel=0)
             # im.shape == [batch_size, *dim_sizes, 1]
 
             out_fts_list.append(out_fts)
