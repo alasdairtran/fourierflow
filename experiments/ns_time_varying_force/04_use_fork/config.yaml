@@ -64,7 +64,7 @@ trainer:
   fast_dev_run: false # 2
 callbacks:
   - type: model_checkpoint
-    filename: "{epoch}-{step}-{valid_loss_full:.4f}"
+    filename: "{epoch}-{step}-{valid_loss_full:.5f}"
     save_top_k: 4
     save_last: true
     monitor: valid_loss_full
