@@ -172,59 +172,6 @@ class Fourier2DDEQExperiment(Experiment):
 
         return loss, loss_full, pred
 
-    def _test_step(self, data, split):
-        B, *dim_sizes, T = data.shape
-        X, Y = dim_sizes
-        # data.shape == [batch_size, *dim_sizes, total_steps]
-
-        xx = repeat(data, '... -> ... 1')
-        # xx.shape == [batch_size, *dim_sizes, total_steps, 1]
-
-        if self.use_position:
-            pos_feats = self.encode_positions(
-                dim_sizes, self.low, self.high, self.use_fourier_position)
-            # pos_feats.shape == [*dim_sizes, pos_size]
-
-            pos_feats = repeat(pos_feats, '... -> b ...', b=B)
-            # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
-
-            all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
-
-            xx = torch.cat([xx, all_pos_feats], dim=-1)
-            # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
-
-        xx = xx[..., :1, :]
-        # xx.shape == [batch_size, *dim_sizes, n_steps, 3]
-
-        yy = data[:, ..., 1:]
-        # yy.shape == [batch_size, *dim_sizes, n_steps]
-
-        loss = 0
-        # We predict one future one step at a time
-        for t in range(19):
-            if t == 0:
-                x = xx[..., t, :]
-            elif self.use_position:
-                x = torch.cat([im, pos_feats], dim=-1)
-            else:
-                x = im
-            # x.shape == [batch_size, *dim_sizes, 3]
-
-            im = self.conv(x, self.global_step)
-            # im.shape == [batch_size, *dim_sizes, 1]
-
-            y = yy[..., t]
-            l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
-            loss += l
-            if t in [0, 1, 3, 7, 14, 18]:
-                self.log(f'test_loss_{t + 1}', l)
-            pred = im if t == 0 else torch.cat((pred, im), dim=-1)
-
-        loss /= self.n_steps
-        loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
-
-        return loss, loss_full, pred
-
     def training_step(self, batch, batch_idx):
         loss = self._training_step(batch)
         self.log('train_loss', loss)
