@@ -11,6 +11,8 @@ from typer import Typer
 from fourierflow.registries import Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
 
+from .utils import get_save_dir
+
 app = Typer()
 
 
@@ -27,22 +29,19 @@ def main(config_path: str,
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
+        # ptvsd doesn't play well with multiple processes.
+        params['datastore']['n_workers'] = 0
 
     datastore = Datastore.from_params(params['datastore'])
     experiment = Experiment.from_params(params['experiment'])
     experiment.load_lightning_model_state(checkpoint_path, map_location)
 
     # Determine the path where the experimental test results will be saved.
-    parts = config_path.split('/')
-    i = parts.index('configs')
-    save_dir = os.path.expandvars('$SM_MODEL_DIR')
-    results_dir = os.path.join(save_dir, *parts[i+1:-1])
-    if not os.path.exists(results_dir):
-        os.makedirs(results_dir, exist_ok=True)
+    save_dir = get_save_dir(config_path)
 
     # We use Weights & Biases to track our experiments.
     wandb_opts = params.pop('wandb').as_dict()
-    wandb_logger = WandbLogger(save_dir=results_dir,
+    wandb_logger = WandbLogger(save_dir=save_dir,
                                mode='online',
                                config=deepcopy(params.as_dict()),
                                id=str(uuid.uuid4()),

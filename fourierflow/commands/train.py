@@ -14,18 +14,9 @@ from typer import Typer
 from fourierflow.registries import Callback, Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
 
+from .utils import get_save_dir
+
 app = Typer()
-
-
-def get_save_dir(config_path):
-    # Determine the path where the experimental results will be saved.
-    parts = config_path.split('/')
-    i = parts.index('experiments')
-    root_dir = os.path.expandvars('$SM_MODEL_DIR')
-    save_dir = os.path.join(root_dir, *parts[i+1:-1])
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
-    return save_dir
 
 
 def delete_old_results(results_dir, force):
