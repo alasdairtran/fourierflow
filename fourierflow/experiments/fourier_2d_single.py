@@ -12,7 +12,7 @@ from allennlp.training.optimizers import Optimizer
 from einops import rearrange, repeat
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from fourierflow.modules import fourier_encode
+from fourierflow.modules import Normalizer, fourier_encode
 from fourierflow.modules.loss import LpLoss
 from fourierflow.registry import Experiment, Module, Scheduler
 
@@ -51,7 +51,9 @@ class Fourier2DSingleExperiment(Experiment):
         self.low = low
         self.high = high
         self.lr = None
+        self.normalizer = Normalizer([conv.input_dim])
         self.register_buffer('_float', torch.FloatTensor([0.1]))
+        self.automatic_optimization = False  # activates manual optimization
 
     def forward(self, x):
         x = self.conv(x)
@@ -105,10 +107,10 @@ class Fourier2DSingleExperiment(Experiment):
             x = torch.cat([x, f], dim=-1)
 
         if self.append_mu:
-            mu = (batch['mu'] - 1e-5) / (1e-4 - 1e-5)
-            mu = repeat(mu, 'b -> b m n 1', m=X, n=Y)
+            mu = repeat(batch['mu'], 'b -> b m n 1', m=X, n=Y)
             x = torch.cat([x, mu], dim=-1)
 
+        x = self.normalizer(x)
         im, _, _ = self.conv(x)
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
@@ -153,8 +155,8 @@ class Fourier2DSingleExperiment(Experiment):
             xx = torch.cat([xx, force], dim=-1)
 
         if self.append_mu:
-            mu = (batch['mu'] - 1e-5) / (1e-4 - 1e-5)
-            mu = repeat(mu, 'b -> b m n t 1', m=X, n=Y, t=xx.shape[-2])
+            mu = repeat(batch['mu'], 'b -> b m n t 1',
+                        m=X, n=Y, t=xx.shape[-2])
             xx = torch.cat([xx, mu], dim=-1)
 
         yy = data[:, ..., -self.n_steps:]
@@ -178,6 +180,7 @@ class Fourier2DSingleExperiment(Experiment):
                 x = im
             # x.shape == [batch_size, *dim_sizes, 3]
 
+            x = self.normalizer(x)
             im, im_list, out_fts = self.conv(x)
             # im.shape == [batch_size, *dim_sizes, 1]
 
