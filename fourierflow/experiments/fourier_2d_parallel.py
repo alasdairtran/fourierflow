@@ -18,7 +18,7 @@ from fourierflow.modules.perceiver import (Attention, FeedForward, PreNorm,
 from fourierflow.registry import Experiment, Module, Scheduler
 
 
-@Experiment.register('fourier_2d_parellel')
+@Experiment.register('fourier_2d_parallel')
 class Fourier2DParallelExperiment(Experiment):
     def __init__(self,
                  conv: Module,
