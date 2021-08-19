@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from einops import rearrange
 
 
 class Normalizer(nn.Module):
@@ -24,11 +25,23 @@ class Normalizer(nn.Module):
         self.n_accumulations += 1
 
     def forward(self, x):
+        _, *dim_sizes, _ = x.shape
+        if dim_sizes:
+            x = rearrange(x, 'b ... h -> (b ...) h')
         # x.shape == [batch_size, latent_dim]
+
         if self.training and self.n_accumulations < self.max_accumulations:
             self._accumulate(x)
 
-        return (x - self._mean) / self._std
+        x = (x - self._mean) / self._std
+
+        if len(dim_sizes) == 1:
+            x = rearrange(x, '(b m) h -> b m h', m=dim_sizes[0])
+        elif len(dim_sizes) == 2:
+            m, n = dim_sizes
+            x = rearrange(x, '(b m n) h -> b m n h', m=m, n=n)
+
+        return x
 
     def inverse(self, x):
         return x * self._std + self._mean
