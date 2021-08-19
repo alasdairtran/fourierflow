@@ -11,7 +11,7 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins import DDPPlugin
 from typer import Typer
 
-from fourierflow.registry import Callback, Datastore, Experiment
+from fourierflow.registries import Callback, Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
 
 app = Typer()

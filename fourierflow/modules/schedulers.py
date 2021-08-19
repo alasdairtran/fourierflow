@@ -2,7 +2,7 @@ import math
 
 from torch.optim.lr_scheduler import LambdaLR
 
-from fourierflow.registry import Scheduler
+from fourierflow.registries import Scheduler
 
 
 class LinearLRLambda:

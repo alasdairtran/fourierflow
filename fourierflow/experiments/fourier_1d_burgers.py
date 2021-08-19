@@ -7,7 +7,7 @@ from einops import rearrange, repeat
 
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
-from fourierflow.registry import Experiment, Module, Scheduler
+from fourierflow.registries import Experiment, Module, Scheduler
 
 
 @Experiment.register('fourier_1d_burgers')

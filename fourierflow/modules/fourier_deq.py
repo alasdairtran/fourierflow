@@ -10,7 +10,7 @@ from torch.nn.utils import weight_norm
 
 from fourierflow.modules.deq.jacobian import jac_loss_estimate
 from fourierflow.modules.deq.solvers import anderson, broyden
-from fourierflow.registry import Module
+from fourierflow.registries import Module
 
 
 def wnorm(module, active):

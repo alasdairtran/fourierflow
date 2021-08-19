@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from fourierflow.registry import Module
+from fourierflow.registries import Module
 
 
 @Module.register('radflow_lstm')

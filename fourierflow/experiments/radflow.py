@@ -4,7 +4,7 @@ import torch
 from allennlp.common import Lazy
 from allennlp.training.optimizers import Optimizer
 
-from fourierflow.registry import Experiment, Module, Scheduler
+from fourierflow.registries import Experiment, Module, Scheduler
 
 
 @Experiment.register('radflow')

@@ -5,7 +5,7 @@ from allennlp.common import Lazy
 from allennlp.training.optimizers import Optimizer
 from einops import repeat
 
-from fourierflow.registry import Experiment, Module, Scheduler
+from fourierflow.registries import Experiment, Module, Scheduler
 
 
 @Experiment.register('nbeats')

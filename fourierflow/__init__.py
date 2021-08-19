@@ -6,4 +6,5 @@ import fourierflow.datastores
 import fourierflow.experiments
 import fourierflow.modules
 import fourierflow.optimizers
+import fourierflow.registries
 import fourierflow.schedulers

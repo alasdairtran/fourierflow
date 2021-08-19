@@ -8,7 +8,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from typer import Typer
 
-from fourierflow.registry import Datastore, Experiment
+from fourierflow.registries import Datastore, Experiment
 from fourierflow.utils.parsing import yaml_to_params
 
 app = Typer()

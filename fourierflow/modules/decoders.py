@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from fourierflow.registry import Module
+from fourierflow.registries import Module
 
 # from torchdiffeq import odeint
 

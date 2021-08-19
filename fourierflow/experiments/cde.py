@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from fourierflow.registry import Experiment
+from fourierflow.registries import Experiment
 
 # import torchcde
 

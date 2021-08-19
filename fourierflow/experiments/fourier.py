@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 from fourierflow.modules.fourier import SimpleBlock1d
 from fourierflow.modules.loss import LpLoss
-from fourierflow.registry import Experiment
+from fourierflow.registries import Experiment
 
 
 @Experiment.register('fourier_1d')

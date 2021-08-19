@@ -12,7 +12,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
-from fourierflow.registry import Experiment, Module, Scheduler
+from fourierflow.registries import Experiment, Module, Scheduler
 
 
 @Experiment.register('fourier_2d_deq')

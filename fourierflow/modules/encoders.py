@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from fourierflow.registry import Module
+from fourierflow.registries import Module
 
 
 @Module.register('encoder')

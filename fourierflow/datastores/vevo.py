@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import os
 
-from fourierflow.registry import Datastore
+from fourierflow.registries import Datastore
 
 
 @Datastore.register('vevo')

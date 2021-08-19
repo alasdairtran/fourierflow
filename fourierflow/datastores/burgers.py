@@ -7,7 +7,7 @@ import torch
 from einops import repeat
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.registry import Datastore
+from fourierflow.registries import Datastore
 
 
 @Datastore.register('burgers')

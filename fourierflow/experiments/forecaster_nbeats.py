@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
-from fourierflow.registry import Module
+from fourierflow.registries import Module
 
-from fourierflow.registry import Experiment
+from fourierflow.registries import Experiment
 from .viz import plot_deterministic_forecasts
 
 

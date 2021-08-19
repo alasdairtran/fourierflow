@@ -6,7 +6,7 @@ from einops import rearrange, reduce, repeat
 from torch.nn import functional as F
 
 from fourierflow.modules.linear import GehringLinear
-from fourierflow.registry import Module
+from fourierflow.registries import Module
 
 from .fourier import SpectralConv1d
 
