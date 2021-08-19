@@ -12,6 +12,7 @@ from .fourier_2d_split import SimpleBlock2dSplit
 from .fourier_deq import SimpleBlock2dDEQ
 from .fourier_deq_full import SimpleBlock2dDEQFull
 from .nbeats import NBeatsNet
+from .normalizer import Normalizer
 from .perceiver import (Perceiver, TimeSeriesPerceiver,
                         TimeSeriesPerceiverPositional,
                         TimeSeriesPerceiverResidual)
