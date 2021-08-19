@@ -1,6 +1,7 @@
 import os
 import uuid
 from copy import deepcopy
+from datetime import datetime
 from typing import Optional
 
 import ptvsd
@@ -44,7 +45,7 @@ def main(config_path: str,
     wandb_logger = WandbLogger(save_dir=save_dir,
                                mode='online',
                                config=deepcopy(params.as_dict()),
-                               id=str(uuid.uuid4()),
+                               id=datetime.now().strftime('%Y%m%d-%H%M%S-%f'),
                                **wandb_opts)
 
     # Start the main testing pipeline.

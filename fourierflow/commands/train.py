@@ -2,6 +2,7 @@ import os
 import shutil
 import uuid
 from copy import deepcopy
+from datetime import datetime
 from glob import glob
 
 import ptvsd
@@ -60,7 +61,7 @@ def main(config_path: str, overrides: str = '', force: bool = False, debug: bool
     wandb_logger = WandbLogger(save_dir=save_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
-                               id=str(uuid.uuid4()),
+                               id=datetime.now().strftime('%Y%m%d-%H%M%S-%f'),
                                **wandb_opts)
 
     # Set seed and upload code for reproducibility.

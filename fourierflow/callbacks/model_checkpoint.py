@@ -49,8 +49,7 @@ class CustomModelCheckpoint(ModelCheckpoint):
                 if isinstance(trainer.logger.version, str)
                 else f"version_{trainer.logger.version}"
             )
-            chk_id = f'run-{ts}-{version}'
-            ckpt_path = os.path.join(save_dir, "checkpoints", chk_id)
+            ckpt_path = os.path.join(save_dir, "checkpoints", version)
         else:
             ckpt_path = os.path.join(trainer.weights_save_path, "checkpoints")
 
