@@ -52,9 +52,8 @@ def main(config_path: str, overrides: str = '', force: bool = False, debug: bool
                                **wandb_opts)
 
     # To ensure reproduciblity, we seed the whole Pytorch Lightning pipeline.
-    seed = params.get('seed', '38124')
-    os.environ['PL_GLOBAL_SEED'] = seed
-    os.environ['PL_SEED_WORKERS'] = '1'
+    seed = params.get('seed', 38124)
+    pl.seed_everything(seed, workers=True)
 
     # Upload all Python code for save the exact state of the experiment code.
     code_artifact = wandb.Artifact('fourierflow', type='code')
