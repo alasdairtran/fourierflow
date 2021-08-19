@@ -1,0 +1,73 @@
+wandb:
+  project: ns-time-varying-force
+  group:
+  name: 06_normalize_inputs_ouputs
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+datastore:
+  type: navier_stokes_3
+  data_path: ${DATA_ROOT}/navier-stokes/random_varying_force_mu.h5
+  ssr: 4 # sub-sampling rate
+  k: 10 # the number of steps between input and output
+  batch_size: 38
+  n_workers: 16
+experiment:
+  type: fourier_2d_single
+  conv:
+    type: fourier_2d_factorized_parallel
+    modes: 16
+    width: 64
+    linear_out: true
+    n_layers: 24
+    input_dim: 5
+    share_weight: true
+    factor: 4
+    ff_weight_norm: true
+    next_input: add
+    gain: 0.1
+    dropout: 0.0
+    in_dropout: 0.0
+    avg_outs: true
+  n_steps: 10
+  append_force: true
+  append_mu: true
+  optimizer:
+    type: adamw
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    type: cosine_with_warmup
+    num_warmup_steps: 500
+    num_training_steps: 50000
+    num_cycles: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: None
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 10
+  gradient_clip_val: 0.1
+  gradient_clip_algorithm: value
+  stochastic_weight_avg: false
+  weights_summary: full
+  val_check_interval: 500
+  # Debugging parameters
+  log_gpu_memory: None # all
+  track_grad_norm: -1 # 2
+  fast_dev_run: false # 2
+callbacks:
+  - type: model_checkpoint
+    filename: "{epoch}-{step}-{valid_loss_full:.4f}"
+    save_top_k: 4
+    save_last: true
+    monitor: valid_loss_full
+    mode: min
+    auto_insert_metric_name: true
+  - type: learning_rate_monitor
+    logging_interval: step
