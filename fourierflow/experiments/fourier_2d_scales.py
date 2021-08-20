@@ -1,18 +1,14 @@
 from typing import Any, Dict
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
 import torch
-import wandb
 from allennlp.common import Lazy
 from allennlp.training.optimizers import Optimizer
 from einops import rearrange, repeat
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
 from fourierflow.registries import Experiment, Module, Scheduler
+from fourierflow.viz import log_navier_stokes_heatmap
 
 
 @Experiment.register('fourier_2d_scales')
@@ -214,43 +210,8 @@ class Fourier2DScalesExperiment(Experiment):
         if batch_idx == 0:
             data = batch
             expt = self.logger.experiment
-            log_imshow(expt, data[0, :, :, 19], 'gt t=19')
-            log_imshow(expt, preds_19[0, :, :, 0], 'pred t=19')
+            log_navier_stokes_heatmap(expt, data[0, :, :, 19], 'gt t=19')
+            log_navier_stokes_heatmap(expt, preds_19[0, :, :, 0], 'pred t=19')
 
     def test_step(self, batch, batch_idx):
         self._valid_step(batch, 'test')
-
-
-class MidpointNormalize(mpl.colors.Normalize):
-    """See https://stackoverflow.com/a/50003503/3790116."""
-
-    def __init__(self, vmin, vmax, midpoint=0, clip=False):
-        self.midpoint = midpoint
-        mpl.colors.Normalize.__init__(self, vmin, vmax, clip)
-
-    def __call__(self, value, clip=None):
-        normalized_min = max(
-            0, 1 / 2 * (1 - abs((self.midpoint - self.vmin) / (self.midpoint - self.vmax))))
-        normalized_max = min(
-            1, 1 / 2 * (1 + abs((self.vmax - self.midpoint) / (self.midpoint - self.vmin))))
-        normalized_mid = 0.5
-        x, y = [self.vmin, self.midpoint, self.vmax], [
-            normalized_min, normalized_mid, normalized_max]
-        return np.ma.masked_array(np.interp(value, x, y))
-
-
-def log_imshow(expt, tensor, name):
-    fig = plt.figure(figsize=(6, 6))
-    ax = fig.add_subplot(1, 1, 1)
-    vals = tensor.cpu().numpy()
-    vmin = -3  # -1 if 'layer' in name else -3
-    vmax = 3  # 1 if 'layer' in name else 3
-    norm = MidpointNormalize(vmin=vmin, vmax=vmax, midpoint=0)
-    im = ax.imshow(vals, interpolation='bilinear',
-                   cmap=plt.get_cmap('bwr'), norm=norm)
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    fig.colorbar(im, cax=cax, orientation='vertical')
-    fig.tight_layout()
-    expt.log({f'{name}': wandb.Image(fig)})
-    plt.close('all')
