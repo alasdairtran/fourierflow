@@ -24,6 +24,8 @@ python -m ipykernel install --user --name fourierflow --display-name "fourierflo
 poe install-tensorflow
 # Manually reinstall Pytorch with CUDA 11.1 support
 poe install-torch-cuda11
+# Manually upgrade wandb to fix sync time issue: https://github.com/wandb/client/pull/2457
+pip install -U wandb
 
 # set default paths
 cp example.env .env
