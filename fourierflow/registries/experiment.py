@@ -12,7 +12,7 @@ class Experiment(Registrable, LightningModule):
 
     def on_train_start(self):
         n = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        self.log('n_params', n)
+        self.logger.experiment.summary["n_params"] = n
 
     def configure_optimizers(self):
         parameters = [[n, p] for n, p in self.named_parameters()
