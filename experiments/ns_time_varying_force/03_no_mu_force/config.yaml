@@ -1,6 +1,6 @@
 wandb:
   project: ns-time-varying-force
-  group:
+  group: 03_no_mu_force
   name: 03_no_mu_force
   tags:
     - pde

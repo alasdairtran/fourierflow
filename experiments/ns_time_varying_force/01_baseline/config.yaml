@@ -1,6 +1,6 @@
 wandb:
   project: ns-time-varying-force
-  group:
+  group: 01_baseline
   name: 01_baseline
   tags:
     - pde

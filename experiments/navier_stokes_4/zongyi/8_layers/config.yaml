@@ -1,12 +1,12 @@
 wandb:
   project: navier-stokes-4
-  group:
-  name: 09_li_24_layers
+  group: zongyi/8_layers
+  name: zongyi/8_layers
   tags:
     - pde
     - navier-stokes
     - fourier
-  notes: Reproduced experiment of Li et al (2020)
+  notes: ""
 datastore:
   type: navier_stokes
   data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
@@ -22,7 +22,8 @@ experiment:
     type: fourier_net_2d
     modes1: 12
     modes2: 12
-    width: 24
+    width: 20
+    n_layers: 8
   n_steps: 10
   optimizer:
     type: adamw

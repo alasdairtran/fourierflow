@@ -1,7 +1,7 @@
 wandb:
   project: navier-stokes-4
-  group:
-  name: 01_fourier_li
+  group: zongyi/4_layers
+  name: zongyi/4_layers
   tags:
     - pde
     - navier-stokes
@@ -23,6 +23,7 @@ experiment:
     modes1: 12
     modes2: 12
     width: 20
+    n_layers: 4
   n_steps: 10
   optimizer:
     type: adamw
