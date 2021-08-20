@@ -31,6 +31,7 @@ class Fourier2DSingleExperiment(Experiment):
                  use_position: bool = True,
                  append_force: bool = False,
                  append_mu: bool = False,
+                 max_accumulations: float = 1e6,
                  use_fourier_position: bool = False):
         super().__init__()
         self.conv = conv
@@ -49,7 +50,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.low = low
         self.high = high
         self.lr = None
-        self.normalizer = Normalizer([conv.input_dim])
+        self.normalizer = Normalizer([conv.input_dim], max_accumulations)
         self.register_buffer('_float', torch.FloatTensor([0.1]))
 
     def forward(self, x):
