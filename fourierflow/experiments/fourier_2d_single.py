@@ -105,7 +105,7 @@ class Fourier2DSingleExperiment(Experiment):
             x = torch.cat([x, mu], dim=-1)
 
         x = self.normalizer(x)
-        im, _, _ = self.conv(x)
+        im = self.conv(x)['forecast']
 
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
@@ -160,7 +160,6 @@ class Fourier2DSingleExperiment(Experiment):
         loss = 0
         # We predict one future one step at a time
         pred_layer_list = []
-        out_fts_list = []
         for t in range(self.n_steps):
             if t == 0:
                 x = xx[..., t, :]
@@ -176,10 +175,9 @@ class Fourier2DSingleExperiment(Experiment):
             # x.shape == [batch_size, *dim_sizes, 3]
 
             x = self.normalizer(x)
-            im, im_list, out_fts = self.conv(x)
+            out = self.conv(x)
+            im, im_list = out['forecast'], out['forecast_list']
             # im.shape == [batch_size, *dim_sizes, 1]
-
-            out_fts_list.append(out_fts)
 
             y = yy[..., t]
             l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
@@ -193,7 +191,7 @@ class Fourier2DSingleExperiment(Experiment):
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, pred, pred_layer_list, out_fts_list
+        return loss, loss_full, pred, pred_layer_list
 
     def training_step(self, batch, batch_idx):
         loss = self._training_step(batch)
@@ -201,7 +199,7 @@ class Fourier2DSingleExperiment(Experiment):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list, _ = self._valid_step(batch, 'valid')
+        loss, loss_full, preds, pred_list = self._valid_step(batch, 'valid')
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
 
@@ -219,19 +217,7 @@ class Fourier2DSingleExperiment(Experiment):
                         expt, layer[0], f'layer {i} t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list, out_fts_list = self._valid_step(
+        loss, loss_full, preds, pred_list = self._valid_step(
             batch, 'test')
-        # loss, loss_full, _, _ = self._test_step(batch, 'test')
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
-
-        # import pickle
-        # with open('R.pkl', 'wb') as f:
-        #     pickle.dump(out_fts_list, f)
-
-        # if batch_idx == 0:
-        #     expt = self.logger.experiment
-        #     log_imshow(expt, torch.sqrt(
-        #         out_fts_list[0][0][0].real**2 + out_fts_list[0][0][0].imag**2), 'layer 0')
-        #     log_imshow(expt, torch.sqrt(
-        #         out_fts_list[0][1][0].real**2 + out_fts_list[0][1][0].imag**2), 'layer 1')

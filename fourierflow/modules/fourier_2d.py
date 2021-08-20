@@ -123,4 +123,6 @@ class SimpleBlock2d(nn.Module):
 
         x = self.feedforward(x)
         # x.shape == [n_batches, *dim_sizes, 1]
-        return x, None
+        return {
+            'forecast': x
+        }

@@ -123,7 +123,7 @@ class SpectralConv2d(nn.Module):
 
         b = self.backcast_ff(x)
         f = self.forecast_ff(x) if self.use_fork else None
-        return b, f, []
+        return b, f
 
     def forward_fourier(self, x):
         x = rearrange(x, 'b m n i -> b i m n')
@@ -252,15 +252,11 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
         # x.shape == [n_batches, *dim_sizes, input_size]
         forecast = 0
         x = self.in_proj(x)
-        # temp = x
         x = self.drop(x)
         forecast_list = []
-        out_fts = []
         for i in range(self.n_layers):
             layer = self.spectral_layers[i]
-            b, f, out_ft = layer(x)
-            # b, _, out_ft = layer(temp)
-            out_fts.append(out_ft)
+            b, f = layer(x)
 
             if self.use_fork:
                 f_out = self.out(f)
@@ -271,11 +267,13 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
                 x = x - b
             elif self.next_input == 'add':
                 x = x + b
-                # temp = x + b
 
         if not self.use_fork:
             forecast = self.out(b)
         if self.avg_outs:
             forecast = forecast / len(self.spectral_layers)
 
-        return forecast, forecast_list, out_fts
+        return {
+            'forecast': forecast,
+            'forecast_list': forecast_list,
+        }

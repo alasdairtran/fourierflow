@@ -111,13 +111,12 @@ class Fourier2DExperiment(Experiment):
 
         loss = 0
         # We predict one future one step at a time
-        pred_layer_list = []
         for t in range(self.n_steps):
             y = yy[..., t: t+1]
             # y.shape == [batch_size, x_dim, y_dim, 1]
 
-            im, im_list = self.conv(embeds)
-            pred_layer_list.append(im_list)
+            out = self.conv(embeds)
+            im = out['forecast']
             # im.shape == [batch_size, *dim_sizes, 1]
 
             loss += self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
@@ -137,16 +136,16 @@ class Fourier2DExperiment(Experiment):
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, pred, pred_layer_list
+        return loss, loss_full, pred
 
     def training_step(self, batch, batch_idx):
-        loss, loss_full, _, _ = self._learning_step(batch)
+        loss, loss_full, _ = self._learning_step(batch)
         self.log('train_loss', loss)
         self.log('train_loss_full', loss_full)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list = self._learning_step(batch)
+        loss, loss_full, preds = self._learning_step(batch)
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full)
 
@@ -157,13 +156,7 @@ class Fourier2DExperiment(Experiment):
             log_navier_stokes_heatmap(expt, yy[0, :, :, -1], 'gt t=19')
             log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19')
 
-            layers = pred_list[-1]
-            if layers:
-                for i, layer in enumerate(layers):
-                    log_navier_stokes_heatmap(
-                        expt, layer[0], f'layer {i} t=19')
-
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _ = self._learning_step(batch)
+        loss, loss_full, _ = self._learning_step(batch)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
