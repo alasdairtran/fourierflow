@@ -25,7 +25,7 @@ def fourier_encode(x, max_freq, num_bands=4, base=2):
     x = torch.cat([x.sin(), x.cos()], dim=-1)
     # x.shape == [*dim_sizes, n_dims, n_bands * 2]
 
-    # Interestingly enough, we also append the raw num_b ion
+    # Interestingly enough, we also append the raw position
     x = torch.cat((x, orig_x), dim=-1)
     # x.shape == [*dim_sizes, n_dims, n_bands * 2 + 1]
     return x
