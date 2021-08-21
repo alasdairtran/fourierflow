@@ -58,36 +58,26 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # is only 0.04%.
 
 # Reproducing SOA model on Navier Stokes.
-fourierflow train experiments/navier_stokes_4/01_li_baseline/config.yaml
+fourierflow train experiments/navier_stokes_4/zongyi/4_layers/config.yaml
 
 # Train with our best model
-fourierflow train experiments/navier_stokes_4/02_best_200/config.yaml
+fourierflow train experiments/navier_stokes_4/markov/24_layers/config.yaml
 
 # Performance tradeoff evaluation. We use the Navier Stokes test set
 # as our benchmark dataset.
 
 # Train on gadi
-qsub -N 02_best_200 -v CONFIG=experiments/navier_stokes_4/02_best_200/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
+qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
 ```
 
 ## Meshgraphnet Experiments
 
 ```sh
 # DeepMind meshgraphnets simulation data
-cd meshgraphnets
-sh download_dataset.sh airfoil data
-sh download_dataset.sh cylinder_flow data
-sh download_dataset.sh deforming_plate data
-sh download_dataset.sh flag_minimal data
-sh download_dataset.sh flag_simple data
-sh download_dataset.sh flag_dynamic data
-sh download_dataset.sh flag_dynamic_sizing data
-sh download_dataset.sh sphere_simple data
-sh download_dataset.sh sphere_dynamic data
-sh download_dataset.sh sphere_dynamic_sizing data
+fourierflow download meshgraphnets
 
 # Convert to HDF5 format
-python scripts/convert.py cylinder-flow
+fourierflow convert cylinder-flow
 
 # Create index files
 python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/train.tfrecord data/cylinder_flow/train.index
