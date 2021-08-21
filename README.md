@@ -76,7 +76,7 @@ qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.
 # DeepMind meshgraphnets simulation data
 fourierflow download meshgraphnets
 
-# Convert to HDF5 format
+# Convert cylinder-flow data from TFRecords to HDF5 format
 fourierflow convert cylinder-flow
 
 # Create index files
