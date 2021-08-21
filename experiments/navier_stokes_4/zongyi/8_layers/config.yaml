@@ -1,7 +1,6 @@
 wandb:
   project: navier-stokes-4
   group: zongyi/8_layers
-  name: zongyi/8_layers
   tags:
     - pde
     - navier-stokes

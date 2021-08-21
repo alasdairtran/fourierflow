@@ -10,7 +10,7 @@ from pytorch_lightning.loggers import WandbLogger
 from typer import Typer
 
 from fourierflow.registries import Datastore, Experiment
-from fourierflow.utils.parsing import yaml_to_params
+from fourierflow.utils import yaml_to_params
 
 from .utils import get_save_dir
 

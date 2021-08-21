@@ -1,7 +1,6 @@
 wandb:
   project: navier-stokes-4
   group: markov/24_layers
-  name: markov/24_layers
   tags:
     - pde
     - navier-stokes

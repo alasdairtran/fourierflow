@@ -1,7 +1,6 @@
 wandb:
   project: ns-force-mu
   group: 01_baseline
-  name: 01_baseline
   tags:
     - pde
     - navier-stokes

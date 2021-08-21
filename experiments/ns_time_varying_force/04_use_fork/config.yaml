@@ -1,7 +1,6 @@
 wandb:
   project: ns-time-varying-force
   group: 04_use_fork
-  name: 04_use_fork
   tags:
     - pde
     - navier-stokes

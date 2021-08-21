@@ -1,7 +1,6 @@
 wandb:
   project: ns-time-varying-force
   group: 01_baseline
-  name: 01_baseline
   tags:
     - pde
     - navier-stokes

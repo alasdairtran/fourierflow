@@ -6,6 +6,7 @@ from glob import glob
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 import ptvsd
 import pytorch_lightning as pl
 import wandb
@@ -14,14 +15,14 @@ from pytorch_lightning.plugins import DDPPlugin
 from typer import Typer
 
 from fourierflow.registries import Callback, Datastore, Experiment
-from fourierflow.utils.parsing import yaml_to_params
+from fourierflow.utils import ExistingExperimentFound, yaml_to_params
 
 from .utils import get_save_dir
 
 app = Typer()
 
 
-def delete_old_results(results_dir, force):
+def delete_old_results(results_dir, force, resume):
     """Delete existing checkpoints and wandb logs if --force is enabled."""
     wandb_dir = Path(results_dir) / 'wandb'
     chkpt_dir = Path(results_dir) / 'checkpoints'
@@ -29,6 +30,10 @@ def delete_old_results(results_dir, force):
         shutil.rmtree(wandb_dir)
     if force and chkpt_dir.exists():
         shutil.rmtree(chkpt_dir)
+    if not force and not resume and wandb_dir.exists():
+        raise ExistingExperimentFound(f'Directory already exists: {wandb_dir}')
+    if not force and not resume and chkpt_dir.exists():
+        raise ExistingExperimentFound(f'Directory already exists: {chkpt_dir}')
 
 
 def upload_code_to_wandb(config_path, wandb_logger):
@@ -41,18 +46,19 @@ def upload_code_to_wandb(config_path, wandb_logger):
     wandb_logger.experiment.log_artifact(code_artifact)
 
 
-def get_experiment_id(checkpoint_id, save_dir, resume):
+def get_experiment_id(checkpoint_id, trial, save_dir, resume):
     chkpt_dir = Path(save_dir) / 'checkpoints'
     if resume and not checkpoint_id and chkpt_dir.exists:
         paths = chkpt_dir.glob('*/last.ckpt')
         checkpoint_id = next(paths).parent.name
-    return checkpoint_id or datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+    now = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+    return checkpoint_id or f'trial-{trial}-{now}'
 
 
 @app.callback(invoke_without_command=True)
 def main(config_path: str, overrides: str = '', force: bool = False,
          resume: bool = False, checkpoint_id: Optional[str] = None,
-         debug: bool = False):
+         trial: int = 0, debug: bool = False):
     """Train a Pytorch Lightning experiment."""
     params = yaml_to_params(config_path, overrides)
 
@@ -65,11 +71,13 @@ def main(config_path: str, overrides: str = '', force: bool = False,
 
     # Set up directories to save experimental outputs.
     save_dir = get_save_dir(config_path)
-    delete_old_results(save_dir, force)
+    delete_old_results(save_dir, force, resume)
 
     # We use Weights & Biases to track our experiments.
-    wandb_id = get_experiment_id(checkpoint_id, save_dir, resume)
-    wandb_opts = params.pop('wandb').as_dict()
+    wandb_id = get_experiment_id(checkpoint_id, trial, save_dir, resume)
+    params['trial'] = trial
+    params['wandb']['name'] = f"{params['wandb']['group']}/{trial}"
+    wandb_opts = params.get('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=save_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
@@ -77,7 +85,8 @@ def main(config_path: str, overrides: str = '', force: bool = False,
                                **wandb_opts)
 
     # Set seed and upload code for reproducibility.
-    seed = params.get('seed', 38124)
+    rs = np.random.RandomState(7231 + trial)
+    seed = params.get('seed', rs.randint(1000, 1000000))
     pl.seed_everything(seed, workers=True)
     upload_code_to_wandb(config_path, wandb_logger)
 
