@@ -82,7 +82,8 @@ class Fourier2DSingleExperiment(Experiment):
 
         return fourier_feats
 
-    def _build_features(self, x, f, mu):
+    def _build_features(self, batch):
+        x, f, mu = batch['x'], batch['f'], batch['mu']
         B, *dim_sizes, _ = x.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes]
@@ -111,7 +112,7 @@ class Fourier2DSingleExperiment(Experiment):
         return x
 
     def _training_step(self, batch):
-        x = self._build_features(batch['x'], batch['f'], batch['mu'])
+        x = self._build_features(batch)
         im = self.conv(x)['forecast']
 
         # im.shape == [batch_size * time, *dim_sizes, 1]
@@ -201,25 +202,35 @@ class Fourier2DSingleExperiment(Experiment):
         return loss, loss_full, pred, pred_layer_list
 
     def training_step(self, batch, batch_idx):
-        loss = self._training_step(batch)
-        self.log('train_loss', loss)
+        # Accumulate normalization stats in the first epoch
+        if self.current_epoch == 0:
+            with torch.no_grad():
+                self._build_features(batch)
+
         for i in range(self.conv.input_dim):
             self.log(f'normalizer_mean_{i}', self.normalizer.mean[i])
             self.log(f'normalizer_std_{i}', self.normalizer.std[i])
 
-        opt = self.optimizers()
-        opt.zero_grad()
-        self.manual_backward(loss)
-        for group in opt.param_groups:
-            torch.nn.utils.clip_grad_value_(group["params"], self.clip_val)
-        opt.step()
+        if self.current_epoch >= 1:
+            loss = self._training_step(batch)
+            self.log('train_loss', loss)
 
-        sch = self.lr_schedulers()
-        sch.step()
+            opt = self.optimizers()
+            opt.zero_grad()
+            self.manual_backward(loss)
+            for group in opt.param_groups:
+                torch.nn.utils.clip_grad_value_(group["params"], self.clip_val)
+            opt.step()
 
-        return loss
+            sch = self.lr_schedulers()
+            sch.step()
+
+            return loss
 
     def validation_step(self, batch, batch_idx):
+        if self.current_epoch == 0:
+            return
+
         loss, loss_full, preds, pred_list = self._valid_step(batch, 'valid')
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)

@@ -51,7 +51,7 @@ experiment:
 trainer:
   gpus: 1
   precision: 32
-  max_epochs: 10
+  max_epochs: 11 # 1 accumulation epoch + 10 training epochs
   stochastic_weight_avg: false
   weights_summary: full
   log_every_n_steps: 100
