@@ -82,8 +82,7 @@ class Fourier2DSingleExperiment(Experiment):
 
         return fourier_feats
 
-    def _training_step(self, batch):
-        x, y = batch['x'], batch['y']
+    def _build_features(self, x, f, mu):
         B, *dim_sizes, _ = x.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes]
@@ -100,20 +99,25 @@ class Fourier2DSingleExperiment(Experiment):
             # xx.shape == [batch_size, *dim_sizes, 3]
 
         if self.append_force:
-            f = repeat(batch['f'], 'b m n -> b m n 1')
+            f = repeat(f, 'b m n -> b m n 1')
             x = torch.cat([x, f], dim=-1)
 
         if self.append_mu:
-            mu = repeat(batch['mu'], 'b -> b m n 1', m=X, n=Y)
+            mu = repeat(mu, 'b -> b m n 1', m=X, n=Y)
             x = torch.cat([x, mu], dim=-1)
 
         x = self.normalizer(x)
+
+        return x
+
+    def _training_step(self, batch):
+        x = self._build_features(batch['x'], batch['f'], batch['mu'])
         im = self.conv(x)['forecast']
 
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
         BN = im.shape[0]
-        loss = self.l2_loss(im.reshape(BN, -1), y.reshape(BN, -1))
+        loss = self.l2_loss(im.reshape(BN, -1), batch['y'].reshape(BN, -1))
 
         return loss
 
