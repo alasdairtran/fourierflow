@@ -196,6 +196,9 @@ class Fourier2DSingleExperiment(Experiment):
     def training_step(self, batch, batch_idx):
         loss = self._training_step(batch)
         self.log('train_loss', loss)
+        for i in range(self.conv.input_dim):
+            self.log(f'normalizer_mean_{i}', self.normalizer.mean[i])
+            self.log(f'normalizer_std_{i}', self.normalizer.std[i])
         return loss
 
     def validation_step(self, batch, batch_idx):
