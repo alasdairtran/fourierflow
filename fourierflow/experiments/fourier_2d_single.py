@@ -28,7 +28,8 @@ class Fourier2DSingleExperiment(Experiment):
                  append_force: bool = False,
                  append_mu: bool = False,
                  max_accumulations: float = 1e6,
-                 use_fourier_position: bool = False):
+                 use_fourier_position: bool = False,
+                 clip_val: float = 0.1):
         super().__init__()
         self.conv = conv
         self.n_steps = n_steps
@@ -48,6 +49,8 @@ class Fourier2DSingleExperiment(Experiment):
         self.lr = None
         self.normalizer = Normalizer([conv.input_dim], max_accumulations)
         self.register_buffer('_float', torch.FloatTensor([0.1]))
+        self.automatic_optimization = False  # activates manual optimization
+        self.clip_val = clip_val
 
     def forward(self, x):
         x = self.conv(x)
@@ -199,6 +202,17 @@ class Fourier2DSingleExperiment(Experiment):
         for i in range(self.conv.input_dim):
             self.log(f'normalizer_mean_{i}', self.normalizer.mean[i])
             self.log(f'normalizer_std_{i}', self.normalizer.std[i])
+
+        opt = self.optimizers()
+        opt.zero_grad()
+        self.manual_backward(loss)
+        for group in opt.param_groups:
+            torch.nn.utils.clip_grad_value_(group["params"], self.clip_val)
+        opt.step()
+
+        sch = self.lr_schedulers()
+        sch.step()
+
         return loss
 
     def validation_step(self, batch, batch_idx):
