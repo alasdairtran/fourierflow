@@ -21,7 +21,6 @@ import json
 import os
 
 import tensorflow.compat.v1 as tf
-
 from common import NodeType
 
 
@@ -83,6 +82,7 @@ def split_and_preprocess(ds, noise_field, noise_scale, noise_gamma):
         frame['target|'+noise_field] += (1.0 - noise_gamma) * noise
         return frame
 
+    # Flatten a dataset of batches into a dataset of their elements
     ds = ds.flat_map(tf.data.Dataset.from_tensor_slices)
     ds = ds.map(add_noise, num_parallel_calls=8)
     ds = ds.shuffle(10000)
