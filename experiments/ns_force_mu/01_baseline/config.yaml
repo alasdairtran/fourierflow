@@ -33,7 +33,6 @@ experiment:
   n_steps: 10
   max_accumulations: 10000
   noise_std: 0.02
-  noise_idx: [0, 3, 4]
   append_force: true
   append_mu: true
   optimizer:
