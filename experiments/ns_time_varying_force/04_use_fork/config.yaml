@@ -32,6 +32,8 @@ experiment:
     avg_outs: true
     use_fork: true
   n_steps: 10
+  max_accumulations: 10000
+  noise_std: 0.02
   append_force: true
   append_mu: true
   optimizer:

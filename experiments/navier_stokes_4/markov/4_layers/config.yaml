@@ -33,6 +33,8 @@ experiment:
     in_dropout: 0.0
     avg_outs: true
   n_steps: 10
+  max_accumulations: 1000
+  noise_std: 0.02
   optimizer:
     type: adamw
     lr: 0.0025
@@ -50,7 +52,7 @@ experiment:
 trainer:
   gpus: 1
   precision: 32
-  max_epochs: 100
+  max_epochs: 101 # 1 accumulation epoch + 100 training epochs
   stochastic_weight_avg: false
   weights_summary: full
   log_every_n_steps: 100

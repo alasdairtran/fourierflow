@@ -29,7 +29,8 @@ class Fourier2DSingleExperiment(Experiment):
                  append_mu: bool = False,
                  max_accumulations: float = 1e6,
                  use_fourier_position: bool = False,
-                 clip_val: float = 0.1):
+                 clip_val: float = 0.1,
+                 noise_std: float = 0.0):
         super().__init__()
         self.conv = conv
         self.n_steps = n_steps
@@ -51,6 +52,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.register_buffer('_float', torch.FloatTensor([0.1]))
         self.automatic_optimization = False  # activates manual optimization
         self.clip_val = clip_val
+        self.noise_std = noise_std
 
     def forward(self, x):
         x = self.conv(x)
@@ -83,7 +85,7 @@ class Fourier2DSingleExperiment(Experiment):
         return fourier_feats
 
     def _build_features(self, batch):
-        x, f, mu = batch['x'], batch['f'], batch['mu']
+        x = batch['x']
         B, *dim_sizes, _ = x.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes]
@@ -100,14 +102,16 @@ class Fourier2DSingleExperiment(Experiment):
             # xx.shape == [batch_size, *dim_sizes, 3]
 
         if self.append_force:
-            f = repeat(f, 'b m n -> b m n 1')
+            f = repeat(batch['f'], 'b m n -> b m n 1')
             x = torch.cat([x, f], dim=-1)
 
         if self.append_mu:
-            mu = repeat(mu, 'b -> b m n 1', m=X, n=Y)
+            mu = repeat(batch['mu'], 'b -> b m n 1', m=X, n=Y)
             x = torch.cat([x, mu], dim=-1)
 
         x = self.normalizer(x)
+
+        x += torch.randn(*x.shape, device=x.device) * self.noise_std
 
         return x
 
