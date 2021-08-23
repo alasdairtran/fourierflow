@@ -1,0 +1,15 @@
+[pydocstyle]
+
+# D100: Missing docstring in public module
+# D101: Missing docstring in public class (e.g. SubjectAdmin)
+# D102: Missing docstring in public method (e.g. resolve)
+# D103: Missing docstring in public function
+# D104: Missing docstring in public package
+# D105: Missing docstrings in magic methods (we don't need to docstrings for
+#       obvious methods such as __str__)
+# D106: Missing docstring in public nested class (e.g. Meta)
+# D107: Missing docstring in __init__
+# D203: 1 blank line required before class docstring (we want no blank lines)
+# D213: Multi-line docstring summary should start at the second line (we want 1 blank line)
+
+ignore = D100, D101, D102, D103, D104, D105, D106, D107, D203, D213
