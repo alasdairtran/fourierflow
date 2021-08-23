@@ -35,6 +35,7 @@ experiment:
   n_steps: 10
   max_accumulations: 1000
   noise_std: 0.02
+  noise_idx: [0]
   optimizer:
     type: adamw
     lr: 0.0025

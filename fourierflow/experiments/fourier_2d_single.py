@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import torch
 from allennlp.common import Lazy
@@ -30,7 +30,8 @@ class Fourier2DSingleExperiment(Experiment):
                  max_accumulations: float = 1e6,
                  use_fourier_position: bool = False,
                  clip_val: float = 0.1,
-                 noise_std: float = 0.0):
+                 noise_std: float = 0.0,
+                 noise_idx: List[int] = [0]):
         super().__init__()
         self.conv = conv
         self.n_steps = n_steps
@@ -53,6 +54,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.automatic_optimization = False  # activates manual optimization
         self.clip_val = clip_val
         self.noise_std = noise_std
+        self.noise_idx = noise_idx
 
     def forward(self, x):
         x = self.conv(x)
@@ -99,7 +101,7 @@ class Fourier2DSingleExperiment(Experiment):
             # pos_feats.shape == [batch_size, *dim_sizes, n_dims]
 
             x = torch.cat([x, pos_feats], dim=-1)
-            # xx.shape == [batch_size, *dim_sizes, 3]
+            # x.shape == [batch_size, *dim_sizes, 3]
 
         if self.append_force:
             f = repeat(batch['f'], 'b m n -> b m n 1')
@@ -111,7 +113,9 @@ class Fourier2DSingleExperiment(Experiment):
 
         x = self.normalizer(x)
 
-        x += torch.randn(*x.shape, device=x.device) * self.noise_std
+        noise_shape = x[..., self.noise_idx].shape
+        noise = torch.randn(*noise_shape, device=x.device) * self.noise_std
+        x[..., self.noise_idx] += noise
 
         return x
 
