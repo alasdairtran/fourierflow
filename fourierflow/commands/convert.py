@@ -1,7 +1,7 @@
 import functools
 import json
 import logging
-import os
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -55,21 +55,25 @@ def flag_simple():
 
 
 @app.command()
-def cylinder_flow(in_dir: str = 'data/cylinder_flow',
-                  out_path: str = 'data/cylinder_flow/cylinder_flow.h5'):
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+def cylinder_flow(data_dir: str = 'data/cylinder_flow',
+                  out: str = 'data/cylinder_flow/cylinder_flow.h5'):
+    out_path = Path(out)
+    out_path.parent.mkdir(exist_ok=True)
     h5f = h5py.File(out_path, 'a')
 
-    with open(os.path.join(in_dir, 'meta.json'), 'r') as fp:
+    in_path = Path(data_dir)
+    logger.info(f'Reading metadata from {in_path}')
+    with open(in_path / 'meta.json', 'r') as fp:
         meta = json.loads(fp.read())
 
-    process_cylinder_split('train', meta, h5f, in_dir)
-    process_cylinder_split('valid', meta, h5f, in_dir)
-    process_cylinder_split('test', meta, h5f, in_dir)
+    process_cylinder_split('train', meta, h5f, in_path)
+    process_cylinder_split('valid', meta, h5f, in_path)
+    process_cylinder_split('test', meta, h5f, in_path)
 
 
-def process_cylinder_split(split, meta, h5f, in_dir):
-    ds = tf.data.TFRecordDataset(os.path.join(in_dir, split+'.tfrecord'))
+def process_cylinder_split(split, meta, h5f, in_path):
+    logger.info(f'Reading TFRecord from {in_path}')
+    ds = tf.data.TFRecordDataset(in_path / f'{split}.tfrecord')
     ds = ds.map(functools.partial(_parse, meta=meta), num_parallel_calls=8)
 
     params = {
@@ -81,7 +85,7 @@ def process_cylinder_split(split, meta, h5f, in_dir):
         'batch': 2,
     }
 
-    ds = add_targets(ds, [params['field']], add_history=params['history'])
+    ds = add_targets(ds, [params['field']], params['history'])
 
     n_cells = []
     n_nodes = []
@@ -93,11 +97,12 @@ def process_cylinder_split(split, meta, h5f, in_dir):
         if not n_steps:
             n_steps = s['cells'].shape[0]
 
+    # Each sample has 598 time steps.
     n_samples = len(n_cells)
     max_cells = max(n_cells)
     max_nodes = max(n_nodes)
-    logger.info('Max cells', max_cells)
-    logger.info('Max nodes', max_nodes)
+    logger.info(f'Max cells: {max_cells}')
+    logger.info(f'Max nodes: {max_nodes}')
 
     h5f.create_dataset(f'{split}/n_cells', (n_samples), np.int32, n_cells)
     h5f.create_dataset(f'{split}/n_nodes', (n_samples), np.int32, n_nodes)
@@ -106,25 +111,31 @@ def process_cylinder_split(split, meta, h5f, in_dir):
     shape_2 = (n_samples, n_steps, max_nodes, 2)
     shape_3 = (n_samples, n_steps, max_cells, 3)
 
+    # Each cell is a triangle, a triple containing three node indices.
     cells = h5f.create_dataset(
         f'{split}/cells', shape_3, np.int32, fillvalue=-1)
 
+    # Each position is the (x, y) coordinate of a node (a vertex of triangle).
     mesh_pos = h5f.create_dataset(
         f'{split}/mesh_pos', shape_2, np.float32, fillvalue=np.nan)
 
+    # Each node has a type: 0 (normal), 4 (inflow), 5 (outflow), 6 (wall)
     node_type = h5f.create_dataset(
         f'{split}/node_type', shape_1, np.int32, fillvalue=-1)
 
+    # The (x, y) velocity at each node. Can be negative.
     velocity = h5f.create_dataset(
         f'{split}/velocity', shape_2, np.float32, fillvalue=np.nan)
 
+    # The (x, y) velocity at each node at the next time step.
     target_velocity = h5f.create_dataset(
         f'{split}/target_velocity', shape_2, np.float32, fillvalue=np.nan)
 
+    # Pressure is a scalar value at each node at each time step.
     pressure = h5f.create_dataset(
         f'{split}/pressure', shape_1, np.float32, fillvalue=np.nan)
 
-    logger(f'Writing {split} to disk.')
+    logger.info(f'Writing {split} to disk.')
     for i, sample in tqdm(enumerate(ds)):
         c = n_cells[i]
         n = n_nodes[i]

@@ -77,7 +77,7 @@ qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.
 fourierflow download meshgraphnets
 
 # Convert cylinder-flow data from TFRecords to HDF5 format
-fourierflow convert cylinder-flow
+fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylinder_flow/cylinder_flow.h5
 
 # Create index files
 python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/train.tfrecord data/cylinder_flow/train.index
