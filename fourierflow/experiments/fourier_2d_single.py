@@ -118,6 +118,7 @@ class Fourier2DSingleExperiment(Experiment):
     def _training_step(self, batch):
         x = self._build_features(batch)
         im = self.conv(x)['forecast']
+        im = self.normalizer.inverse(im, channel=0)
 
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
@@ -189,6 +190,7 @@ class Fourier2DSingleExperiment(Experiment):
             x = self.normalizer(x)
             out = self.conv(x)
             im, im_list = out['forecast'], out['forecast_list']
+            im = self.normalizer.inverse(im, channel=0)
             # im.shape == [batch_size, *dim_sizes, 1]
 
             y = yy[..., t]
