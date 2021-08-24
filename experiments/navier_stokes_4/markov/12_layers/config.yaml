@@ -33,7 +33,7 @@ experiment:
     avg_outs: true
   n_steps: 10
   max_accumulations: 1000
-  noise_std: 0.02
+  noise_std: 0.01
   optimizer:
     type: adamw
     lr: 0.0025
