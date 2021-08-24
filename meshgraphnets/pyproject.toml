@@ -2,6 +2,7 @@
 name = "meshgraphnets"
 version = "0.1.0"
 description = "Mesgraphnet experiments copied from DeepMind repo"
+authors = []
 repository = "https://github.com/alasdairtran/fourierflow/meshgraphnets"
 
 [tool.poetry.dependencies]
