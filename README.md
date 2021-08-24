@@ -85,10 +85,8 @@ python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/valid.tfrecord data/cyl
 python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/test.tfrecord data/cylinder_flow/test.index
 
 # Reproduce mesh experiment
-pyenv local 3.6.14
-virtualenv .venv/mesh
-source .venv/mesh/bin/activate
-pip install -r requirements.txt
+poetry install
+source .venv/bin/activate
 # Set LD_LIBRARY_PATH to cuda-10.0/lib64 location
 
 # Train
