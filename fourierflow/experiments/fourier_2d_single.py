@@ -220,7 +220,7 @@ class Fourier2DSingleExperiment(Experiment):
 
         if self.current_epoch >= 1:
             loss = self._training_step(batch)
-            self.log('train_loss', loss)
+            self.log('train_loss', loss, prog_bar=True)
 
             opt = self.optimizers()
             opt.zero_grad()
