@@ -195,7 +195,7 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
             WNLinear(self.width, 128, wnorm=ff_weight_norm),
             WNLinear(128, 1, wnorm=ff_weight_norm))
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         # x.shape == [n_batches, *dim_sizes, input_size]
         forecast = 0
         x = self.in_proj(x)

@@ -12,60 +12,38 @@ from fourierflow.modules.deq.jacobian import jac_loss_estimate
 from fourierflow.modules.deq.solvers import anderson, broyden
 from fourierflow.registries import Module
 
+from .linear import WNLinear
+
 
 def wnorm(module, active):
     return weight_norm(module) if active else module
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, norm_locs, factor, dropout=0.0, weight_norm=False, ff_weight_norm=True):
+    def __init__(self, dim, factor, ff_weight_norm, n_layers, layer_norm, dropout):
         super().__init__()
-        self.linear_1 = wnorm(nn.Linear(dim, dim * factor), ff_weight_norm)
-        self.act = nn.ReLU(inplace=True)
-        self.linear_2 = wnorm(nn.Linear(dim * factor, dim), ff_weight_norm)
-        self.weight_norm = weight_norm
-        self.dropout = dropout
-        # self.reset_parameters()
-        self.gnorm_1 = nn.GroupNorm(dim * factor // 16, dim * factor)
-        self.gnorm_2 = nn.GroupNorm(dim // 16, dim)
-        self.gnorm_3 = nn.GroupNorm(dim // 16, dim)
-        self.norm_locs = norm_locs
-
-    def reset_parameters(self):
-        nn.init.xavier_normal_(self.linear_1.weight)
-        nn.init.xavier_normal_(self.linear_2.weight)
-
-        # Weight normalization is a reparameterization that decouples the
-        # magnitude of a weight tensor from its direction. See Salimans and
-        # Kingma (2016): https://arxiv.org/abs/1602.07868.
-        if self.weight_norm:
-            nn.utils.weight_norm(self.linear_1)
-            nn.utils.weight_norm(self.linear_2)
+        self.layers = nn.ModuleList([])
+        for i in range(n_layers):
+            in_dim = dim if i == 0 else dim * factor
+            out_dim = dim if i == n_layers - 1 else dim * factor
+            self.layers.append(nn.Sequential(
+                WNLinear(in_dim, out_dim, wnorm=ff_weight_norm),
+                nn.Dropout(dropout),
+                nn.ReLU(inplace=True) if i < n_layers - 1 else nn.Identity(),
+                nn.LayerNorm(out_dim) if layer_norm and i == n_layers -
+                1 else nn.Identity(),
+            ))
 
     def forward(self, x, res):
-        x = self.linear_1(x)
-        if 'fork_1' in self.norm_locs:
-            x = rearrange(x, 'b m n i -> b i m n')
-            x = self.gnorm_1(x)
-            x = rearrange(x, 'b i m n -> b m n i')
-
-        x = self.act(x)
-        x = self.linear_2(x)
-        if 'fork_2' in self.norm_locs:
-            x = rearrange(x, 'b m n i -> b i m n')
-            x = self.gnorm_2(x)
-            x = rearrange(x, 'b i m n -> b m n i')
-
+        for layer in self.layers:
+            x = layer(x)
         x = res + x
-        if 'fork_3' in self.norm_locs:
-            x = rearrange(x, 'b m n i -> b i m n')
-            x = self.gnorm_3(x)
-            x = rearrange(x, 'b i m n -> b m n i')
         return x
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes, norm_locs, factor):
+    def __init__(self, in_dim, out_dim, n_modes, factor, norm_locs,
+                 ff_weight_norm, n_ff_layers, layer_norm, use_fork, dropout):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -76,14 +54,16 @@ class SpectralConv2d(nn.Module):
 
         self.fourier_weight = nn.ParameterList([])
         for _ in range(2):
-            weight = torch.complex(torch.FloatTensor(in_dim, out_dim, n_modes),
-                                   torch.FloatTensor(in_dim, out_dim, n_modes))
+            weight = torch.FloatTensor(in_dim, out_dim, n_modes, 2)
             param = nn.Parameter(weight)
             nn.init.xavier_normal_(param, gain=0.1)
             self.fourier_weight.append(param)
 
-        # self.forecast_ff = FeedForward(out_dim, norm_locs, factor)
-        self.backcast_ff = FeedForward(out_dim, norm_locs, factor)
+        if use_fork:
+            self.forecast_ff = FeedForward(
+                out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
+        self.backcast_ff = FeedForward(
+            out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
     def forward(self, z, x):
         # z.shape == [n_batches, 2 * flat_size, 1]
@@ -120,7 +100,7 @@ class SpectralConv2d(nn.Module):
         out_ft[:, :, :, :self.n_modes] = torch.einsum(
             "bixy,ioy->boxy",
             x_fty[:, :, :, :self.n_modes],
-            self.fourier_weight[0])
+            torch.view_as_complex(self.fourier_weight[0]))
 
         xy = torch.fft.irfft(out_ft, dim=-1, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -135,7 +115,7 @@ class SpectralConv2d(nn.Module):
         out_ft[:, :, :self.n_modes, :] = torch.einsum(
             "bixy,iox->boxy",
             x_ftx[:, :, :self.n_modes, :],
-            self.fourier_weight[1])
+            torch.view_as_complex(self.fourier_weight[1]))
 
         xx = torch.fft.irfft(out_ft, dim=-2, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -158,7 +138,8 @@ class SpectralConv2d(nn.Module):
 
 
 class DEQBlock(nn.Module):
-    def __init__(self, modes, width, n_layers, pretraining_steps, norm_locs, factor):
+    def __init__(self, modes, width, n_layers, pretraining_steps, norm_locs, factor,
+                 ff_weight_norm, n_ff_layers, layer_norm, use_fork, dropout):
         super().__init__()
         self.n_layers = n_layers
         self.pretraining_steps = pretraining_steps
@@ -166,13 +147,18 @@ class DEQBlock(nn.Module):
         self.f = SpectralConv2d(in_dim=width,
                                 out_dim=width,
                                 n_modes=modes,
+                                factor=factor,
                                 norm_locs=norm_locs,
-                                factor=factor)
+                                ff_weight_norm=ff_weight_norm,
+                                n_ff_layers=n_ff_layers,
+                                layer_norm=layer_norm,
+                                use_fork=use_fork,
+                                dropout=dropout)
         self.solver = anderson
 
     def forward(self, z0, x, global_step):
         # z0.shape == [n_batches, width, flat_size]
-        if global_step < self.pretraining_steps:
+        if global_step is not None and global_step < self.pretraining_steps:
             z = z0
             for _ in range(self.n_layers):
                 z = self.f(z, x)
@@ -217,12 +203,16 @@ class DEQBlock(nn.Module):
 
 @Module.register('fourier_net_2d_deq')
 class SimpleBlock2dDEQ(nn.Module):
-    def __init__(self, modes, width, input_dim, n_layers, pretraining_steps, norm_locs, ff_weight_norm=True, factor=2):
+    def __init__(self, modes, width, input_dim, n_layers, pretraining_steps,
+                 norm_locs, n_ff_layers, layer_norm, use_fork, dropout,
+                 ff_weight_norm=True, factor=2):
         super().__init__()
         self.width = width
+        self.input_dim = input_dim
         self.in_proj = wnorm(nn.Linear(input_dim, self.width), ff_weight_norm)
         self.deq_block = DEQBlock(
-            modes, width, n_layers, pretraining_steps, norm_locs, factor)
+            modes, width, n_layers, pretraining_steps, norm_locs, factor,
+            ff_weight_norm, n_ff_layers, layer_norm, use_fork, dropout)
         self.out = nn.Sequential(wnorm(nn.Linear(self.width, 128), ff_weight_norm),
                                  wnorm(nn.Linear(128, 1), ff_weight_norm))
         self.solver = broyden
@@ -253,4 +243,6 @@ class SimpleBlock2dDEQ(nn.Module):
 
         forecast = self.out(new_z_star)
 
-        return forecast
+        return {
+            'forecast': forecast,
+        }

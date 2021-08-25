@@ -117,7 +117,7 @@ class Fourier2DSingleExperiment(Experiment):
 
     def _training_step(self, batch):
         x = self._build_features(batch)
-        im = self.conv(x)['forecast']
+        im = self.conv(x, global_step=self.global_step)['forecast']
         im = self.normalizer.inverse(im, channel=0)
 
         # im.shape == [batch_size * time, *dim_sizes, 1]
@@ -189,7 +189,7 @@ class Fourier2DSingleExperiment(Experiment):
 
             x = self.normalizer(x)
             out = self.conv(x)
-            im, im_list = out['forecast'], out['forecast_list']
+            im = out['forecast']
             im = self.normalizer.inverse(im, channel=0)
             # im.shape == [batch_size, *dim_sizes, 1]
 
@@ -197,7 +197,8 @@ class Fourier2DSingleExperiment(Experiment):
             l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
             loss += l
             pred = im if t == 0 else torch.cat((pred, im), dim=-1)
-            pred_layer_list.append(im_list)
+            if 'forecast_list' in out:
+                pred_layer_list.append(out['forecast_list'])
 
             if t == self.n_steps - 1:
                 self.log(f'{split}_loss_last', l)
@@ -245,8 +246,8 @@ class Fourier2DSingleExperiment(Experiment):
             log_navier_stokes_heatmap(expt, data[0, :, :, 19], 'gt t=19')
             log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19')
 
-            layers = pred_list[-1]
-            if layers:
+            if pred_list:
+                layers = pred_list[-1]
                 for i, layer in enumerate(layers):
                     log_navier_stokes_heatmap(
                         expt, layer[0], f'layer {i} t=19')
