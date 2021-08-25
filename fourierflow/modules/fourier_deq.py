@@ -164,8 +164,8 @@ class DEQBlock(nn.Module):
                 z = self.f(z, x)
             return z
 
-        f_thres = 30
-        b_thres = 30
+        f_thres = 40
+        b_thres = 40
 
         # Forward pass
         with torch.no_grad():
