@@ -2550,6 +2550,14 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "spharapy"
+version = "1.1.0"
+description = "SPHARA Implementation in Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "srsly"
 version = "2.4.1"
 description = "Modern high-performance serialization utilities for Python"
@@ -3089,7 +3097,7 @@ test = ["zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "2b2b7c96ba1787024152c17a59203f9ae1921380efdb1d2fa9556fa514df735f"
+content-hash = "9da5151dfb101c941ad2ede7e323754f5b7b2c0ef5a381b494c2409cc4b79fa4"
 
 [metadata.files]
 absl-py = [
@@ -4854,6 +4862,10 @@ spacy = [
 spacy-legacy = [
     {file = "spacy-legacy-3.0.8.tar.gz", hash = "sha256:b4725c5c161f0685ab4fce3fc912bc68aefdb7e102ba9848e852bb5842256c2f"},
     {file = "spacy_legacy-3.0.8-py2.py3-none-any.whl", hash = "sha256:eb37a3540bb461b5fe9348d4976784f18a0e345982e41e2c5c7cd8229889e825"},
+]
+spharapy = [
+    {file = "SpharaPy-1.1.0-py3-none-any.whl", hash = "sha256:500eb9db283cc15b5588f761c09f0a21fa0730e03834e97f4b8b1d792c102fef"},
+    {file = "SpharaPy-1.1.0.tar.gz", hash = "sha256:e005513e3ab35a82809b61e7b4f832a650f2cd73f7189fc7779e50e2b5a5f02b"},
 ]
 srsly = [
     {file = "srsly-2.4.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:f7c3374184bfb1aa852bcb8e45747b02f2dde0ebe62b4ddf4b0141affeab32e1"},
