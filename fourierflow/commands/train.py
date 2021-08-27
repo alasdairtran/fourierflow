@@ -80,6 +80,12 @@ def main(config_path: str, overrides: str = '', force: bool = False,
     save_dir = get_save_dir(config_path)
     delete_old_results(save_dir, force, trial, resume)
 
+    # Set seed for reproducibility.
+    rs = np.random.RandomState(7231 + trial)
+    seed = params.get('seed', rs.randint(1000, 1000000))
+    pl.seed_everything(seed, workers=True)
+    params['seed'] = seed
+
     # We use Weights & Biases to track our experiments.
     wandb_id = get_experiment_id(checkpoint_id, trial, save_dir, resume)
     params['trial'] = trial
@@ -90,11 +96,6 @@ def main(config_path: str, overrides: str = '', force: bool = False,
                                config=deepcopy(params.as_dict()),
                                id=wandb_id,
                                **wandb_opts)
-
-    # Set seed and upload code for reproducibility.
-    rs = np.random.RandomState(7231 + trial)
-    seed = params.get('seed', rs.randint(1000, 1000000))
-    pl.seed_everything(seed, workers=True)
     upload_code_to_wandb(config_path, wandb_logger)
 
     # Initialize the dataset and experiment modules.
