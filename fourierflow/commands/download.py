@@ -65,7 +65,7 @@ def fno():
 
 @app.command()
 def meshgraphnets():
-    """Download teh meshgraphnets datasets from DeepMind."""
+    """Download the meshgraphnets datasets from DeepMind."""
     settings = ['airfoil', 'cylinder_flow', 'deforming_plate', 'flag_minimal',
                 'flag_simple', 'flag_dynamic', 'flag_dynamic_sizing',
                 'sphere_simple', 'sphere_dynamic', 'sphere_dynamic_sizing']
