@@ -22,17 +22,24 @@ from .utils import get_save_dir
 app = Typer()
 
 
-def delete_old_results(results_dir, force, resume):
+def delete_old_results(results_dir, force, trial, resume):
     """Delete existing checkpoints and wandb logs if --force is enabled."""
     wandb_dir = Path(results_dir) / 'wandb'
+    wandb_matches = list(wandb_dir.glob(f'*-trial-{trial}-*'))
+
     chkpt_dir = Path(results_dir) / 'checkpoints'
-    if force and wandb_dir.exists():
-        shutil.rmtree(wandb_dir)
-    if force and chkpt_dir.exists():
-        shutil.rmtree(chkpt_dir)
-    if not force and not resume and wandb_dir.exists():
+    chkpt_matches = list(chkpt_dir.glob(f'trial-{trial}-*'))
+
+    if force and wandb_matches:
+        [shutil.rmtree(p) for p in wandb_matches]
+
+    if force and chkpt_matches:
+        [shutil.rmtree(p) for p in chkpt_matches]
+
+    if not force and not resume and wandb_matches:
         raise ExistingExperimentFound(f'Directory already exists: {wandb_dir}')
-    if not force and not resume and chkpt_dir.exists():
+
+    if not force and not resume and chkpt_matches:
         raise ExistingExperimentFound(f'Directory already exists: {chkpt_dir}')
 
 
@@ -71,7 +78,7 @@ def main(config_path: str, overrides: str = '', force: bool = False,
 
     # Set up directories to save experimental outputs.
     save_dir = get_save_dir(config_path)
-    delete_old_results(save_dir, force, resume)
+    delete_old_results(save_dir, force, trial, resume)
 
     # We use Weights & Biases to track our experiments.
     wandb_id = get_experiment_id(checkpoint_id, trial, save_dir, resume)
