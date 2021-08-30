@@ -6,7 +6,7 @@ authors = ["Alasdair Tran <alasdair.tran@anu.edu.au>"]
 repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
-python = "^3.9.6"
+python = "~3.9.6"
 # poetry add allennlp einops entmax gdown hyperopt ipykernel jupyterlab \
 #   matplotlib moviepy pandas plotly poethepoet ptvsd pydocstyle pylint \
 #   python-dotenv pytorch-lightning requests seaborn SpharaPy termcolor \
@@ -39,7 +39,7 @@ typer = "^0.3.2"
 wandb = "^0.11.2"
 
 [tool.poetry.dev-dependencies]
-# poetry add --dev autopep8 isort mypy
+# poetry add --dev autopep8 isort mypy types-requests
 autopep8 = "^1.5.7"
 isort = "^5.9.3"
 mypy = "^0.910"
