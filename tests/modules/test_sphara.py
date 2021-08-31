@@ -1,6 +1,6 @@
 import torch
 
-from fourierflow.modules.sphara.trimesh import get_triangle_area
+from fourierflow.modules.sphara.trimesh import TriMesh, get_triangle_area
 
 
 def test_area_of_standard_simplex():
@@ -18,6 +18,7 @@ def test_area_of_two_R3_triangles():
     targets = torch.Tensor([0.5, 25])
     assert torch.allclose(area, targets)
 
+
 def test_area_of_two_R2_triangles():
     vertex_coords = torch.Tensor([
         [[0, 0], [1, 0], [0, 1]],
@@ -26,3 +27,16 @@ def test_area_of_two_R2_triangles():
     area = get_triangle_area(vertex_coords)
     targets = torch.Tensor([0.5, 25])
     assert torch.allclose(area, targets)
+
+
+def test_trimesh_normal_mass_matrix():
+    triangles = torch.tensor([[0, 1, 2]])
+    vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+    mesh = TriMesh(triangles, vertices)
+    mass = mesh.get_mass_matrix(mode='normal')
+
+    targets = torch.tensor([[0.58333333,  0.29166667,  0.29166667],
+                            [0.29166667,  0.58333333,  0.29166667],
+                            [0.29166667,  0.29166667,  0.58333333]])
+
+    assert torch.allclose(mass.to_dense(), targets)
