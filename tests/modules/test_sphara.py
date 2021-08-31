@@ -40,3 +40,42 @@ def test_trimesh_normal_mass_matrix():
                             [0.29166667,  0.29166667,  0.58333333]])
 
     assert torch.allclose(mass.to_dense(), targets)
+
+
+def test_trimesh_half_cotangent_weight_matrix():
+    triangles = torch.tensor([[0, 1, 2]])
+    vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+    mesh = TriMesh(triangles, vertices)
+    mass = mesh.get_weight_matrix(mode='half_cotangent')
+
+    targets = torch.tensor([[0., 0.64285714, 0.28571429],
+                            [0.64285714, 0., 0.07142857],
+                            [0.28571429, 0.07142857, 0.]])
+
+    assert torch.allclose(mass.to_dense(), targets)
+
+
+def test_trimesh_inv_euclidean_weight_matrix():
+    triangles = torch.tensor([[0, 1, 2]])
+    vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+    mesh = TriMesh(triangles, vertices)
+    mass = mesh.get_weight_matrix(mode='inv_euclidean')
+
+    targets = torch.tensor([[0., 0.4472136, 0.31622777],
+                            [0.4472136, 0., 0.2773501],
+                            [0.31622777, 0.2773501, 0.]])
+
+    assert torch.allclose(mass.to_dense(), targets)
+
+
+def test_trimesh_unit_weight_matrix():
+    triangles = torch.tensor([[0, 1, 2]])
+    vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+    mesh = TriMesh(triangles, vertices)
+    mass = mesh.get_weight_matrix(mode='unit')
+
+    targets = torch.tensor([[0., 1., 1.],
+                            [1., 0., 1.],
+                            [1., 1., 0.]])
+
+    assert torch.allclose(mass.to_dense(), targets)
