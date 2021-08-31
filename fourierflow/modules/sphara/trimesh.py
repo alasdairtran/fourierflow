@@ -226,3 +226,37 @@ class TriMesh:
         weight = torch.sparse_coo_tensor(indices, values, size=[N, N])
 
         return weight.coalesce()
+
+    def get_stiffness_matrix(self):
+        """Get the stiffness matrix of a triangular mesh.
+
+        The method determines a stiffness matrix of a triangular mesh.
+
+        Returns
+        -------
+        stiffness : tensor, shape (n_points, n_points)
+            Symmetric matrix, which contains the stiffness values for each edge
+            and vertex for the FEM approach. The number of vertices of the
+            triangular mesh is n_points.
+
+        Examples
+        --------
+        >>> mesh = TriMesh([[0, 1, 2]], [[1., 0., 0.], [0., 2., 0.], [0., 0., 3.]])
+        >>> mesh.get_stiffness_matrix()
+        tensor([[-0.92857143,  0.64285714,  0.28571429],
+                [ 0.64285714, -0.71428571,  0.07142857],
+                [ 0.28571429,  0.07142857, -0.35714286]])
+
+        References
+        ----------
+        :cite:`vallet07`
+
+        """
+        # Compute the cot weight matrix
+        weight = self.get_weight_matrix(mode='half_cotangent')
+
+        # compute and return the stiffness matrix
+        diagnoals = torch.sparse.sum(weight, dim=0).to_dense()
+        stiffness = -torch.diag(diagnoals).to_sparse() + weight
+
+        return stiffness
