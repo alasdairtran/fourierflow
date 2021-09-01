@@ -1,5 +1,6 @@
 import torch
 
+from fourierflow.modules.sphara.basis import SpharaBasis
 from fourierflow.modules.sphara.trimesh import TriMesh, get_triangle_area
 
 
@@ -92,3 +93,19 @@ def test_trimesh_stiffness_matrix():
                             [0.28571429,  0.07142857, -0.35714286]])
 
     assert torch.allclose(stiffness.to_dense(), targets)
+
+
+def test_sphara_basis():
+    triangles = torch.tensor([[0, 1, 2]])
+    vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+    mesh = TriMesh(triangles, vertices)
+    sb_fem = SpharaBasis(mesh, mode='fem')
+    freqs, basis = sb_fem.basis()
+
+    target_freqs = torch.tensor([5.14285714e+00])
+    target_basis = torch.tensor([[1.42857143],
+                                 [-1.14285714],
+                                 [-0.28571429]])
+
+    assert torch.allclose(freqs, target_freqs)
+    assert torch.allclose(basis, target_basis)
