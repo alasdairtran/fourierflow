@@ -8,10 +8,10 @@ class SpharaBasis:
     def __init__(self, mesh: TriMesh, mode: str = 'fem', largest: bool = False):
         self.mesh = mesh
         self.mode = mode
-        self._largest = largest
-        self._basis = None
-        self._frequencies = None
-        self._mass_matrix = None
+        self.largest = largest
+        self.basis = None
+        self.frequencies = None
+        self.mass = None
 
     def get_basis(self):
         r"""Return the SPHARA basis for the triangulated sample points.
@@ -49,22 +49,22 @@ class SpharaBasis:
                 [-0.2857]])
 
         """
-        if self._basis is None or self._frequencies is None:
-            self._construct_basis()
-        return self._frequencies, self._basis
+        if self.basis is None or self.frequencies is None:
+            self.construct_basis()
+        return self.frequencies, self.basis
 
-    def _construct_basis(self):
+    def construct_basis(self):
         if self.mode == 'fem':
             self._construct_fem_basis()
         elif self.mode in ['unit', 'inv_euclidean']:
             laplacian = self.mesh.get_laplacian_matrix(mode=self.mode)
-            self._frequencies, self._basis = LA.eigh(laplacian.to_dense())
+            self.frequencies, self.basis = LA.eigh(laplacian.to_dense())
         else:
             raise ValueError(f'Unrecognized mode: {self.mode}')
 
     def _construct_fem_basis(self, k=1):
-        self._mass_matrix = self.mesh.get_mass_matrix(mode='normal')
+        self.mass = self.mesh.get_mass_matrix(mode='normal')
         stiffness = self.mesh.get_stiffness_matrix()
-        self._frequencies, self._basis = torch.lobpcg(
-            -stiffness.to_dense(), k, self._mass_matrix.to_dense(),
-            largest=self._largest)
+        self.frequencies, self.basis = torch.lobpcg(
+            -stiffness.to_dense(), k, self.mass.to_dense(),
+            largest=self.largest)
