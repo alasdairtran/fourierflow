@@ -57,7 +57,8 @@ class SpharaBasis:
         if self.mode == 'fem':
             self._construct_fem_basis()
         elif self.mode in ['unit', 'inv_euclidean']:
-            raise NotImplementedError
+            laplacian = self.mesh.get_laplacian_matrix(mode=self.mode)
+            self._frequencies, self._basis = LA.eigh(laplacian.to_dense())
         else:
             raise ValueError(f'Unrecognized mode: {self.mode}')
 

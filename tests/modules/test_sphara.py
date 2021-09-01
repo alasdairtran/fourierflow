@@ -108,7 +108,7 @@ def test_trimesh_stiffness_matrix():
     assert torch.allclose(stiffness.to_dense(), targets)
 
 
-def test_sphara_basis():
+def test_sphara_fem_basis():
     torch.manual_seed(1234)
     triangles = torch.tensor([[0, 1, 2]])
     vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
@@ -120,6 +120,23 @@ def test_sphara_basis():
     target_basis = torch.tensor([[1.42857143],
                                  [-1.14285714],
                                  [-0.28571429]])
+
+    assert torch.allclose(freqs, target_freqs)
+    assert torch.allclose(basis, target_basis)
+
+
+def test_sphara_inv_euclidean_basis():
+    torch.manual_seed(1234)
+    triangles = torch.tensor([[0, 1, 2]])
+    vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+    mesh = TriMesh(triangles, vertices)
+    sb_fem = SpharaBasis(mesh, mode='inv_euclidean')
+    freqs, basis = sb_fem.basis()
+
+    target_freqs = torch.tensor([-5.7742e-08,  8.86644828e-01,  1.19493809])
+    target_basis = torch.tensor([[-0.57735027, 0.32808212,  0.74768228],
+                                 [-0.57735027, 0.48347079, -0.65796859],
+                                 [-0.57735027, -0.81155291, -0.08971369]])
 
     assert torch.allclose(freqs, target_freqs)
     assert torch.allclose(basis, target_basis)
