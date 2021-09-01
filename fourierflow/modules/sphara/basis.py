@@ -5,9 +5,10 @@ from .trimesh import TriMesh
 
 
 class SpharaBasis:
-    def __init__(self, mesh: TriMesh, mode: str = 'fem'):
+    def __init__(self, mesh: TriMesh, mode: str = 'fem', largest: bool = False):
         self.mesh = mesh
         self.mode = mode
+        self._largest = largest
         self._basis = None
         self._frequencies = None
         self._mass_matrix = None
@@ -64,4 +65,5 @@ class SpharaBasis:
         self._mass_matrix = self.mesh.get_mass_matrix(mode='normal')
         stiffness = self.mesh.get_stiffness_matrix()
         self._frequencies, self._basis = torch.lobpcg(
-            -stiffness.to_dense(), k, self._mass_matrix.to_dense())
+            -stiffness.to_dense(), k, self._mass_matrix.to_dense(),
+            largest=self._largest)
