@@ -13,7 +13,7 @@ class SpharaBasis:
         self._frequencies = None
         self._mass_matrix = None
 
-    def basis(self):
+    def get_basis(self):
         r"""Return the SPHARA basis for the triangulated sample points.
 
         The method determines a SPHARA basis for spatially distributed
