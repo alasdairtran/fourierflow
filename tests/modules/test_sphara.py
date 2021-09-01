@@ -82,6 +82,19 @@ def test_trimesh_unit_weight_matrix():
     assert torch.allclose(weight.to_dense(), targets)
 
 
+def test_trimesh_lapacian_matrix():
+    triangles = torch.tensor([[0, 1, 2]])
+    vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+    mesh = TriMesh(triangles, vertices)
+    weight = mesh.get_laplacian_matrix(mode='inv_euclidean')
+
+    targets = torch.tensor([[0.76344136, -0.4472136, -0.31622777],
+                            [-0.4472136,  0.72456369, -0.2773501],
+                            [-0.31622777, -0.2773501,  0.59357786]])
+
+    assert torch.allclose(weight.to_dense(), targets)
+
+
 def test_trimesh_stiffness_matrix():
     triangles = torch.tensor([[0, 1, 2]])
     vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
@@ -96,6 +109,7 @@ def test_trimesh_stiffness_matrix():
 
 
 def test_sphara_basis():
+    torch.manual_seed(1234)
     triangles = torch.tensor([[0, 1, 2]])
     vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
     mesh = TriMesh(triangles, vertices)
@@ -103,9 +117,9 @@ def test_sphara_basis():
     freqs, basis = sb_fem.basis()
 
     target_freqs = torch.tensor([5.14285714e+00])
-    target_basis = torch.tensor([[-1.42857143],
-                                 [1.14285714],
-                                 [0.28571429]])
+    target_basis = torch.tensor([[1.42857143],
+                                 [-1.14285714],
+                                 [-0.28571429]])
 
     assert torch.allclose(freqs, target_freqs)
     assert torch.allclose(basis, target_basis)

@@ -63,6 +63,48 @@ class TriMesh:
         self.vertex_coords = torch.embedding(self.vertices, self.triangles)
         # vertex_coords.shape == [n_triangles, 3, n_dims]
 
+    def get_laplacian_matrix(self, mode='inv_euclidean') -> Tensor:
+        """Compute a laplacian matrix for a triangular mesh.
+
+        The method creates a laplacian matrix for a triangular
+        mesh using different weighting function.
+
+        Parameters
+        ----------
+        mode : {'unit', 'inv_euclidean', 'half_cotangent'}, optional
+            The methods for determining the edge weights. Using the option
+            'unit' all edges of the mesh are weighted by unit weighting
+            function, the result is an adjacency matrix. The option
+            'inv_euclidean' results in edge weights corresponding to the
+            inverse Euclidean distance of the edge lengths. The option
+            'half_cotangent' uses the half of the cotangent of the two angles
+            opposed to an edge as weighting function. the default weighting
+            function is 'inv_euclidean'.
+
+        Returns
+        -------
+        laplacian : tensor, shape (n_points, n_points)
+            Matrix, which contains the discrete laplace operator for data
+            defined at the vertices of a triangular mesh. The number of
+            vertices of the triangular mesh is n_points.
+
+        Examples
+        --------
+        >>> mesh = tm.TriMesh([[0, 1, 2]], [[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+        >>> mesh.get_laplacian_matrix(mode='inv_euclidean')
+        tensor([[ 0.76344136, -0.4472136 , -0.31622777],
+                [-0.4472136 ,  0.72456369, -0.2773501 ],
+                [-0.31622777, -0.2773501 ,  0.59357786]])
+
+        """
+        if mode not in ('unit', 'inv_euclidean', 'half_cotangent'):
+            raise ValueError(f'Unrecognized mode: {mode}')
+
+        weight = self.get_weight_matrix(mode=mode)
+        diagnoals = torch.sparse.sum(weight, dim=0).to_dense()
+        laplacian = torch.diag(diagnoals).to_sparse() - weight
+        return laplacian
+
     def get_mass_matrix(self, mode='normal') -> Tensor:
         """Get the mass matrix of a triangular mesh.
 
@@ -156,7 +198,7 @@ class TriMesh:
 
         Examples
         --------
-        >>> mesh = TriMesh([[0, 1, 2]], [[1., 0., 0.], [0., 2., 0.], [0., 0., 3.]])
+        >>> mesh = TriMesh([[0, 1, 2]], [[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
         >>> mesh.get_weight_matrix(mode='inv_euclidean')
         tensor([[ 0.        ,  0.4472136 ,  0.31622777],
                 [ 0.4472136 ,  0.        ,  0.2773501 ],
@@ -241,7 +283,7 @@ class TriMesh:
 
         Examples
         --------
-        >>> mesh = TriMesh([[0, 1, 2]], [[1., 0., 0.], [0., 2., 0.], [0., 0., 3.]])
+        >>> mesh = TriMesh([[0, 1, 2]], [[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
         >>> mesh.get_stiffness_matrix()
         tensor([[-0.92857143,  0.64285714,  0.28571429],
                 [ 0.64285714, -0.71428571,  0.07142857],
