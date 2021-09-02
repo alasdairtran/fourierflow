@@ -78,9 +78,9 @@ class CylinderFlowTrainingDataset(Dataset):
         c = self.n_cells[b]
         n = self.n_nodes[b]
         return {
-            'cells': self.cells[b, t, :c],
-            'mesh_pos': self.mesh_pos[b, t, :n],
-            'node_type': self.node_type[b, t, :n],
+            'cells': self.cells[b, :c],
+            'mesh_pos': self.mesh_pos[b, :n],
+            'node_type': self.node_type[b, :n],
             'velocity': self.velocity[b, t, :n],
             'target_velocity': self.target_velocity[b, t, :n],
             'pressure': self.pressure[b, t, :n],
@@ -106,9 +106,9 @@ class CylinderFlowDataset(Dataset):
         c = self.n_cells[b]
         n = self.n_nodes[b]
         return {
-            'cells': self.cells[b, :, :c],
-            'mesh_pos': self.mesh_pos[b, :, :n],
-            'node_type': self.node_type[b, :, :n],
+            'cells': self.cells[b, :c],
+            'mesh_pos': self.mesh_pos[b, :n],
+            'node_type': self.node_type[b, :n],
             'velocity': self.velocity[b, :, :n],
             'target_velocity': self.target_velocity[b, :, :n],
             'pressure': self.pressure[b, :, :n],

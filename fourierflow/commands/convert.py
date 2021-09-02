@@ -69,7 +69,6 @@ def cylinder_flow(data_dir: str = 'data/cylinder_flow',
     process_cylinder_split('train', meta, h5f, in_path)
     process_cylinder_split('valid', meta, h5f, in_path)
     process_cylinder_split('test', meta, h5f, in_path)
-    verify_constant_mesh(h5f)
 
 
 def process_cylinder_split(split, meta, h5f, in_path):
@@ -105,12 +104,15 @@ def process_cylinder_split(split, meta, h5f, in_path):
     logger.info(f'Max cells: {max_cells}')
     logger.info(f'Max nodes: {max_nodes}')
 
-    h5f.create_dataset(f'{split}/n_cells', (n_samples), np.int32, n_cells)
-    h5f.create_dataset(f'{split}/n_nodes', (n_samples), np.int32, n_nodes)
+    h5f.create_dataset(f'{split}/n_cells', (n_samples,), np.int32, n_cells)
+    h5f.create_dataset(f'{split}/n_nodes', (n_samples,), np.int32, n_nodes)
 
-    shape_1 = (n_samples, n_steps, max_nodes)
-    shape_2 = (n_samples, n_steps, max_nodes, 2)
-    shape_3 = (n_samples, n_steps, max_cells, 3)
+    shape_1 = (n_samples, max_nodes)
+    shape_2 = (n_samples, max_nodes, 2)
+    shape_3 = (n_samples, max_cells, 3)
+
+    shape_1t = (n_samples, n_steps, max_nodes)
+    shape_2t = (n_samples, n_steps, max_nodes, 2)
 
     # Each cell is a triangle, a triple containing three node indices.
     cells = h5f.create_dataset(
@@ -126,23 +128,27 @@ def process_cylinder_split(split, meta, h5f, in_path):
 
     # The (x, y) velocity at each node. Can be negative.
     velocity = h5f.create_dataset(
-        f'{split}/velocity', shape_2, np.float32, fillvalue=np.nan)
+        f'{split}/velocity', shape_2t, np.float32, fillvalue=np.nan)
 
     # The (x, y) velocity at each node at the next time step.
     target_velocity = h5f.create_dataset(
-        f'{split}/target_velocity', shape_2, np.float32, fillvalue=np.nan)
+        f'{split}/target_velocity', shape_2t, np.float32, fillvalue=np.nan)
 
     # Pressure is a scalar value at each node at each time step.
     pressure = h5f.create_dataset(
-        f'{split}/pressure', shape_1, np.float32, fillvalue=np.nan)
+        f'{split}/pressure', shape_1t, np.float32, fillvalue=np.nan)
 
     logger.info(f'Writing {split} to disk.')
     for i, sample in tqdm(enumerate(ds)):
         c = n_cells[i]
         n = n_nodes[i]
-        cells[i, :, :c] = sample['cells'].numpy()
-        mesh_pos[i, :, :n] = sample['mesh_pos'].numpy()
-        node_type[i, :, :n] = sample['node_type'].numpy()[..., 0]
+
+        # For cylinder-flow, mesh_pos, node_type, and cells are constant
+        # across all time steps.
+        cells[i, :c] = sample['cells'].numpy()[0]
+        mesh_pos[i, :n] = sample['mesh_pos'].numpy()[0]
+        node_type[i, :n] = sample['node_type'].numpy()[0, ..., 0]
+
         velocity[i, :, :n] = sample['velocity'].numpy()
         target_velocity[i, :, :n] = sample['target|velocity'].numpy()
         pressure[i, :, :n] = sample['pressure'].numpy()[..., 0]
