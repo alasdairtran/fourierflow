@@ -49,7 +49,7 @@ class SpharaBasis:
                 [-0.2857]])
 
         """
-        if self.basis is None or self.frequencies is None:
+        if self.frequencies is None or self.basis is None:
             self.construct_basis()
         return self.frequencies, self.basis
 
