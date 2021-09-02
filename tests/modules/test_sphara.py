@@ -1,6 +1,7 @@
 import torch
 
 from fourierflow.modules.sphara.basis import SpharaBasis
+from fourierflow.modules.sphara.filter import SpharaFilter
 from fourierflow.modules.sphara.transform import SpharaTransform
 from fourierflow.modules.sphara.trimesh import TriMesh, get_triangle_area
 
@@ -205,3 +206,21 @@ def test_sphara_inv_euclidean_synthesize():
     recovered = st.synthesize(coeffs)
 
     assert torch.allclose(data, recovered)
+
+
+def test_sphara_inv_euclidean_filter():
+    torch.manual_seed(78124)
+    triangles = torch.tensor([[0, 1, 2]])
+    vertices = torch.tensor([[1.0, 0, 0], [0, 2, 0], [0, 0, 3]])
+    mesh = TriMesh(triangles, vertices)
+    sf = SpharaFilter(mesh, mode='inv_euclidean', specification=[1., 1., 0.])
+    data = torch.randn(5, 3)
+    data_filtered = sf.filter(data)
+
+    targets = torch.tensor([[-1.000241,   -1.1199238,  -0.12247648],
+                            [0.11390518,  0.21456946, -0.6243761],
+                            [-0.49451074, -0.5072175,  -0.40131807],
+                            [0.08357128, -0.04511572,  1.0273737],
+                            [1.1693169,  1.1133603,  1.5797076]])
+
+    assert torch.allclose(targets, data_filtered)
