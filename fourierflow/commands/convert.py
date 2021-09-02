@@ -69,6 +69,7 @@ def cylinder_flow(data_dir: str = 'data/cylinder_flow',
     process_cylinder_split('train', meta, h5f, in_path)
     process_cylinder_split('valid', meta, h5f, in_path)
     process_cylinder_split('test', meta, h5f, in_path)
+    verify_constant_mesh(h5f)
 
 
 def process_cylinder_split(split, meta, h5f, in_path):
@@ -145,6 +146,27 @@ def process_cylinder_split(split, meta, h5f, in_path):
         velocity[i, :, :n] = sample['velocity'].numpy()
         target_velocity[i, :, :n] = sample['target|velocity'].numpy()
         pressure[i, :, :n] = sample['pressure'].numpy()[..., 0]
+
+
+def verify_constant_mesh(h5f):
+    verify_constant_mesh_split(h5f['train'])
+    verify_constant_mesh_split(h5f['valid'])
+    verify_constant_mesh_split(h5f['test'])
+
+
+def verify_constant_mesh_split(data):
+    # Check that the mesh is the same at each time step
+    n_samples = data['mesh_pos'].shape[0]
+    for i in tqdm(range(n_samples)):
+        n_cells = data['n_cells'][i]
+        n_nodes = data['n_nodes'][i]
+
+        cells = data['cells'][i, :, :n_cells]
+        mesh_pos = data['mesh_pos'][i, :, :n_nodes]
+
+        for t in range(598):
+            assert (cells[0] == cells[t]).all()
+            assert (mesh_pos[0] == mesh_pos[t]).all()
 
 
 if __name__ == "__main__":

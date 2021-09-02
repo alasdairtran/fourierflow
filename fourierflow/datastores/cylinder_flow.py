@@ -8,6 +8,13 @@ from fourierflow.registries import Datastore
 
 @Datastore.register('cylinder_flow')
 class CylinderFlowDatastore(Datastore):
+    """Load the Cylinder Flow dataset.
+
+    For the cylinder flow, the mesh (cells and mesh_pos) is fixed throughout
+    all 600 steps.
+
+    """
+
     name = 'cylinder_flow'
 
     def __init__(self, data_path: str, n_workers: int, batch_size: int):
