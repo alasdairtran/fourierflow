@@ -68,5 +68,4 @@ class SpharaBasis:
         self.mass = self.mesh.get_mass_matrix(mode='normal')
         stiffness = self.mesh.get_stiffness_matrix()
         self.frequencies, self.basis = torch.lobpcg(
-            -stiffness.to_dense(), self.k, self.mass.to_dense(),
-            largest=self.largest)
+            -stiffness, self.k, self.mass, largest=self.largest)
