@@ -79,10 +79,8 @@ fourierflow download meshgraphnets
 # Convert cylinder-flow data from TFRecords to HDF5 format
 fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylinder_flow/cylinder_flow.h5
 
-# Create index files
-python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/train.tfrecord data/cylinder_flow/train.index
-python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/valid.tfrecord data/cylinder_flow/valid.index
-python -m tfrecord.tools.tfrecord2idx data/cylinder_flow/test.tfrecord data/cylinder_flow/test.index
+# Compute the top 256 Fourier basis of the cylinder-flow meshes
+fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow.h5
 
 # Reproduce mesh experiment
 poetry install
