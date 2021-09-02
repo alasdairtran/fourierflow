@@ -5,13 +5,15 @@ from .trimesh import TriMesh
 
 
 class SpharaBasis:
-    def __init__(self, mesh: TriMesh, mode: str = 'fem', largest: bool = False):
+    def __init__(self, mesh: TriMesh, mode: str = 'fem', largest: bool = False,
+                 k: int = 1):
         self.mesh = mesh
         self.mode = mode
         self.largest = largest
         self.basis = None
         self.frequencies = None
         self.mass = None
+        self.k = k
 
     def get_basis(self):
         r"""Return the SPHARA basis for the triangulated sample points.
@@ -40,7 +42,7 @@ class SpharaBasis:
         --------
         >>> mesh = TriMesh([[0, 1, 2]], [[1., 0., 0.], [0., 2., 0.], [0., 0., 3.]])
         >>> sb_fem = SpharaBasis(mesh, mode='fem')
-        >>> frequencies, basis = sb_fem.basis()
+        >>> frequencies, basis = sb_fem.get_basis()
         >>> frequencies
         tensor([5.1429])
         >>> basis
@@ -62,9 +64,9 @@ class SpharaBasis:
         else:
             raise ValueError(f'Unrecognized mode: {self.mode}')
 
-    def _construct_fem_basis(self, k=1):
+    def _construct_fem_basis(self):
         self.mass = self.mesh.get_mass_matrix(mode='normal')
         stiffness = self.mesh.get_stiffness_matrix()
         self.frequencies, self.basis = torch.lobpcg(
-            -stiffness.to_dense(), k, self.mass.to_dense(),
+            -stiffness.to_dense(), self.k, self.mass.to_dense(),
             largest=self.largest)
