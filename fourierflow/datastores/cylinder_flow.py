@@ -1,9 +1,21 @@
+import enum
 import os
 
 import h5py
 from torch.utils.data import DataLoader, Dataset
 
 from fourierflow.registries import Datastore
+
+
+class NodeType(enum.IntEnum):
+    NORMAL = 0
+    OBSTACLE = 1
+    AIRFOIL = 2
+    HANDLE = 3
+    INFLOW = 4
+    OUTFLOW = 5
+    WALL_BOUNDARY = 6
+    SIZE = 9
 
 
 @Datastore.register('cylinder_flow')
@@ -65,9 +77,11 @@ class CylinderFlowTrainingDataset(Dataset):
         self.velocity = data['velocity']
         self.target_velocity = data['target_velocity']
         self.pressure = data['pressure']
+        self.frequencies = data['frequencies']
+        self.basis = data['basis']
         self.n_cells = data['n_cells']
         self.n_nodes = data['n_nodes']
-        self.B, self.T, _, _ = self.cells.shape
+        self.B, self.T, _, _ = self.velocity.shape
 
     def __len__(self):
         return self.B * self.T
@@ -84,6 +98,8 @@ class CylinderFlowTrainingDataset(Dataset):
             'velocity': self.velocity[b, t, :n],
             'target_velocity': self.target_velocity[b, t, :n],
             'pressure': self.pressure[b, t, :n],
+            'frequencies': self.frequencies[b],
+            'basis': self.basis[b, :n],
         }
 
 
@@ -95,6 +111,8 @@ class CylinderFlowDataset(Dataset):
         self.velocity = data['velocity']
         self.target_velocity = data['target_velocity']
         self.pressure = data['pressure']
+        self.frequencies = data['frequencies']
+        self.basis = data['basis']
         self.n_cells = data['n_cells']
         self.n_nodes = data['n_nodes']
         self.B = self.cells[0]
@@ -112,4 +130,6 @@ class CylinderFlowDataset(Dataset):
             'velocity': self.velocity[b, :, :n],
             'target_velocity': self.target_velocity[b, :, :n],
             'pressure': self.pressure[b, :, :n],
+            'frequencies': self.frequencies[b],
+            'basis': self.basis[b, :n],
         }
