@@ -28,11 +28,27 @@ def compute_basis_for_split(h5f, split):
     max_nodes = data['n_nodes'][...].max()
     n_modes = 256
 
-    frequencies = h5f.create_dataset(
-        f'{split}/frequencies', (n_samples, n_modes), np.float32, fillvalue=np.nan)
+    if f'{split}/frequencies' not in h5f:
+        h5f.create_dataset(f'{split}/frequencies',
+                           shape=(n_samples, n_modes),
+                           dtype=np.float32,
+                           fillvalue=np.nan)
 
-    basis = h5f.create_dataset(
-        f'{split}/basis', (n_samples, max_nodes, n_modes), np.float32, fillvalue=np.nan)
+    if f'{split}/basis' not in h5f:
+        h5f.create_dataset(f'{split}/basis',
+                           shape=(n_samples, max_nodes, n_modes),
+                           dtype=np.float32,
+                           fillvalue=np.nan)
+
+    if f'{split}/mass' not in h5f:
+        h5f.create_dataset(f'{split}/mass',
+                           shape=(n_samples, max_nodes, max_nodes),
+                           dtype=np.float32,
+                           fillvalue=np.nan)
+
+    frequencies = h5f[f'{split}/frequencies']
+    basis = h5f[f'{split}/basis']
+    mass = h5f[f'{split}/mass']
 
     for i in tqdm(range(n_samples)):
         n = data['n_nodes'][i]
@@ -47,6 +63,7 @@ def compute_basis_for_split(h5f, split):
 
         frequencies[i] = f.cpu().numpy()
         basis[i, :n] = b.cpu().numpy()
+        mass[i, :n, :n] = sb.mass.to_dense().cpu().numpy()
 
 
 if __name__ == "__main__":

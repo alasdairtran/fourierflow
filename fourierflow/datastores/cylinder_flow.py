@@ -79,6 +79,7 @@ class CylinderFlowTrainingDataset(Dataset):
         self.pressure = data['pressure']
         self.frequencies = data['frequencies']
         self.basis = data['basis']
+        self.mass = data['mass']
         self.n_cells = data['n_cells']
         self.n_nodes = data['n_nodes']
         self.B, self.T, _, _ = self.velocity.shape
@@ -100,6 +101,7 @@ class CylinderFlowTrainingDataset(Dataset):
             'pressure': self.pressure[b, t, :n],
             'frequencies': self.frequencies[b],
             'basis': self.basis[b, :n],
+            'mass': self.mass[b, :n, :n],
         }
 
 
@@ -132,4 +134,5 @@ class CylinderFlowDataset(Dataset):
             'pressure': self.pressure[b, :, :n],
             'frequencies': self.frequencies[b],
             'basis': self.basis[b, :n],
+            'mass': self.mass[b, :n, :n],
         }

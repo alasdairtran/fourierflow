@@ -76,10 +76,10 @@ qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.
 # DeepMind meshgraphnets simulation data
 fourierflow download meshgraphnets
 
-# Convert cylinder-flow data from TFRecords to HDF5 format
+# Convert cylinder-flow data from TFRecords to HDF5 format.
 fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylinder_flow/cylinder_flow.h5
 
-# Compute the top 256 Fourier basis of the cylinder-flow meshes
+# Compute the top 256 Fourier basis of the cylinder-flow meshes (takes 2h).
 fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow.h5
 
 # Reproduce mesh experiment
