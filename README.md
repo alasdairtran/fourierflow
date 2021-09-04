@@ -77,10 +77,13 @@ qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.
 fourierflow download meshgraphnets
 
 # Convert cylinder-flow data from TFRecords to HDF5 format.
-fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylinder_flow/cylinder_flow.h5
+fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylinder_flow/cylinder_flow_fem.h5
+fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylinder_flow/cylinder_flow_inv_euclidean.h5
 
-# Compute the top 256 Fourier basis of the cylinder-flow meshes (takes 2h).
-fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow.h5
+# Compute the Fourier basis of the cylinder-flow meshes (takes 2h).
+fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow_inv_euclidean.h5 --mode inv_euclidean
+fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow_fem.h5 --mode fem --n-modes 128
+
 
 # Reproduce mesh experiment
 poetry install

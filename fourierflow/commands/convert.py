@@ -169,10 +169,12 @@ def verify_constant_mesh_split(data):
 
         cells = data['cells'][i, :, :n_cells]
         mesh_pos = data['mesh_pos'][i, :, :n_nodes]
+        node_type = data['node_type'][i, :, :n_nodes]
 
         for t in range(598):
             assert (cells[0] == cells[t]).all()
             assert (mesh_pos[0] == mesh_pos[t]).all()
+            assert (node_type[0] == node_type[t]).all()
 
 
 if __name__ == "__main__":
