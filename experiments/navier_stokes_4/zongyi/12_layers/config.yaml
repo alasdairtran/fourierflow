@@ -6,7 +6,7 @@ wandb:
     - navier-stokes
     - fourier
   notes: ""
-datastore:
+builder:
   type: navier_stokes
   data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
   train_size: 1000

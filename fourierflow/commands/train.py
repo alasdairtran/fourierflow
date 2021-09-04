@@ -14,7 +14,7 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins import DDPPlugin
 from typer import Typer
 
-from fourierflow.registries import Callback, Datastore, Experiment
+from fourierflow.registries import Callback, Builder, Experiment
 from fourierflow.utils import ExistingExperimentFound, yaml_to_params
 
 from .utils import get_save_dir
@@ -74,7 +74,7 @@ def main(config_path: str, overrides: str = '', force: bool = False,
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
         # ptvsd doesn't play well with multiple processes.
-        params['datastore']['n_workers'] = 0
+        params['builder']['n_workers'] = 0
 
     # Set up directories to save experimental outputs.
     save_dir = get_save_dir(config_path)
@@ -99,7 +99,7 @@ def main(config_path: str, overrides: str = '', force: bool = False,
     upload_code_to_wandb(config_path, wandb_logger)
 
     # Initialize the dataset and experiment modules.
-    datastore = Datastore.from_params(params['datastore'])
+    builder = Builder.from_params(params['builder'])
     experiment = Experiment.from_params(params['experiment'])
 
     # Support fine-tuning mode if a pretrained model path is supplied.
@@ -127,9 +127,9 @@ def main(config_path: str, overrides: str = '', force: bool = False,
 
     # Tuning only has an effect when either auto_scale_batch_size or
     # auto_lr_find is set to true.
-    trainer.tune(experiment, datamodule=datastore)
-    trainer.fit(experiment, datamodule=datastore)
-    trainer.test(experiment, datamodule=datastore)
+    trainer.tune(experiment, datamodule=builder)
+    trainer.fit(experiment, datamodule=builder)
+    trainer.test(experiment, datamodule=builder)
 
 
 if __name__ == "__main__":

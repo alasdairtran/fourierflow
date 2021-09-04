@@ -7,11 +7,11 @@ import torch
 from einops import repeat
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.registries import Datastore
+from fourierflow.registries import Builder
 
 
-@Datastore.register('burgers')
-class BurgersDatastore(Datastore):
+@Builder.register('burgers')
+class BurgersBuilder(Builder):
     name = 'burgers'
 
     def __init__(self, data_path: str, train_size: int,

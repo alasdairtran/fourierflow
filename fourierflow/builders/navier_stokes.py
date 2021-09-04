@@ -5,11 +5,11 @@ from einops import repeat
 from torch.utils.data import DataLoader, Dataset
 import os
 
-from fourierflow.registries import Datastore
+from fourierflow.registries import Builder
 
 
-@Datastore.register('navier_stokes')
-class NavierStokesDatastore(Datastore):
+@Builder.register('navier_stokes')
+class NavierStokesBuilder(Builder):
     name = 'navier_stokes'
 
     def __init__(self, data_path: str, train_size: int, test_size: int,

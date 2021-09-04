@@ -7,11 +7,11 @@ import torch
 from einops import repeat
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.registries import Datastore
+from fourierflow.registries import Builder
 
 
-@Datastore.register('darcy_flow')
-class DarcyFlowDatastore(Datastore):
+@Builder.register('darcy_flow')
+class DarcyFlowBuilder(Builder):
     name = 'darcy_flow'
 
     def __init__(self, train_path: str, test_path: str, train_size: int,

@@ -6,11 +6,11 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import os
 
-from fourierflow.registries import Datastore
+from fourierflow.registries import Builder
 
 
-@Datastore.register('vevo')
-class VevoDatastore(Datastore):
+@Builder.register('vevo')
+class VevoBuilder(Builder):
     name = 'vevo'
 
     def __init__(self, data_path: str, train_id_path: str, test_id_path: str,

@@ -4,7 +4,7 @@ import os
 import h5py
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.registries import Datastore
+from fourierflow.registries import Builder
 
 
 class NodeType(enum.IntEnum):
@@ -18,8 +18,8 @@ class NodeType(enum.IntEnum):
     SIZE = 9
 
 
-@Datastore.register('cylinder_flow')
-class CylinderFlowDatastore(Datastore):
+@Builder.register('cylinder_flow')
+class CylinderFlowBuilder(Builder):
     """Load the Cylinder Flow dataset.
 
     For the cylinder flow, the mesh (cells and mesh_pos) is fixed throughout

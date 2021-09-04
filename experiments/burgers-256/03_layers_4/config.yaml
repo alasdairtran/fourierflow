@@ -7,7 +7,7 @@ wandb:
     - burgers
     - fourier
   notes: ""
-datastore:
+builder:
   type: burgers
   data_path: ${FNO_DATA_ROOT}/burgers_data_R10.mat
   train_size: 1000

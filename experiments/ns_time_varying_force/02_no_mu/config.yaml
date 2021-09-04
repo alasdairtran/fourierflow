@@ -6,7 +6,7 @@ wandb:
     - navier-stokes
     - fourier
   notes: ""
-datastore:
+builder:
   type: navier_stokes_3
   data_path: ${DATA_ROOT}/navier-stokes/random_varying_force_mu.h5
   ssr: 4 # sub-sampling rate

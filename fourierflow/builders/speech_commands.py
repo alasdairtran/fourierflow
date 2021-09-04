@@ -10,11 +10,11 @@ import torch
 import torchaudio
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.registries import Datastore
+from fourierflow.registries import Builder
 
 
-@Datastore.register('speech_commands')
-class SpeechCommandsDatastore(Datastore):
+@Builder.register('speech_commands')
+class SpeechCommandsBuilder(Builder):
     name = 'speech'
 
     def __init__(self, data_dir: str, train_id_path: str, test_id_path: str,

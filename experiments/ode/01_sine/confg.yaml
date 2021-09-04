@@ -7,7 +7,7 @@ wandb:
     - ode
     - sine
   notes: ODE experiment.
-datastore:
+builder:
   type: sine
   amplitude_range: [-1.0, 1.0]
   freq_range: [1, 1]

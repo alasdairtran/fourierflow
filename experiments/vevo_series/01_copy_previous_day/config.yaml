@@ -6,7 +6,7 @@ wandb:
     - vevo
     - time-series
   notes: Reproduced baseline experiment on VEVO dataset by copying previous day.
-datastore:
+builder:
   type: vevo
   data_path: /localdata/u4921817/projects/phd/radflow/data/vevo/vevo_static.hdf5
   train_id_path: /localdata/u4921817/projects/phd/radflow/data/vevo/vevo_all_nodes.pkl

@@ -5,7 +5,7 @@ wandb:
   tags:
     - radflow
     - time-series
-datastore:
+builder:
   type: speech_commands
   data_path: data/speech_commands
 experiment:

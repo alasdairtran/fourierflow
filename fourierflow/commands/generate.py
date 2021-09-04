@@ -7,8 +7,8 @@ import torch
 from einops import repeat
 from typer import Argument, Option, Typer
 
-from fourierflow.datastores.synthetic import (Force, GaussianRF,
-                                              solve_navier_stokes_2d)
+from fourierflow.builders.synthetic import (Force, GaussianRF,
+                                            solve_navier_stokes_2d)
 
 app = Typer()
 

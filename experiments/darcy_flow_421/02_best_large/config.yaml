@@ -7,7 +7,7 @@ wandb:
     - darcy-flow
     - fourier
   notes: ""
-datastore:
+builder:
   type: darcy_flow
   train_path: ${FNO_DATA_ROOT}/piececonst_r421_N1024_smooth1.mat
   test_path: ${FNO_DATA_ROOT}/piececonst_r421_N1024_smooth2.mat

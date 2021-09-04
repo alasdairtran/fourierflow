@@ -9,7 +9,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from typer import Typer
 
-from fourierflow.registries import Datastore, Experiment
+from fourierflow.registries import Builder, Experiment
 from fourierflow.utils import yaml_to_params
 
 from .utils import get_save_dir
@@ -31,9 +31,9 @@ def main(config_path: str,
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
         # ptvsd doesn't play well with multiple processes.
-        params['datastore']['n_workers'] = 0
+        params['builder']['n_workers'] = 0
 
-    datastore = Datastore.from_params(params['datastore'])
+    builder = Builder.from_params(params['builder'])
     experiment = Experiment.from_params(params['experiment'])
     experiment.load_lightning_model_state(checkpoint_path, map_location)
 
@@ -51,7 +51,7 @@ def main(config_path: str,
     # Start the main testing pipeline.
     trainer = pl.Trainer(logger=wandb_logger,
                          **params.pop('trainer').as_dict())
-    trainer.test(experiment, datamodule=datastore)
+    trainer.test(experiment, datamodule=builder)
 
 
 if __name__ == "__main__":

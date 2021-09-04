@@ -8,11 +8,11 @@ import torch
 # import torchcde
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.registries import Datastore
+from fourierflow.registries import Builder
 
 
-@Datastore.register('sine')
-class SineDatastore(Datastore):
+@Builder.register('sine')
+class SineBuilder(Builder):
     name = 'sine'
 
     def __init__(self,
