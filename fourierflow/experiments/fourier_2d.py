@@ -16,24 +16,19 @@ from fourierflow.viz import log_navier_stokes_heatmap
 class Fourier2DExperiment(Experiment):
     def __init__(self,
                  conv: Module,
-                 optimizer: Lazy[Optimizer],
                  n_steps: int,
                  max_freq: int = 32,
                  num_freq_bands: int = 8,
                  freq_base: int = 2,
-                 scheduler: Lazy[Scheduler] = None,
-                 scheduler_config: Dict[str, Any] = None,
                  use_fourier_position: bool = False,
                  append_pos: bool = True,
                  teacher_forcing: bool = False,
-                 model_path: str = None):
-        super().__init__()
+                 model_path: str = None,
+                 **kwargs):
+        super().__init__(**kwargs)
         self.conv = conv
         self.n_steps = n_steps
         self.l2_loss = LpLoss(size_average=True)
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.scheduler_config = scheduler_config
         self.use_fourier_position = use_fourier_position
         self.max_freq = max_freq
         self.num_freq_bands = num_freq_bands
