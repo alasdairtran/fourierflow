@@ -6,7 +6,7 @@ from allennlp.training.optimizers import Optimizer
 from pytorch_lightning import LightningModule
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 
-from fourierflow.registries import Scheduler
+from .schedulers import Scheduler
 
 
 class Experiment(Registrable, LightningModule):
