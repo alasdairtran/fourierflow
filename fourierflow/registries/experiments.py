@@ -1,14 +1,24 @@
-from typing import IO, Callable, Dict, Optional, Union
+from typing import IO, Any, Callable, Dict, Optional, Union
 
 import torch
-from allennlp.common import Registrable
+from allennlp.common import Lazy, Registrable
+from allennlp.training.optimizers import Optimizer
 from pytorch_lightning import LightningModule
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 
+from fourierflow.registries import Scheduler
+
 
 class Experiment(Registrable, LightningModule):
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+                 optimizer: Lazy[Optimizer],
+                 scheduler: Lazy[Scheduler],
+                 scheduler_config: Dict[str, Any],
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.scheduler_config = scheduler_config
 
     def on_train_start(self):
         n = sum(p.numel() for p in self.parameters() if p.requires_grad)

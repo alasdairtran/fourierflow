@@ -15,13 +15,10 @@ from fourierflow.viz import log_navier_stokes_heatmap
 class Fourier2DSingleExperiment(Experiment):
     def __init__(self,
                  conv: Module,
-                 optimizer: Lazy[Optimizer],
                  n_steps: int,
                  max_freq: int = 32,
                  num_freq_bands: int = 8,
                  freq_base: int = 2,
-                 scheduler: Lazy[Scheduler] = None,
-                 scheduler_config: Dict[str, Any] = None,
                  low: float = 0,
                  high: float = 1,
                  use_position: bool = True,
@@ -30,14 +27,12 @@ class Fourier2DSingleExperiment(Experiment):
                  max_accumulations: float = 1e6,
                  use_fourier_position: bool = False,
                  clip_val: float = 0.1,
-                 noise_std: float = 0.0):
-        super().__init__()
+                 noise_std: float = 0.0,
+                 **kwargs):
+        super().__init__(**kwargs)
         self.conv = conv
         self.n_steps = n_steps
         self.l2_loss = LpLoss(size_average=True)
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.scheduler_config = scheduler_config
         self.use_fourier_position = use_fourier_position
         self.use_position = use_position
         self.max_freq = max_freq
