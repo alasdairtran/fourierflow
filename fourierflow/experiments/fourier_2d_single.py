@@ -1,13 +1,11 @@
-from typing import Any, Dict
+from typing import Optional
 
 import torch
-from allennlp.common import Lazy
-from allennlp.training.optimizers import Optimizer
 from einops import rearrange, repeat
 
 from fourierflow.modules import Normalizer, fourier_encode
 from fourierflow.modules.loss import LpLoss
-from fourierflow.registries import Experiment, Module, Scheduler
+from fourierflow.registries import Experiment, Module
 from fourierflow.viz import log_navier_stokes_heatmap
 
 
@@ -27,7 +25,8 @@ class Fourier2DSingleExperiment(Experiment):
                  max_accumulations: float = 1e6,
                  should_normalize: bool = True,
                  use_fourier_position: bool = False,
-                 clip_val: float = 0.1,
+                 clip_val: Optional[float] = 0.1,
+                 automatic_optimization: bool = False,
                  noise_std: float = 0.0,
                  **kwargs):
         super().__init__(**kwargs)
@@ -47,7 +46,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.should_normalize = should_normalize
         self.normalizer = Normalizer([conv.input_dim], max_accumulations)
         self.register_buffer('_float', torch.FloatTensor([0.1]))
-        self.automatic_optimization = False  # activates manual optimization
+        self.automatic_optimization = automatic_optimization
         self.clip_val = clip_val
         self.noise_std = noise_std
 
@@ -215,23 +214,27 @@ class Fourier2DSingleExperiment(Experiment):
             with torch.no_grad():
                 self._build_features(batch)
 
-        for i in range(self.conv.input_dim):
-            self.log(f'normalizer_mean_{i}', self.normalizer.mean[i])
-            self.log(f'normalizer_std_{i}', self.normalizer.std[i])
+        if self.should_normalize:
+            for i in range(self.conv.input_dim):
+                self.log(f'normalizer_mean_{i}', self.normalizer.mean[i])
+                self.log(f'normalizer_std_{i}', self.normalizer.std[i])
 
         if not self.should_normalize or self.current_epoch >= 1:
             loss = self._training_step(batch)
             self.log('train_loss', loss, prog_bar=True)
 
-            opt = self.optimizers()
-            opt.zero_grad()
-            self.manual_backward(loss)
-            for group in opt.param_groups:
-                torch.nn.utils.clip_grad_value_(group["params"], self.clip_val)
-            opt.step()
+            if not self.automatic_optimization:
+                opt = self.optimizers()
+                opt.zero_grad()
+                self.manual_backward(loss)
+                if self.clip_val:
+                    for group in opt.param_groups:
+                        torch.nn.utils.clip_grad_value_(group["params"],
+                                                        self.clip_val)
+                opt.step()
 
-            sch = self.lr_schedulers()
-            sch.step()
+                sch = self.lr_schedulers()
+                sch.step()
 
             return loss
 

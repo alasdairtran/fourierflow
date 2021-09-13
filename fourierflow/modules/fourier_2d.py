@@ -98,6 +98,7 @@ class SimpleBlock2d(nn.Module):
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
+        self.input_dim = input_dim
         self.in_proj = nn.Linear(input_dim, self.width)
         self.residual = residual
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
@@ -115,7 +116,7 @@ class SimpleBlock2d(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(128, 1))
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         # x.shape == [n_batches, *dim_sizes, input_size]
         x = self.in_proj(x)
         for layer in self.spectral_layers:
