@@ -25,6 +25,7 @@ class Fourier2DSingleExperiment(Experiment):
                  append_force: bool = False,
                  append_mu: bool = False,
                  max_accumulations: float = 1e6,
+                 should_normalize: bool = True,
                  use_fourier_position: bool = False,
                  clip_val: float = 0.1,
                  noise_std: float = 0.0,
@@ -43,6 +44,7 @@ class Fourier2DSingleExperiment(Experiment):
         self.low = low
         self.high = high
         self.lr = None
+        self.should_normalize = should_normalize
         self.normalizer = Normalizer([conv.input_dim], max_accumulations)
         self.register_buffer('_float', torch.FloatTensor([0.1]))
         self.automatic_optimization = False  # activates manual optimization
@@ -104,7 +106,8 @@ class Fourier2DSingleExperiment(Experiment):
             mu = repeat(batch['mu'], 'b -> b m n 1', m=X, n=Y)
             x = torch.cat([x, mu], dim=-1)
 
-        x = self.normalizer(x)
+        if self.should_normalize:
+            x = self.normalizer(x)
 
         x += torch.randn(*x.shape, device=x.device) * self.noise_std
 
@@ -113,7 +116,8 @@ class Fourier2DSingleExperiment(Experiment):
     def _training_step(self, batch):
         x = self._build_features(batch)
         im = self.conv(x, global_step=self.global_step)['forecast']
-        im = self.normalizer.inverse(im, channel=0)
+        if self.should_normalize:
+            im = self.normalizer.inverse(im, channel=0)
 
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
@@ -182,10 +186,12 @@ class Fourier2DSingleExperiment(Experiment):
                 x = im
             # x.shape == [batch_size, *dim_sizes, 3]
 
-            x = self.normalizer(x)
+            if self.should_normalize:
+                x = self.normalizer(x)
             out = self.conv(x)
             im = out['forecast']
-            im = self.normalizer.inverse(im, channel=0)
+            if self.should_normalize:
+                im = self.normalizer.inverse(im, channel=0)
             # im.shape == [batch_size, *dim_sizes, 1]
 
             y = yy[..., t]
@@ -205,7 +211,7 @@ class Fourier2DSingleExperiment(Experiment):
 
     def training_step(self, batch, batch_idx):
         # Accumulate normalization stats in the first epoch
-        if self.current_epoch == 0:
+        if self.should_normalize and self.current_epoch == 0:
             with torch.no_grad():
                 self._build_features(batch)
 
@@ -213,7 +219,7 @@ class Fourier2DSingleExperiment(Experiment):
             self.log(f'normalizer_mean_{i}', self.normalizer.mean[i])
             self.log(f'normalizer_std_{i}', self.normalizer.std[i])
 
-        if self.current_epoch >= 1:
+        if not self.should_normalize or self.current_epoch >= 1:
             loss = self._training_step(batch)
             self.log('train_loss', loss, prog_bar=True)
 
