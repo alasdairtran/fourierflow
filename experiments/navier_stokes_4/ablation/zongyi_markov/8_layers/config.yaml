@@ -1,0 +1,51 @@
+wandb:
+  project: navier-stokes-4
+  group: ablation/zongyi_markov/8_layers
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+builder:
+  type: navier_stokes_2
+  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
+  train_size: 1000
+  test_size: 200
+  ssr: 1 # sub-sampling rate
+  batch_size: 190
+  n_workers: 4
+experiment:
+  type: fourier_2d_single
+  conv:
+    type: fourier_net_2d
+    modes1: 12
+    modes2: 12
+    width: 20
+    n_layers: 8
+    input_dim: 3
+  n_steps: 10
+  should_normalize: false
+  clip_val: None
+  optimizer:
+    type: adamw
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    type: step_lr
+    step_size: 100
+    gamma: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: None
+  automatic_optimization: true
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 500
+callbacks:
+  - type: model_checkpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+  - type: learning_rate_monitor
+    logging_interval: step
