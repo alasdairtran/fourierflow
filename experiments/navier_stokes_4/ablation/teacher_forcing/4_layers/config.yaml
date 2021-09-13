@@ -1,0 +1,49 @@
+wandb:
+  project: navier-stokes-4
+  group: ablation/teaching_forcing/4_layers
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+builder:
+  type: navier_stokes
+  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
+  train_size: 1000
+  test_size: 200
+  ssr: 1 # sub-sampling rate
+  n_steps: 10
+  batch_size: 20
+  n_workers: 4
+experiment:
+  type: fourier_2d
+  conv:
+    type: fourier_net_2d
+    modes1: 12
+    modes2: 12
+    width: 20
+    n_layers: 4
+  n_steps: 10
+  teacher_forcing: true
+  optimizer:
+    type: adamw
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    type: step_lr
+    step_size: 100
+    gamma: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: None
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 500
+callbacks:
+  - type: model_checkpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+  - type: learning_rate_monitor
+    logging_interval: step
