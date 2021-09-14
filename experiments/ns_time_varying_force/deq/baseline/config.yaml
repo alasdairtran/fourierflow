@@ -1,0 +1,73 @@
+wandb:
+  project: ns-time-varying-force
+  group: deq/baseline
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+builder:
+  type: navier_stokes_3
+  data_path: ${DATA_ROOT}/navier-stokes/random_varying_force_mu.h5
+  ssr: 4 # sub-sampling rate
+  k: 10 # the number of steps between input and output
+  batch_size: 19
+  n_workers: 16
+experiment:
+  type: fourier_2d_single
+  conv:
+    type: fourier_net_2d_deq
+    modes: 16
+    width: 64
+    input_dim: 5
+    n_layers: 12
+    pretraining_steps: 20000
+    norm_locs: []
+    n_ff_layers: 2
+    layer_norm: false
+    use_fork: false
+    dropout: 0.0
+    ff_weight_norm: true
+    factor: 4
+  n_steps: 10
+  max_accumulations: 10000
+  noise_std: 0.02
+  append_force: true
+  append_mu: true
+  optimizer:
+    type: adamw
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    type: cosine_with_warmup
+    num_warmup_steps: 500
+    num_training_steps: 30000
+    num_cycles: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: None
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 4 # 1 accumulation epoch + 3 training epochs
+  stochastic_weight_avg: false
+  weights_summary: full
+  log_every_n_steps: 100
+  val_check_interval: 1000
+  # Debugging parameters
+  log_gpu_memory: None # all
+  track_grad_norm: -1 # 2
+  fast_dev_run: false # 2
+  limit_train_batches: 1.0
+callbacks:
+  - type: model_checkpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+    save_top_k: 1
+    save_last: true
+    monitor: valid_loss
+    mode: min
+    auto_insert_metric_name: true
+  - type: learning_rate_monitor
+    logging_interval: step
