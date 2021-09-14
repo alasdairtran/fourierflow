@@ -159,8 +159,9 @@ class SimpleBlock2dFactorizedParallel(nn.Module):
 
         self.forecast_ff = self.backcast_ff = None
         if share_fork:
-            self.forecast_ff = FeedForward(
-                width, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
+            if use_fork:
+                self.forecast_ff = FeedForward(
+                    width, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
             self.backcast_ff = FeedForward(
                 width, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
