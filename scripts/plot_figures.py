@@ -5,28 +5,65 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
 import torch
+import wandb
 
 from fourierflow.builders.synthetic.ns_2d import navier_stokes_2d
 
 
-def plot_performance_vs_layers():
-    xs = [4, 8, 12, 16, 20, 24]
-    ys_zongyi = [0.1381, 0.1544, 0.1684, 0.1762, 0.1837, np.nan]
-    ys_teacher = [0.1299, 0.1094, 0.1176, 0.144, 0.2177, np.nan]
-    ys_ours = [0.05705, 0.03422, 0.02861, 0.02613, 0.02408, 0.02287]
+def get_test_losses(dataset, groups):
+    api = wandb.Api()
+    outs = []
+    for group in groups:
+        runs = api.runs('alasdairtran/navier-stokes-4', {
+            'config.wandb.group': group,
+            'state': 'finished'
+        })
+        losses = [run.summary['test_loss'] for run in runs]
+        outs.append(losses)
+    return np.array(outs)
 
-    fig = plt.figure(figsize=(9, 4))
-    ax = plt.subplot(1, 2, 1)
-    ax.errorbar(xs, ys_zongyi, marker='o')
-    ax.errorbar(xs, ys_ours, marker='x')
+
+def plot_performance_vs_layer():
+    fig = plt.figure(figsize=(3.2, 3))
+    ax = plt.subplot(1, 1, 1)
+
+    def plot_line(losses, **kwargs):
+        means = losses.mean(1)
+        e_lower = means - losses.min(1)
+        e_upper = losses.max(1) - means
+        yerr = np.array([e_lower, e_upper])
+        # yerr = losses.std(1)
+        ax.errorbar(xs[:len(means)], means, yerr=yerr, **kwargs)
+
+    layers_1 = [4, 8, 12, 16, 20]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    xs = [4, 8, 12, 16, 20, 24]
+
+    dataset = 'navier-stokes-4'
+    groups = [f'zongyi/{i}_layers' for i in layers_1]
+    losses = get_test_losses(dataset, groups)
+    plot_line(losses)
+
+    groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
+    losses = get_test_losses(dataset, groups)
+    plot_line(losses)
+
+    groups = [f'ablation/zongyi_markov/{i}_layers' for i in layers_1]
+    losses = get_test_losses(dataset, groups)
+    plot_line(losses)
+
+    groups = [f'markov/{i}_layers' for i in layers_2]
+    losses = get_test_losses(dataset, groups)
+    plot_line(losses)
+
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
-    ax.errorbar(xs, ys_teacher, marker='.')
     ax.set_xlabel('Layer')
     ax.set_ylabel('Normalized MSE')
-    ax.legend(['FNO', 'CW-FNO', 'TF-FNO'], frameon=False)
+    ax.legend(['FNO', 'TF-FNO', 'M-FNO', 'F-FNO'], frameon=False)
 
     fig.tight_layout()
     fig.savefig('figures/loss_vs_layers.pdf')
+
 
 
 def plot_pde_inference_performance_tradeoff():
