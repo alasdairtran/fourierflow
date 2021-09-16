@@ -1,0 +1,75 @@
+wandb:
+  project: navier-stokes-4
+  group: ablation/no_factorization_shared_all/16_layers
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+  log_model: all
+builder:
+  type: navier_stokes_2
+  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
+  train_size: 1000
+  test_size: 200
+  ssr: 1 # sub-sampling rate
+  batch_size: 19
+  n_workers: 4
+experiment:
+  type: fourier_2d_single
+  conv:
+    type: fourier_2d_full
+    modes: 16
+    width: 64
+    linear_out: true
+    n_layers: 16
+    input_dim: 3
+    share_weight: true
+    share_fork: true
+    factor: 4
+    ff_weight_norm: true
+    next_input: add
+    gain: 0.1
+    dropout: 0.0
+    in_dropout: 0.0
+    avg_outs: true
+  n_steps: 10
+  max_accumulations: 1000
+  noise_std: 0.01
+  optimizer:
+    type: adamw
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    type: cosine_with_warmup
+    num_warmup_steps: 500
+    num_training_steps: 100000
+    num_cycles: 0.5
+  scheduler_config:
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: None
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 101 # 1 accumulation epoch + 100 training epochs
+  stochastic_weight_avg: false
+  weights_summary: full
+  log_every_n_steps: 100
+  # Debugging parameters
+  log_gpu_memory: None # all
+  track_grad_norm: -1 # 2
+  fast_dev_run: false # 2
+  limit_train_batches: 1.0
+callbacks:
+  - type: model_checkpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+    save_top_k: 1
+    save_last: false # not needed when save_top_k == 1
+    monitor: None # valid_loss
+    mode: min
+    every_n_train_steps: None
+    every_n_epochs: 1
+  - type: learning_rate_monitor
+    logging_interval: step

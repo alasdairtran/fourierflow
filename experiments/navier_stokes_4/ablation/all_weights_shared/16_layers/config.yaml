@@ -1,6 +1,6 @@
 wandb:
   project: navier-stokes-4
-  group: ablation/shared_all_weights
+  group: ablation/all_weights_shared/16_layers
   tags:
     - pde
     - navier-stokes
@@ -21,7 +21,7 @@ experiment:
     modes: 16
     width: 64
     linear_out: true
-    n_layers: 24
+    n_layers: 16
     input_dim: 3
     share_weight: true
     share_fork: true
