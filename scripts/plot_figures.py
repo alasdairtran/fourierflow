@@ -14,7 +14,7 @@ def get_test_losses(dataset, groups):
     api = wandb.Api()
     outs = []
     for group in groups:
-        runs = api.runs('alasdairtran/navier-stokes-4', {
+        runs = api.runs(f'alasdairtran/{dataset}', {
             'config.wandb.group': group,
             'state': 'finished'
         })
@@ -23,38 +23,39 @@ def get_test_losses(dataset, groups):
     return np.array(outs)
 
 
+def plot_line(xs, losses, ax, **kwargs):
+    means = losses.mean(1)
+    e_lower = means - losses.min(1)
+    e_upper = losses.max(1) - means
+    yerr = np.array([e_lower, e_upper])
+    # yerr = losses.std(1)
+    ax.errorbar(xs[:len(means)], means, yerr=yerr, **kwargs)
+
+
 def plot_performance_vs_layer():
     fig = plt.figure(figsize=(3.2, 3))
     ax = plt.subplot(1, 1, 1)
 
-    def plot_line(losses, **kwargs):
-        means = losses.mean(1)
-        e_lower = means - losses.min(1)
-        e_upper = losses.max(1) - means
-        yerr = np.array([e_lower, e_upper])
-        # yerr = losses.std(1)
-        ax.errorbar(xs[:len(means)], means, yerr=yerr, **kwargs)
-
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-
     dataset = 'navier-stokes-4'
+
     groups = [f'zongyi/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
-    plot_line(losses)
+    plot_line(xs, losses, ax)
 
     groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
-    plot_line(losses)
+    plot_line(xs, losses, ax)
 
     groups = [f'ablation/zongyi_markov/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
-    plot_line(losses)
+    plot_line(xs, losses, ax)
 
     groups = [f'markov/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(losses)
+    plot_line(xs, losses, ax)
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
     ax.set_xlabel('Layer')
@@ -64,6 +65,34 @@ def plot_performance_vs_layer():
     fig.tight_layout()
     fig.savefig('figures/loss_vs_layers.pdf')
 
+
+def plot_ablation():
+    fig = plt.figure(figsize=(3.2, 3))
+    ax = plt.subplot(1, 1, 1)
+
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    xs = [4, 8, 12, 16, 20, 24]
+    dataset = 'navier-stokes-4'
+
+    groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
+    losses = get_test_losses(dataset, groups)
+    plot_line(xs, losses, ax)
+
+    groups = [f'ablation/no_sharing/{i}_layers' for i in layers_2]
+    losses = get_test_losses(dataset, groups)
+    plot_line(xs, losses, ax)
+
+    groups = [f'markov/{i}_layers' for i in layers_2]
+    losses = get_test_losses(dataset, groups)
+    plot_line(xs, losses, ax)
+
+    ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
+    ax.set_xlabel('Layer')
+    ax.set_ylabel('Normalized MSE')
+    ax.legend(['no factorize', 'no sharing', 'F-FNO'], frameon=False)
+
+    fig.tight_layout()
+    fig.savefig('figures/loss_vs_layers.pdf')
 
 
 def plot_pde_inference_performance_tradeoff():
