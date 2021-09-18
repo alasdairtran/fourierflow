@@ -1,7 +1,6 @@
 import os
 import shutil
 from copy import deepcopy
-from datetime import datetime
 from glob import glob
 from pathlib import Path
 from typing import Optional
@@ -14,10 +13,9 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins import DDPPlugin
 from typer import Typer
 
-from fourierflow.registries import Callback, Builder, Experiment
-from fourierflow.utils import ExistingExperimentFound, yaml_to_params
-
-from .utils import get_save_dir
+from fourierflow.registries import Builder, Callback, Experiment
+from fourierflow.utils import (ExistingExperimentFound, get_experiment_id,
+                               get_save_dir, yaml_to_params)
 
 app = Typer()
 
@@ -51,15 +49,6 @@ def upload_code_to_wandb(config_path, wandb_logger):
     for path in paths:
         code_artifact.add_file(path, path)
     wandb_logger.experiment.log_artifact(code_artifact)
-
-
-def get_experiment_id(checkpoint_id, trial, save_dir, resume):
-    chkpt_dir = Path(save_dir) / 'checkpoints'
-    if resume and not checkpoint_id and chkpt_dir.exists:
-        paths = chkpt_dir.glob('*/last.ckpt')
-        checkpoint_id = next(paths).parent.name
-    now = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
-    return checkpoint_id or f'trial-{trial}-{now}'
 
 
 @app.callback(invoke_without_command=True)
