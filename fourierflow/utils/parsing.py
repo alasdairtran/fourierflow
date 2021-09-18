@@ -1,9 +1,12 @@
+from os import PathLike
+from typing import Union
+
 import yaml
 from allennlp.common.file_utils import cached_path
 from allennlp.common.params import Params, parse_overrides, with_fallback
 
 
-def yaml_to_params(params_file: str, overrides: str = "") -> Params:
+def yaml_to_params(params_file:  Union[str, PathLike], overrides: str = '') -> Params:
     # redirect to cache, if necessary
     params_file = cached_path(params_file)
 

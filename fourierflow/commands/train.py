@@ -79,7 +79,7 @@ def main(config_path: str, overrides: str = '', force: bool = False,
     wandb_id = get_experiment_id(checkpoint_id, trial, save_dir, resume)
     params['trial'] = trial
     params['wandb']['name'] = f"{params['wandb']['group']}/{trial}"
-    wandb_opts = params.get('wandb').as_dict()
+    wandb_opts = params.pop('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=save_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
