@@ -23,10 +23,10 @@ def get_test_losses(dataset, groups):
     return np.array(outs)
 
 
-def plot_line(xs, losses, ax, **kwargs):
-    means = losses.mean(1)
-    e_lower = means - losses.min(1)
-    e_upper = losses.max(1) - means
+def plot_line(xs, losses, ax, axis=1, **kwargs):
+    means = losses.mean(axis)
+    e_lower = means - losses.min(axis)
+    e_upper = losses.max(axis) - means
     yerr = np.array([e_lower, e_upper])
     # yerr = losses.std(1)
     ax.errorbar(xs[:len(means)], means, yerr=yerr, **kwargs)
@@ -93,6 +93,48 @@ def plot_ablation():
 
     fig.tight_layout()
     fig.savefig('figures/loss_vs_layers.pdf')
+
+
+def get_step_losses(dataset, group):
+    api = wandb.Api()
+    runs = api.runs(f'alasdairtran/{dataset}', {
+        'config.wandb.group': group,
+        'state': 'finished'
+    })
+    run_losses = []
+    for run in runs:
+        if 'test_loss_1' in run.summary:
+            losses = []
+            for i in range(10):
+                losses.append(run.summary[f'test_loss_{i}'])
+            run_losses.append(losses)
+
+    return np.array(run_losses)
+
+
+def plot_step_loss_curves():
+    fig = plt.figure(figsize=(3.2, 3))
+    ax = plt.subplot(1, 1, 1)
+
+    xs = list(range(10))
+    dataset = 'navier-stokes-4'
+
+    losses = get_step_losses(dataset, 'zongyi/4_layers')
+    plot_line(xs, losses, ax, axis=0)
+
+    losses = get_step_losses(dataset, 'ablation/zongyi_markov/4_layers')
+    plot_line(xs, losses, ax, axis=0)
+
+    losses = get_step_losses(dataset, 'markov/4_layers')
+    plot_line(xs, losses, ax, axis=0)
+
+    ax.set_xticks(xs)
+    ax.set_xlabel('Step')
+    ax.set_ylabel('Normalized MSE')
+    ax.legend(['FNO', 'M-FNO', 'F-FNO'], frameon=False)
+
+    fig.tight_layout()
+    fig.savefig('figures/step_losses.pdf')
 
 
 def plot_pde_inference_performance_tradeoff():
