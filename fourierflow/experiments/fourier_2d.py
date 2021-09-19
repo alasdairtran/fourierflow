@@ -105,6 +105,7 @@ class Fourier2DExperiment(Experiment):
             P = 2
 
         loss = 0
+        step_losses = []
         # We predict one future one step at a time
         for t in range(self.n_steps):
             y = yy[..., t: t+1]
@@ -114,7 +115,9 @@ class Fourier2DExperiment(Experiment):
             im = out['forecast']
             # im.shape == [batch_size, *dim_sizes, 1]
 
-            loss += self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
+            l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
+            step_losses.append(l)
+            loss += l
             pred = im if t == 0 else torch.cat((pred, im), dim=-1)
 
             if self.teacher_forcing and self.training:
@@ -131,16 +134,16 @@ class Fourier2DExperiment(Experiment):
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, pred
+        return loss, loss_full, pred, step_losses
 
     def training_step(self, batch, batch_idx):
-        loss, loss_full, _ = self._learning_step(batch)
+        loss, loss_full, _, _ = self._learning_step(batch)
         self.log('train_loss', loss)
         self.log('train_loss_full', loss_full)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds = self._learning_step(batch)
+        loss, loss_full, preds, _ = self._learning_step(batch)
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full)
 
@@ -152,6 +155,8 @@ class Fourier2DExperiment(Experiment):
             log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _ = self._learning_step(batch)
+        loss, loss_full, _, step_losses = self._learning_step(batch)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
+        for i in range(len(step_losses)):
+            self.log(f'test_loss_{i}', step_losses[i])
