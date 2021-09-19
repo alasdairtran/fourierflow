@@ -169,6 +169,7 @@ class Fourier2DSingleExperiment(Experiment):
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
         loss = 0
+        step_losses = []
         # We predict one future one step at a time
         pred_layer_list = []
         for t in range(self.n_steps):
@@ -195,6 +196,7 @@ class Fourier2DSingleExperiment(Experiment):
 
             y = yy[..., t]
             l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
+            step_losses.append(l)
             loss += l
             pred = im if t == 0 else torch.cat((pred, im), dim=-1)
             if 'forecast_list' in out:
@@ -206,7 +208,7 @@ class Fourier2DSingleExperiment(Experiment):
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, pred, pred_layer_list
+        return loss, loss_full, pred, pred_layer_list, step_losses
 
     def training_step(self, batch, batch_idx):
         # Accumulate normalization stats in the first epoch
@@ -239,7 +241,7 @@ class Fourier2DSingleExperiment(Experiment):
             return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list = self._valid_step(batch, 'valid')
+        loss, loss_full, preds, pred_list, _ = self._valid_step(batch, 'valid')
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
 
@@ -257,7 +259,9 @@ class Fourier2DSingleExperiment(Experiment):
                         expt, layer[0], f'layer {i} t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list = self._valid_step(
+        loss, loss_full, _, _, step_losses = self._valid_step(
             batch, 'test')
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
+        for i in range(len(step_losses)):
+            self.log(f'test_loss_{i}', step_losses[i])
