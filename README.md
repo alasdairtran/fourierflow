@@ -35,9 +35,6 @@ export $(cat .env | xargs)
 
 # Alternatively, you can pass the paths to the system using env vars, e.g.
 FNO_DATA_ROOT=/My/Data/Location fourierflow
-
-# Limit wandb cache size if we don't have enough disk space
-wandb artifact cache cleanup 1GB
 ```
 
 ## Navier Stokes Experiments
@@ -104,7 +101,7 @@ python plot_cloth.py --rollout_path=data/flag_simple/rollout_flag.pkl
 python plot_cfd.py --rollout_path=data/cylinder_flow/rollout_flag.pkl
 ```
 
-# Time Series Experiments
+## Time Series Experiments
 
 ```sh
 # MIMIC-III dataset
@@ -115,4 +112,12 @@ fourierflow train experiments/vevo/02_nbeats/config.yaml
 fourierflow train experiments/vevo/03_radflow/config.yaml
 # N-BEATS with fourier layer - similar performance
 fourierflow train experiments/54_vevo_perceiver/config.yaml
+```
+
+## Notes
+
+```sh
+# Occasionally, we need to manually wandb cache size. Wandb doesn't clean up
+# automatically
+wandb artifact cache cleanup 1GB
 ```
