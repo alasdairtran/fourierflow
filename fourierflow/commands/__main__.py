@@ -1,6 +1,7 @@
 from typer import Typer
 
-from fourierflow.commands import convert, download, generate, mesh, test, train
+from fourierflow.commands import (convert, download, generate, mesh, predict,
+                                  test, train)
 from fourierflow.utils import setup_logger
 
 setup_logger()
@@ -12,6 +13,7 @@ app.add_typer(generate.app, name='generate')
 app.add_typer(mesh.app, name='mesh')
 app.add_typer(test.app, name='test')
 app.add_typer(train.app, name='train')
+app.add_typer(predict.app, name='predict')
 
 if __name__ == '__main__':
     app()

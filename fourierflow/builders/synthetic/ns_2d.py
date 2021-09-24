@@ -8,8 +8,8 @@ from tqdm import tqdm
 
 
 class Force(str, Enum):
-    li = "li"
-    random = "random"
+    li = 'li'
+    random = 'random'
 
 
 # w0: initial vorticity
@@ -18,8 +18,9 @@ class Force(str, Enum):
 # T: final time
 # delta_t: internal time-step for solve (descrease if blow-up)
 # record_steps: number of in-time snapshots to record
-def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles,
-                           scaling, t_scaling, force, varying_force):
+def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles=None,
+                           scaling=None, t_scaling=None, force=Force.li,
+                           varying_force=False):
     seed = np.random.randint(1, 1000000000)
 
     # Grid size - must be power of 2

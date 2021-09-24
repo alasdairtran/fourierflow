@@ -50,9 +50,9 @@ class Fourier2DSingleExperiment(Experiment):
         self.clip_val = clip_val
         self.noise_std = noise_std
 
-    def forward(self, x):
-        x = self.conv(x)
-        return x.squeeze()
+    def forward(self, data):
+        batch = {'data': data}
+        return self._valid_step(batch)
 
     def encode_positions(self, dim_sizes, low=-1, high=1, fourier=True):
         # dim_sizes is a list of dimensions in all positional/time dimensions
@@ -125,7 +125,7 @@ class Fourier2DSingleExperiment(Experiment):
 
         return loss
 
-    def _valid_step(self, batch, split):
+    def _valid_step(self, batch):
         data = batch['data']
         B, *dim_sizes, T = data.shape
         X, Y = dim_sizes
@@ -202,9 +202,6 @@ class Fourier2DSingleExperiment(Experiment):
             if 'forecast_list' in out:
                 pred_layer_list.append(out['forecast_list'])
 
-            if t == self.n_steps - 1:
-                self.log(f'{split}_loss_last', l)
-
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
@@ -241,7 +238,7 @@ class Fourier2DSingleExperiment(Experiment):
             return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list, _ = self._valid_step(batch, 'valid')
+        loss, loss_full, preds, pred_list, _ = self._valid_step(batch)
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
 
@@ -259,8 +256,7 @@ class Fourier2DSingleExperiment(Experiment):
                         expt, layer[0], f'layer {i} t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _, step_losses = self._valid_step(
-            batch, 'test')
+        loss, loss_full, _, _, step_losses = self._valid_step(batch)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
         for i in range(len(step_losses)):
