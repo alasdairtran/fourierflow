@@ -1,13 +1,9 @@
-import math
-import time
-
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.io
-import torch
+import seaborn as sns
 import wandb
 
-from fourierflow.builders.synthetic.ns_2d import navier_stokes_2d
+pal = sns.color_palette()
 
 
 def get_test_losses(dataset, groups):
@@ -19,6 +15,8 @@ def get_test_losses(dataset, groups):
             'state': 'finished'
         })
         losses = [run.summary['test_loss'] for run in runs]
+        if len(losses) != 3:
+            print(f'fail {group}, {len(losses)}')
         outs.append(losses)
     return np.array(outs)
 
@@ -43,19 +41,19 @@ def plot_performance_vs_layer():
 
     groups = [f'zongyi/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax)
+    plot_line(xs, losses, ax, color=pal[0])
 
     groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax)
+    plot_line(xs, losses, ax, color=pal[1])
 
     groups = [f'ablation/zongyi_markov/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax)
+    plot_line(xs, losses, ax, color=pal[2])
 
     groups = [f'markov/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax)
+    plot_line(xs, losses, ax, color=pal[3])
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
     ax.set_xlabel('Layer')
@@ -76,15 +74,15 @@ def plot_ablation():
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax)
+    plot_line(xs, losses, ax, color=pal[7])
 
     groups = [f'ablation/no_sharing/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax)
+    plot_line(xs, losses, ax, color=pal[8])
 
     groups = [f'markov/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax)
+    plot_line(xs, losses, ax, color=pal[3])
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
     ax.set_xlabel('Layer')
@@ -138,32 +136,24 @@ def plot_step_loss_curves():
 
 
 def plot_pde_inference_performance_tradeoff():
-    data_path = 'data/NavierStokes_V1e-5_N1200_T20.mat'
-    data = scipy.io.loadmat(os.path.expandvars(data_path))[
-        'u'].astype(np.float32)
+    # 4 3.254133462905884
+    # 8 6.324826240539551
+    # 12 9.374979257583618
+    # 16 12.499497175216675
+    # 20 15.55120301246643
+    # 24 18.649063110351562
+    # 243.98698592185974
+    x = [0.05705, 0.03422, 0.02861, 0.02613, 0.02408, 0.02287, 0]
+    y = [3.254133462905884, 6.324826240539551, 9.374979257583618,
+         12.499497175216675, 15.55120301246643, 18.649063110351562,
+         243.98698592185974]
 
-    w0 = data[:, :, :, 10]
-
-    device = torch.device('cuda')
-    s = 64
-
-    t = torch.linspace(0, 1, s+1, device=device)
-    t = t[0:-1]
-    X, Y = torch.meshgrid(t, t)
-    f = 0.1*(torch.sin(2*math.pi*(X + Y)) + torch.cos(2*math.pi*(X + Y)))
-
-    record_steps = 20
-    start = time.time()
-    sol, sol_t = navier_stokes_2d(w0, f, 1e-3, 10.0, 1e-4, record_steps)
-    elapsed = time.time() - start
-
-    x = [0.08692677319049835, 0.0646510198712349,
-         0.059111643582582474, 0.056166261434555054, 0]
-    y = [10, 17, 26, 46, elapsed]
-
-    fig = plt.figure(figsize=(6, 6))
+    fig = plt.figure(figsize=(3.2, 3))
     ax = plt.subplot(1, 1, 1)
     ax.scatter(x, y)
-    ax.set_xlabel('error')
-    ax.set_ylabel('inference time')
+    ax.set_xlabel('Normalized MSE')
+    ax.set_ylabel('Inference time')
     ax.set_title('PDE Inference Performance Tradeoff')
+
+    fig.tight_layout()
+    fig.savefig('figures/tradeoff.pdf')
