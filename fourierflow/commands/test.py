@@ -39,7 +39,7 @@ def main(checkpoint_path: str,
     trial = int(wandb_id.split('-')[1])
     params['trial'] = trial
     params['wandb']['name'] = f"{params['wandb']['group']}/{trial}"
-    wandb_opts = params.pop('wandb').as_dict()
+    wandb_opts = params.get('wandb').as_dict()
     wandb_logger = WandbLogger(save_dir=save_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
                                config=deepcopy(params.as_dict()),
