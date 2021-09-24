@@ -2,8 +2,30 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import wandb
+from typer import Typer
 
 pal = sns.color_palette()
+app = Typer()
+
+
+@app.callback(invoke_without_command=True)
+def main():
+    fig = plt.figure(figsize=(12, 3))
+
+    ax = plt.subplot(1, 4, 1)
+    plot_performance_vs_layer(ax)
+
+    ax = plt.subplot(1, 4, 2)
+    plot_ablation(ax)
+
+    ax = plt.subplot(1, 4, 3)
+    plot_step_loss_curves(ax)
+
+    ax = plt.subplot(1, 4, 4)
+    plot_pde_inference_performance_tradeoff(ax)
+
+    fig.tight_layout()
+    fig.savefig('figures/performance.pdf')
 
 
 def get_test_losses(dataset, groups):
@@ -30,10 +52,7 @@ def plot_line(xs, losses, ax, axis=1, **kwargs):
     ax.errorbar(xs[:len(means)], means, yerr=yerr, **kwargs)
 
 
-def plot_performance_vs_layer():
-    fig = plt.figure(figsize=(3.2, 3))
-    ax = plt.subplot(1, 1, 1)
-
+def plot_performance_vs_layer(ax):
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
@@ -60,14 +79,8 @@ def plot_performance_vs_layer():
     ax.set_ylabel('Normalized MSE')
     ax.legend(['FNO', 'TF-FNO', 'M-FNO', 'F-FNO'], frameon=False)
 
-    fig.tight_layout()
-    fig.savefig('figures/loss_vs_layers.pdf')
 
-
-def plot_ablation():
-    fig = plt.figure(figsize=(3.2, 3))
-    ax = plt.subplot(1, 1, 1)
-
+def plot_ablation(ax):
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
     dataset = 'navier-stokes-4'
@@ -89,9 +102,6 @@ def plot_ablation():
     ax.set_ylabel('Normalized MSE')
     ax.legend(['no factorize', 'no sharing', 'F-FNO'], frameon=False)
 
-    fig.tight_layout()
-    fig.savefig('figures/loss_vs_layers.pdf')
-
 
 def get_step_losses(dataset, group):
     api = wandb.Api()
@@ -110,10 +120,7 @@ def get_step_losses(dataset, group):
     return np.array(run_losses)
 
 
-def plot_step_loss_curves():
-    fig = plt.figure(figsize=(3.2, 3))
-    ax = plt.subplot(1, 1, 1)
-
+def plot_step_loss_curves(ax):
     xs = list(range(10))
     dataset = 'navier-stokes-4'
 
@@ -131,11 +138,8 @@ def plot_step_loss_curves():
     ax.set_ylabel('Normalized MSE')
     ax.legend(['FNO', 'M-FNO', 'F-FNO'], frameon=False)
 
-    fig.tight_layout()
-    fig.savefig('figures/step_losses.pdf')
 
-
-def plot_pde_inference_performance_tradeoff():
+def plot_pde_inference_performance_tradeoff(ax):
     # 4 3.254133462905884
     # 8 6.324826240539551
     # 12 9.374979257583618
@@ -148,12 +152,11 @@ def plot_pde_inference_performance_tradeoff():
          12.499497175216675, 15.55120301246643, 18.649063110351562,
          243.98698592185974]
 
-    fig = plt.figure(figsize=(3.2, 3))
-    ax = plt.subplot(1, 1, 1)
     ax.scatter(x, y)
     ax.set_xlabel('Normalized MSE')
     ax.set_ylabel('Inference time')
     ax.set_title('PDE Inference Performance Tradeoff')
 
-    fig.tight_layout()
-    fig.savefig('figures/tradeoff.pdf')
+
+if __name__ == "__main__":
+    app()
