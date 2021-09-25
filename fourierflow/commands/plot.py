@@ -42,7 +42,17 @@ def layer():
 
 @app.command()
 def complexity():
-    ...
+    fig = plt.figure(figsize=(8, 2.6))
+
+    ax = plt.subplot(1, 3, 1)
+    plot_parameters(ax)
+
+    ax = plt.subplot(1, 3, 2)
+    plot_pde_inference_performance_tradeoff(ax)
+
+    fig.tight_layout()
+    fig.savefig('figures/complexity.pdf',
+                bbox_inches='tight')
 
 
 def get_test_losses(dataset, groups):
@@ -174,11 +184,48 @@ def plot_pde_inference_performance_tradeoff(ax):
     y = [3.254133462905884, 6.324826240539551, 9.374979257583618,
          12.499497175216675, 15.55120301246643, 18.649063110351562,
          243.98698592185974]
+    x = np.array(x) * 100
 
     ax.scatter(x, y)
-    ax.set_xlabel('Normalized MSE')
-    ax.set_ylabel('Inference time')
-    ax.set_title('PDE Inference Performance Tradeoff')
+    ax.set_xlabel('Normalized MSE (%)')
+    ax.set_ylabel('Inference Time (s)')
+
+
+def get_paramter_count(dataset, groups):
+    api = wandb.Api()
+
+    param_counts = []
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'config.trial': 0,
+            'state': 'finished',
+        })
+        count = runs[0].summary['n_params']
+        param_counts.append(count)
+
+    return np.array(param_counts)
+
+
+def plot_parameters(ax):
+    dataset = 'navier-stokes-4'
+    xs = [4, 8, 12, 16, 20, 24]
+
+    groups = [f'ablation/no_factorization/{i}_layers' for i in xs]
+    counts = get_paramter_count(dataset, groups)
+    ax.plot(xs, counts, color=pal[7], linestyle='-')
+
+    groups = [f'ablation/no_sharing/{i}_layers' for i in xs]
+    counts = get_paramter_count(dataset, groups)
+    ax.plot(xs, counts, color=pal[8], linestyle='-.')
+
+    groups = [f'markov/{i}_layers' for i in xs]
+    counts = get_paramter_count(dataset, groups)
+    ax.plot(xs, counts, color=pal[3], linestyle='-')
+
+    ax.set_yscale('log')
+    ax.set_xlabel('Number of Layers')
+    ax.set_ylabel('Parameter Count')
 
 
 if __name__ == "__main__":
