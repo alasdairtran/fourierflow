@@ -42,9 +42,18 @@ class Fourier2DExperiment(Experiment):
         #     best_model_state = torch.load(model_path)
         #     self.load_state_dict(best_model_state)
 
-    def forward(self, x):
-        x = self.conv(x)
-        return x.squeeze()
+    def forward(self, data):
+        xx = data[..., :10]
+        B, X, Y, T = xx.shape
+
+        # Add positional information to inputs
+        ticks = torch.linspace(0, 1, X).to(xx.device)
+        grid_x = repeat(ticks, 'x -> b x y 1', b=B, y=Y)
+        grid_y = repeat(ticks, 'y -> b x y 1', b=B, x=X)
+        xx = torch.cat([xx, grid_x, grid_y], dim=-1)
+
+        yy = data[..., 10:]
+        return self._learning_step([xx, yy])
 
     def encode_fourier_positions(self, dim_sizes, device):
         # dim_sizes is a list of dimensions in all positional dimensions

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import wandb
+from matplotlib.lines import Line2D
 from typer import Typer
 
 pal = sns.color_palette()
@@ -45,13 +46,30 @@ def complexity():
     fig = plt.figure(figsize=(8, 2.6))
 
     ax = plt.subplot(1, 3, 1)
-    plot_parameters(ax)
+    lines_1 = plot_parameters(ax)
 
     ax = plt.subplot(1, 3, 2)
-    plot_pde_inference_performance_tradeoff(ax)
+    lines_2 = plot_pde_training_performance_tradeoff(ax)
+
+    ax = plt.subplot(1, 3, 3)
+    lines_3 = plot_pde_inference_performance_tradeoff(ax)
+
+    sim_line = Line2D(range(1), range(1), color="white", marker='o', markerfacecolor=pal[4])
+    lines = [sim_line] + lines_2[-1:] + lines_1
+    labels = ['Crank–Nicolson numerical simulator',
+              'FNO proposed by Li et al. [2021a]',
+              'FNO with bags of tricks',
+              'Factorized FNO without weight sharing',
+              'Factorized FNO (F-FNO)']
+    lgd = fig.legend(handles=lines,
+                     labels=labels,
+                     loc="center",
+                     borderaxespad=0.1,
+                     bbox_to_anchor=[1.2, 0.55])
 
     fig.tight_layout()
     fig.savefig('figures/complexity.pdf',
+                bbox_extra_artists=(lgd,),
                 bbox_inches='tight')
 
 
@@ -172,25 +190,6 @@ def plot_step_loss_curves(ax):
     ax.set_xlabel('Inference Step')
 
 
-def plot_pde_inference_performance_tradeoff(ax):
-    # 4 3.254133462905884
-    # 8 6.324826240539551
-    # 12 9.374979257583618
-    # 16 12.499497175216675
-    # 20 15.55120301246643
-    # 24 18.649063110351562
-    # 243.98698592185974
-    x = [0.05705, 0.03422, 0.02861, 0.02613, 0.02408, 0.02287, 0]
-    y = [3.254133462905884, 6.324826240539551, 9.374979257583618,
-         12.499497175216675, 15.55120301246643, 18.649063110351562,
-         243.98698592185974]
-    x = np.array(x) * 100
-
-    ax.scatter(x, y)
-    ax.set_xlabel('Normalized MSE (%)')
-    ax.set_ylabel('Inference Time (s)')
-
-
 def get_paramter_count(dataset, groups):
     api = wandb.Api()
 
@@ -210,22 +209,126 @@ def get_paramter_count(dataset, groups):
 def plot_parameters(ax):
     dataset = 'navier-stokes-4'
     xs = [4, 8, 12, 16, 20, 24]
+    lines = []
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in xs]
     counts = get_paramter_count(dataset, groups)
-    ax.plot(xs, counts, color=pal[7], linestyle='-')
+    line = ax.plot(xs, counts, color=pal[7], linestyle='-')
+    lines.append(line[0])
 
     groups = [f'ablation/no_sharing/{i}_layers' for i in xs]
     counts = get_paramter_count(dataset, groups)
-    ax.plot(xs, counts, color=pal[8], linestyle='-.')
+    line = ax.plot(xs, counts, color=pal[8], linestyle='-.')
+    lines.append(line[0])
 
     groups = [f'markov/{i}_layers' for i in xs]
     counts = get_paramter_count(dataset, groups)
-    ax.plot(xs, counts, color=pal[3], linestyle='-')
+    line = ax.plot(xs, counts, color=pal[3], linestyle='-')
+    lines.append(line[0])
 
     ax.set_yscale('log')
     ax.set_xlabel('Number of Layers')
     ax.set_ylabel('Parameter Count')
+
+    return lines
+
+
+def get_inference_times(dataset, groups):
+    api = wandb.Api()
+    losses, times = [], []
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'state': 'finished'
+        })
+        assert len(runs) == 3
+        losses.append([run.summary['test_loss'] for run in runs])
+        times.append([run.summary['inference_time'] for run in runs])
+
+    return 100 * np.array(losses), np.array(times)
+
+
+def plot_xy_line(xs, ys, ax, axis=1, **kwargs):
+    y_means = ys.mean(axis)
+    e_lower = y_means - ys.min(axis)
+    e_upper = ys.max(axis) - y_means
+    yerr = np.array([e_lower, e_upper])
+
+    x_means = xs.mean(axis)
+    e_lower = x_means - xs.min(axis)
+    e_upper = xs.max(axis) - x_means
+    xerr = np.array([e_lower, e_upper])
+
+    return ax.errorbar(x_means, y_means, xerr=xerr, yerr=yerr, **kwargs)
+
+
+def plot_pde_inference_performance_tradeoff(ax):
+    dataset = 'navier-stokes-4'
+    layers_1 = [4, 8, 12, 16, 20]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    lines = []
+
+    groups = [f'markov/{i}_layers' for i in layers_2]
+    losses, times = get_inference_times(dataset, groups)
+    container = plot_xy_line(losses, times, ax, color=pal[3], linestyle='-')
+    lines.append(container.lines[0])
+
+    groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
+    losses, times = get_inference_times(dataset, groups)
+    container = plot_xy_line(losses, times, ax, color=pal[7], linestyle='-')
+    lines.append(container.lines[0])
+
+    groups = [f'zongyi/{i}_layers' for i in layers_1]
+    losses, times = get_inference_times(dataset, groups)
+    container = plot_xy_line(losses, times, ax, color=pal[0], linestyle='--')
+    lines.append(container.lines[0])
+
+    ax.scatter([0], [244], color=pal[4])
+    ax.set_xlabel('Normalized MSE (%)')
+    ax.set_ylabel('Inference Time (s)')
+    ax.set_yscale('log')
+
+
+def plot_pde_training_performance_tradeoff(ax):
+    dataset = 'navier-stokes-4'
+    layers_1 = [4, 8, 12, 16, 20]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    lines = []
+
+    groups = [f'markov/{i}_layers' for i in layers_2]
+    losses, times = get_training_times(dataset, groups)
+    container = plot_xy_line(losses, times, ax, color=pal[3], linestyle='-')
+    lines.append(container.lines[0])
+
+    groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
+    losses, times = get_training_times(dataset, groups)
+    container = plot_xy_line(losses, times, ax, color=pal[7], linestyle='-')
+    lines.append(container.lines[0])
+
+    groups = [f'zongyi/{i}_layers' for i in layers_1]
+    losses, times = get_training_times(dataset, groups)
+    container = plot_xy_line(losses, times, ax, color=pal[0], linestyle='--')
+    lines.append(container.lines[0])
+
+    ax.set_xlabel('Normalized MSE (%)')
+    ax.set_ylabel('Training Time (h)')
+
+    return lines
+
+
+def get_training_times(dataset, groups):
+    api = wandb.Api()
+    losses, times = [], []
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'state': 'finished'
+        })
+        assert len(runs) == 3
+        losses.append([run.summary['test_loss'] for run in runs])
+        times.append([run.summary['_runtime'] for run in runs])
+
+    return 100 * np.array(losses), np.array(times) / 3600
 
 
 if __name__ == "__main__":
