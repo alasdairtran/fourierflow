@@ -8,24 +8,41 @@ pal = sns.color_palette()
 app = Typer()
 
 
-@app.callback(invoke_without_command=True)
-def main():
-    fig = plt.figure(figsize=(12, 3))
+@app.command()
+def layer():
+    fig = plt.figure(figsize=(8, 2.6))
 
-    ax = plt.subplot(1, 4, 1)
-    plot_performance_vs_layer(ax)
+    ax = plt.subplot(1, 3, 1)
+    lines_1 = plot_performance_vs_layer(ax)
 
-    ax = plt.subplot(1, 4, 2)
-    plot_ablation(ax)
+    ax = plt.subplot(1, 3, 2)
+    lines_2 = plot_ablation(ax)
 
-    ax = plt.subplot(1, 4, 3)
+    ax = plt.subplot(1, 3, 3)
     plot_step_loss_curves(ax)
 
-    ax = plt.subplot(1, 4, 4)
-    plot_pde_inference_performance_tradeoff(ax)
+    lines = [lines_1[1], lines_1[0], lines_1[2]] + lines_2
+    labels = ['FNO proposed by Li et al. [2021a]',
+              'FNO with teacher forcing',
+              'FNO with Markov assumption',
+              'FNO with bags of tricks',
+              'Factorized FNO without weight sharing',
+              'Factorized FNO (F-FNO)']
+    lgd = fig.legend(handles=lines,
+                     labels=labels,
+                     loc="center",
+                     borderaxespad=0.1,
+                     bbox_to_anchor=[1.2, 0.55])
 
     fig.tight_layout()
-    fig.savefig('figures/performance.pdf')
+    fig.savefig('figures/performance.pdf',
+                bbox_extra_artists=(lgd,),
+                bbox_inches='tight')
+
+
+@app.command()
+def complexity():
+    ...
 
 
 def get_test_losses(dataset, groups):
@@ -40,7 +57,7 @@ def get_test_losses(dataset, groups):
         if len(losses) != 3:
             print(f'fail {group}, {len(losses)}')
         outs.append(losses)
-    return np.array(outs)
+    return np.array(outs) * 100
 
 
 def plot_line(xs, losses, ax, axis=1, **kwargs):
@@ -48,8 +65,7 @@ def plot_line(xs, losses, ax, axis=1, **kwargs):
     e_lower = means - losses.min(axis)
     e_upper = losses.max(axis) - means
     yerr = np.array([e_lower, e_upper])
-    # yerr = losses.std(1)
-    ax.errorbar(xs[:len(means)], means, yerr=yerr, **kwargs)
+    return ax.errorbar(xs[:len(means)], means, yerr=yerr, **kwargs)
 
 
 def plot_performance_vs_layer(ax):
@@ -57,50 +73,60 @@ def plot_performance_vs_layer(ax):
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
     dataset = 'navier-stokes-4'
-
-    groups = [f'zongyi/{i}_layers' for i in layers_1]
-    losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax, color=pal[0])
+    lines = []
 
     groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax, color=pal[1])
+    container = plot_line(xs, losses, ax, color=pal[1])
+    lines.append(container.lines[0])
+
+    groups = [f'zongyi/{i}_layers' for i in layers_1]
+    losses = get_test_losses(dataset, groups)
+    container = plot_line(xs, losses, ax, color=pal[0], linestyle='--')
+    lines.append(container.lines[0])
 
     groups = [f'ablation/zongyi_markov/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax, color=pal[2])
+    container = plot_line(xs, losses, ax, color=pal[2], linestyle=':')
+    lines.append(container.lines[0])
 
-    groups = [f'markov/{i}_layers' for i in layers_2]
+    groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax, color=pal[3])
+    container = plot_line(xs, losses, ax, color=pal[7], linestyle='-')
+    lines.append(container.lines[0])
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
-    ax.set_xlabel('Layer')
-    ax.set_ylabel('Normalized MSE')
-    ax.legend(['FNO', 'TF-FNO', 'M-FNO', 'F-FNO'], frameon=False)
+    ax.set_xlabel('Number of Layers')
+    ax.set_ylabel('Normalized MSE (%)')
+
+    return lines
 
 
 def plot_ablation(ax):
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
     dataset = 'navier-stokes-4'
+    lines = []
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax, color=pal[7])
+    container = plot_line(xs, losses, ax, color=pal[7], linestyle='-')
+    lines.append(container.lines[0])
 
     groups = [f'ablation/no_sharing/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax, color=pal[8])
+    container = plot_line(xs, losses, ax, color=pal[8], linestyle='-.')
+    lines.append(container.lines[0])
 
     groups = [f'markov/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    plot_line(xs, losses, ax, color=pal[3])
+    container = plot_line(xs, losses, ax, color=pal[3])
+    lines.append(container.lines[0])
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
-    ax.set_xlabel('Layer')
-    ax.set_ylabel('Normalized MSE')
-    ax.legend(['no factorize', 'no sharing', 'F-FNO'], frameon=False)
+    ax.set_xlabel('Number of Layers')
+
+    return lines
 
 
 def get_step_losses(dataset, group):
@@ -111,13 +137,12 @@ def get_step_losses(dataset, group):
     })
     run_losses = []
     for run in runs:
-        if 'test_loss_1' in run.summary:
-            losses = []
-            for i in range(10):
-                losses.append(run.summary[f'test_loss_{i}'])
-            run_losses.append(losses)
+        losses = []
+        for i in range(10):
+            losses.append(run.summary[f'test_loss_{i}'])
+        run_losses.append(losses)
 
-    return np.array(run_losses)
+    return np.array(run_losses) * 100
 
 
 def plot_step_loss_curves(ax):
@@ -125,18 +150,16 @@ def plot_step_loss_curves(ax):
     dataset = 'navier-stokes-4'
 
     losses = get_step_losses(dataset, 'zongyi/4_layers')
-    plot_line(xs, losses, ax, axis=0)
+    plot_line(xs, losses, ax, axis=0, color=pal[0], linestyle='--')
 
     losses = get_step_losses(dataset, 'ablation/zongyi_markov/4_layers')
-    plot_line(xs, losses, ax, axis=0)
+    plot_line(xs, losses, ax, axis=0, color=pal[2], linestyle=':')
 
     losses = get_step_losses(dataset, 'markov/4_layers')
-    plot_line(xs, losses, ax, axis=0)
+    plot_line(xs, losses, ax, axis=0, color=pal[3])
 
     ax.set_xticks(xs)
-    ax.set_xlabel('Step')
-    ax.set_ylabel('Normalized MSE')
-    ax.legend(['FNO', 'M-FNO', 'F-FNO'], frameon=False)
+    ax.set_xlabel('Inference Step')
 
 
 def plot_pde_inference_performance_tradeoff(ax):
