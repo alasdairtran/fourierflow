@@ -1,9 +1,12 @@
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import wandb
 from matplotlib.lines import Line2D
 from typer import Typer
+
+from fourierflow.viz.heatmap import MidpointNormalize
 
 pal = sns.color_palette()
 app = Typer()
@@ -52,9 +55,10 @@ def complexity():
     lines_2 = plot_pde_training_performance_tradeoff(ax)
 
     ax = plt.subplot(1, 3, 3)
-    lines_3 = plot_pde_inference_performance_tradeoff(ax)
+    plot_pde_inference_performance_tradeoff(ax)
 
-    sim_line = Line2D(range(1), range(1), color="white", marker='o', markerfacecolor=pal[4])
+    sim_line = Line2D(range(1), range(1), color="white",
+                      marker='o', markerfacecolor=pal[4])
     lines = [sim_line] + lines_2[-1:] + lines_1
     labels = ['Crank–Nicolson numerical simulator',
               'FNO proposed by Li et al. [2021a]',
@@ -71,6 +75,40 @@ def complexity():
     fig.savefig('figures/complexity.pdf',
                 bbox_extra_artists=(lgd,),
                 bbox_inches='tight')
+
+
+@app.command()
+def heatmaps():
+    data_path = './data/navier-stokes/random_varying_force_mu.h5'
+    h5f = h5py.File(data_path)
+
+    plot_heatmap(h5f['train']['f'][897, ..., 50], cmap='PuOr',
+                 vmin=-0.7, vmax=0.7, out_path='figures/f50.svg')
+
+    plot_heatmap(h5f['train']['f'][897, ..., 100], cmap='PuOr',
+                 vmin=-0.7, vmax=0.7, out_path='figures/f100.svg')
+
+    plot_heatmap(h5f['train']['u'][897, ..., 50], cmap='RdBu',
+                 vmin=-3, vmax=3, out_path='figures/w50.svg')
+
+    plot_heatmap(h5f['train']['u'][897, ..., 100], cmap='RdBu',
+                 vmin=-3, vmax=3, out_path='figures/w100.svg')
+
+    plot_heatmap(h5f['train']['u'][897, ..., 150], cmap='RdBu',
+                 vmin=-3, vmax=3, out_path='figures/w150.svg')
+
+
+def plot_heatmap(array,  cmap, vmin, vmax, out_path):
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(1, 1, 1)
+    norm = MidpointNormalize(vmin=vmin, vmax=vmax, midpoint=0)
+    ax.imshow(array, cmap=cmap, norm=norm)
+    ax.set_xticklabels([])
+    ax.set_xticks([])
+    ax.set_yticklabels([])
+    ax.set_yticks([])
+    fig.tight_layout()
+    fig.savefig(out_path, bbox_inches='tight')
 
 
 def get_test_losses(dataset, groups):
@@ -229,6 +267,7 @@ def plot_parameters(ax):
     ax.set_yscale('log')
     ax.set_xlabel('Number of Layers')
     ax.set_ylabel('Parameter Count')
+    ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
 
     return lines
 
@@ -287,6 +326,7 @@ def plot_pde_inference_performance_tradeoff(ax):
     ax.set_xlabel('Normalized MSE (%)')
     ax.set_ylabel('Inference Time (s)')
     ax.set_yscale('log')
+    ax.set_xticks([0, 5, 10, 15, 20])
 
 
 def plot_pde_training_performance_tradeoff(ax):
@@ -312,6 +352,7 @@ def plot_pde_training_performance_tradeoff(ax):
 
     ax.set_xlabel('Normalized MSE (%)')
     ax.set_ylabel('Training Time (h)')
+    ax.set_xticks([0, 5, 10, 15, 20])
 
     return lines
 
