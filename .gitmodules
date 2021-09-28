@@ -1,6 +1,3 @@
-[submodule "paper"]
-	path = iclr2022
-	url = https://git.overleaf.com/60a258d0053a216c66f38046
 [submodule "ml4ps2021"]
 	path = ml4ps2021
 	url = https://git.overleaf.com/6138b837b0ad3c9a84e68323
