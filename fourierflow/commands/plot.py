@@ -26,12 +26,12 @@ def layer():
     plot_step_loss_curves(ax)
 
     lines = [lines_1[1], lines_1[0], lines_1[2]] + lines_2
-    labels = ['FNO proposed by Li et al. [2021a]',
-              'FNO with teacher forcing',
-              'FNO with Markov assumption',
-              'FNO with bags of tricks',
-              'Factorized FNO without weight sharing',
-              'Factorized FNO (F-FNO)']
+    labels = ['FNO (proposed by Li et al. [2021a])',
+              'FNO-TF (with teacher forcing)',
+              'FNO-M (with Markov assumption)',
+              'FNO++ (with bags of tricks)',
+              'F-FNO- (without weight sharing)',
+              'F-FNO (our full proposed model)']
     lgd = fig.legend(handles=lines,
                      labels=labels,
                      loc="center",
@@ -96,6 +96,67 @@ def heatmaps():
 
     plot_heatmap(h5f['train']['u'][897, ..., 150], cmap='RdBu',
                  vmin=-3, vmax=3, out_path='figures/w150.svg')
+
+
+@app.command()
+def table_3():
+    dataset = 'navier-stokes-4'
+    layers_1 = [4, 8, 12, 16, 20]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+
+    groups = [f'zongyi/{i}_layers' for i in layers_1]
+    get_summary(dataset, groups)
+    print('\\midrule')
+
+    groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups)
+    print('\\midrule')
+
+    groups = [f'ablation/no_sharing/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups)
+    print('\\midrule')
+
+    groups = [f'markov/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups)
+
+
+def get_summary(dataset, groups):
+    names = {
+        ('zongyi',): 'FNO',
+        ('ablation', 'no_factorization'): 'FNO++',
+        ('ablation', 'no_sharing'): 'F-FNO without weight sharing',
+        ('markov',): 'F-FNO',
+
+    }
+    api = wandb.Api()
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'state': 'finished'
+        })
+        losses = [run.summary['test_loss'] for run in runs]
+        losses = np.array(losses) * 100
+        assert len(losses) == 3
+
+        train_times = [run.summary['_runtime'] for run in runs]
+        train_times = np.array(train_times) / 3600
+        assert len(train_times) == 3
+
+        test_times = [run.summary['inference_time'] for run in runs]
+        test_times = np.array(test_times)
+        assert len(test_times) == 3
+
+        params = [run.summary['n_params'] for run in runs]
+
+        mean = losses.mean()
+        std = losses.std()
+        train_t = train_times.mean()
+        test_t = test_times.mean()
+        parts = group.split('/')
+        g = names[tuple(parts[:-1])]
+        layers = int(parts[-1].split('_')[0])
+        print(f'{g} & {params[0]:,} & {layers} & ${mean:.2f} \pm {std:.3f}$ &'
+              f'{train_t:.1f} & {test_t:.2f} \\\\')
 
 
 def plot_heatmap(array,  cmap, vmin, vmax, out_path):
