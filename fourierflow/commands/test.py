@@ -16,12 +16,12 @@ app = Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(checkpoint_path: str,
+def main(config_path: str,
+         trial: int,
          overrides: str = '',
          map_location: Optional[str] = None,
          debug: bool = False):
     """Test a Pytorch Lightning experiment."""
-    config_path = Path(checkpoint_path).parent.parent.parent / 'config.yaml'
     params = yaml_to_params(config_path, overrides)
 
     # This debug mode is for those who use VS Code's internal debugger.
@@ -35,6 +35,10 @@ def main(checkpoint_path: str,
     save_dir = get_save_dir(config_path)
 
     # We use Weights & Biases to track our experiments.
+    chkpt_dir = Path(save_dir) / 'checkpoints'
+    paths = list(chkpt_dir.glob(f'trial-{trial}-*/*.ckpt'))
+    assert len(paths) == 1
+    checkpoint_path = paths[0]
     wandb_id = Path(checkpoint_path).parent.name
     trial = int(wandb_id.split('-')[1])
     params['trial'] = trial
@@ -54,7 +58,7 @@ def main(checkpoint_path: str,
 
     builder = Builder.from_params(params['builder'])
     experiment = Experiment.from_params(params['experiment'])
-    experiment.load_lightning_model_state(checkpoint_path, map_location)
+    experiment.load_lightning_model_state(str(checkpoint_path), map_location)
 
     # Start the main testing pipeline.
     trainer = pl.Trainer(logger=wandb_logger,

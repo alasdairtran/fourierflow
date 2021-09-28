@@ -53,8 +53,9 @@ def main(config_path: Optional[str] = Argument(None),
 
     # We use Weights & Biases to track our experiments.
     chkpt_dir = Path(save_dir) / 'checkpoints'
-    paths = chkpt_dir.glob(f'trial-{trial}-*/*.ckpt')
-    checkpoint_path = next(paths)
+    paths = list(chkpt_dir.glob(f'trial-{trial}-*/*.ckpt'))
+    assert len(paths) == 1
+    checkpoint_path = paths[0]
     wandb_id = checkpoint_path.parent.name
     trial = int(wandb_id.split('-')[1])
     params['trial'] = trial
