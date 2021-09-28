@@ -29,9 +29,9 @@ def layer():
     labels = ['FNO (proposed by Li et al. [2021a])',
               'FNO-TF (with teacher forcing)',
               'FNO-M (with Markov assumption)',
-              'FNO++ (with bags of tricks)',
-              'F-FNO- (without weight sharing)',
-              'F-FNO (our full proposed model)']
+              'FNO++ (with a bag of tricks)',
+              'F-FNO-NW (without weight sharing)',
+              'F-FNO (our full model)']
     lgd = fig.legend(handles=lines,
                      labels=labels,
                      loc="center",
@@ -61,10 +61,10 @@ def complexity():
                       marker='o', markerfacecolor=pal[4])
     lines = [sim_line] + lines_2[-1:] + lines_1
     labels = ['Crank–Nicolson numerical simulator',
-              'FNO proposed by Li et al. [2021a]',
-              'FNO with bags of tricks',
-              'Factorized FNO without weight sharing',
-              'Factorized FNO (F-FNO)']
+              'FNO (proposed by Li et al. [2021a])',
+              'FNO++ (with a bag of tricks)',
+              'F-FNO-NW (without weight sharing)',
+              'F-FNO (our full model)']
     lgd = fig.legend(handles=lines,
                      labels=labels,
                      loc="center",
@@ -122,13 +122,20 @@ def table_3():
 
 def get_summary(dataset, groups):
     names = {
-        ('zongyi',): 'FNO',
-        ('ablation', 'no_factorization'): 'FNO++',
-        ('ablation', 'no_sharing'): 'F-FNO without weight sharing',
-        ('markov',): 'F-FNO',
+        ('zongyi',): 'FNO (reproduced)',
+        ('ablation', 'no_factorization'): 'FNO++ (with bags of tricks)',
+        ('ablation', 'teaching_forcing'): 'FNO-TF (with teacher forcing)',
+        ('ablation', 'zongyi_markov'): 'FNO-M (with Markov assumption)',
+        ('ablation', 'no_sharing'): 'F-FNO-NW (without weight sharing)',
+        ('markov',): 'F-FNO (our full model)',
 
     }
     api = wandb.Api()
+
+    parts = groups[0].split('/')
+    g = names[tuple(parts[:-1])]
+    print(f'\multirow{{5}}{{*}}{{{g}}}')
+
     for group in groups:
         runs = api.runs(f'alasdairtran/{dataset}', {
             'config.wandb.group': group,
@@ -142,9 +149,10 @@ def get_summary(dataset, groups):
         train_times = np.array(train_times) / 3600
         assert len(train_times) == 3
 
-        test_times = [run.summary['inference_time'] for run in runs]
+        test_times = [run.summary['inference_time']
+                      for run in runs if 'inference_time' in run.summary]
         test_times = np.array(test_times)
-        assert len(test_times) == 3
+        # assert len(test_times) == 3
 
         params = [run.summary['n_params'] for run in runs]
 
@@ -153,10 +161,9 @@ def get_summary(dataset, groups):
         train_t = train_times.mean()
         test_t = test_times.mean()
         parts = group.split('/')
-        g = names[tuple(parts[:-1])]
         layers = int(parts[-1].split('_')[0])
-        print(f'{g} & {params[0]:,} & {layers} & ${mean:.2f} \pm {std:.3f}$ &'
-              f'{train_t:.1f} & {test_t:.2f} \\\\')
+        print(f' & {layers} & {params[0]:,} & ${mean:.2f} \pm {std:.2f}$ & '
+              f'{train_t:.1f} & {test_t:.1f} \\\\')
 
 
 def plot_heatmap(array,  cmap, vmin, vmax, out_path):
@@ -219,7 +226,7 @@ def plot_performance_vs_layer(ax):
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    container = plot_line(xs, losses, ax, color=pal[7], linestyle='-')
+    container = plot_line(xs, losses, ax, color=pal[9], linestyle='-')
     lines.append(container.lines[0])
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
@@ -237,7 +244,7 @@ def plot_ablation(ax):
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
     losses = get_test_losses(dataset, groups)
-    container = plot_line(xs, losses, ax, color=pal[7], linestyle='-')
+    container = plot_line(xs, losses, ax, color=pal[9], linestyle='-')
     lines.append(container.lines[0])
 
     groups = [f'ablation/no_sharing/{i}_layers' for i in layers_2]
@@ -312,7 +319,7 @@ def plot_parameters(ax):
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in xs]
     counts = get_paramter_count(dataset, groups)
-    line = ax.plot(xs, counts, color=pal[7], linestyle='-')
+    line = ax.plot(xs, counts, color=pal[9], linestyle='-')
     lines.append(line[0])
 
     groups = [f'ablation/no_sharing/{i}_layers' for i in xs]
@@ -375,7 +382,7 @@ def plot_pde_inference_performance_tradeoff(ax):
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
     losses, times = get_inference_times(dataset, groups)
-    container = plot_xy_line(losses, times, ax, color=pal[7], linestyle='-')
+    container = plot_xy_line(losses, times, ax, color=pal[9], linestyle='-')
     lines.append(container.lines[0])
 
     groups = [f'zongyi/{i}_layers' for i in layers_1]
@@ -403,7 +410,7 @@ def plot_pde_training_performance_tradeoff(ax):
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
     losses, times = get_training_times(dataset, groups)
-    container = plot_xy_line(losses, times, ax, color=pal[7], linestyle='-')
+    container = plot_xy_line(losses, times, ax, color=pal[9], linestyle='-')
     lines.append(container.lines[0])
 
     groups = [f'zongyi/{i}_layers' for i in layers_1]
