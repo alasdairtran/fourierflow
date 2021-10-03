@@ -108,6 +108,14 @@ def table_3():
     get_summary(dataset, groups)
     print('\\midrule')
 
+    groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
+    get_summary(dataset, groups)
+    print('\\midrule')
+
+    groups = [f'ablation/zongyi_markov/{i}_layers' for i in layers_1]
+    get_summary(dataset, groups)
+    print('\\midrule')
+
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
     get_summary(dataset, groups)
     print('\\midrule')
@@ -152,7 +160,7 @@ def get_summary(dataset, groups):
         test_times = [run.summary['inference_time']
                       for run in runs if 'inference_time' in run.summary]
         test_times = np.array(test_times)
-        # assert len(test_times) == 3
+        assert len(test_times) == 3
 
         params = [run.summary['n_params'] for run in runs]
 

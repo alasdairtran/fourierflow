@@ -69,9 +69,10 @@ fourierflow train experiments/navier_stokes_4/markov/24_layers/config.yaml
 # Train on gadi
 qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
 
-# Create all plots for paper
+# Create all plots and tables for paper
 fourierflow plot layer
 fourierflow plot complexity
+fourierflow plot table-3
 ```
 
 ## Meshgraphnet Experiments
