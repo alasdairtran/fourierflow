@@ -5,11 +5,11 @@ Experiments with Fourier layers on simulation data.
 ## Getting Started
 
 ```sh
-# Set up pyenv and pin python version to 3.9.6
+# Set up pyenv and pin python version to 3.10.0
 curl https://pyenv.run | bash
 # Configure our shell's environment for pyenv
-pyenv install 3.9.6
-pyenv local 3.9.6
+pyenv install 3.10.0
+pyenv local 3.10.0
 
 # Set up poetry
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
@@ -18,18 +18,17 @@ export PATH="$HOME/.local/bin:$PATH"
 # Install all python dependencies
 poetry install
 source .venv/bin/activate # or: poetry shell
+# If we need to use Jupyter notebooks
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
-# Manually install tensorflow as poetry gets mad when tensorflow wants newer
-# tensorboard version than what pytorch-lightning requires.
-poe install-tensorflow
+# Temp fix until allennlp has upgraded transformers dependencies to 4.11
+poe update-transformers
 # Manually reinstall Pytorch with CUDA 11.1 support
+# Monitor poetry's support for pytorch here: https://github.com/python-poetry/poetry/issues/2613
 poe install-torch-cuda11
-# Manually upgrade wandb to fix sync time issue: https://github.com/wandb/client/pull/2457
-pip install -U wandb
 
 # set default paths
 cp example.env .env
-# The environmnet variables in .env will be loaded automatically when running
+# The environment variables in .env will be loaded automatically when running
 # fourierflow train, but we can also load them manually in our terminal
 export $(cat .env | xargs)
 
@@ -54,14 +53,14 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
     --mu-max 1e-4 --steps 200 --delta 1e-4 --varying-force \
     data/navier-stokes/random_varying_force_mu.h5
 # If we decrease delta from 1e-4 to 1e-5, generating the same dataset would now
-# take 10 times as long, while the differnece between the solutions in step 20
+# take 10 times as long, while the difference between the solutions in step 20
 # is only 0.04%.
 
 # Reproducing SOA model on Navier Stokes.
-fourierflow train experiments/navier_stokes_4/zongyi/4_layers/config.yaml
+fourierflow train --trial 0 experiments/navier_stokes_4/zongyi/4_layers/config.yaml
 
 # Train with our best model
-fourierflow train experiments/navier_stokes_4/markov/24_layers/config.yaml
+fourierflow train --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
 
 # Performance tradeoff evaluation. We use the Navier Stokes test set
 # as our benchmark dataset.

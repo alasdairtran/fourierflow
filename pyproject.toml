@@ -1,58 +1,59 @@
 [tool.poetry]
 name = "fourierflow"
-version = "0.1.0"
+version = "0.2.0"
 description = "Exploration of neural ODE processes and Fourier layers."
 authors = ["Alasdair Tran <alasdair.tran@anu.edu.au>"]
 repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
-python = "~3.9.6"
+python = "~3.10.0"
 # poetry add allennlp einops entmax gdown hyperopt ipykernel jupyterlab \
 #   matplotlib moviepy pandas plotly poethepoet ptvsd pydocstyle pylint \
 #   python-dotenv pytorch-lightning requests seaborn SpharaPy termcolor \
-#   tfrecord torchdiffeq torchtyping typer wandb
-allennlp = "^2.6.0"
-einops = "^0.3.0"
+#   tensorflow-gpu tfrecord torchdiffeq torchtyping typer wandb
+allennlp = "^2.7.0"
+einops = "^0.3.2"
 entmax = "^1.0"
-gdown = "^3.13.0"
+gdown = "^4.0.2"
 hyperopt = "^0.2.5"
-ipykernel = "^6.0.3"
-jupyterlab = "^3.1.4"
-matplotlib = "^3.4.2"
+ipykernel = "^6.4.1"
+jupyterlab = "^3.1.17"
+matplotlib = "^3.4.3"
 moviepy = "^1.0.3"
-pandas = "^1.3.1"
-plotly = "^5.2.1"
+pandas = "^1.3.3"
+plotly = "^5.3.1"
 poethepoet = "^0.10.0"
 ptvsd = "^4.3.2"
 pydocstyle = "^6.1.1"
-pylint = "^2.9.6"
+pylint = "^2.11.1"
 python-dotenv = "^0.19.0"
-pytorch-lightning = "^1.4.1"
+pytorch-lightning = "^1.4.9"
 requests = "^2.26.0"
-seaborn = "^0.11.1"
+seaborn = "^0.11.2"
 SpharaPy = "^1.1.0"
 termcolor = "^1.1.0"
+tensorflow-gpu = "^2.6.0"
 tfrecord = "^1.14.1"
 torchdiffeq = "^0.2.2"
 torchtyping = "^0.1.4"
-typer = "^0.3.2"
-wandb = "^0.11.2"
+typer = "^0.4.0"
+wandb = "^0.12.4"
 
 [tool.poetry.dev-dependencies]
 # poetry add --dev autopep8 isort mypy types-requests
 autopep8 = "^1.5.7"
 isort = "^5.9.3"
 mypy = "^0.910"
-types-requests = "^2.25.6"
+types-requests = "^2.25.9"
 
 [tool.poetry.scripts]
 fourierflow = 'fourierflow.commands.__main__:app'
 
 [tool.poe.tasks]
-install-tensorflow = "python -m pip install --no-cache-dir tensorflow-gpu"
+# Remove when allennlp has upgraded transformers dependencies to 4.11
+update-transformers = "pip install -U transformers"
 # Remove when this is fixed: https://github.com/python-poetry/poetry/issues/2613
-install-torch-cuda11 = "python -m pip install --no-cache-dir -U torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html"
-
+install-torch-cuda11 = "python -m pip install --no-cache-dir -U torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html"
 
 [build-system]
 requires = ["poetry>=0.12"]
