@@ -61,9 +61,8 @@ fourierflow train --trial 0 experiments/navier_stokes_4/zongyi/4_layers/config.y
 
 # Train with our best model
 fourierflow train --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
-
-# Performance tradeoff evaluation. We use the Navier Stokes test set
-# as our benchmark dataset.
+# Get inference time on test set
+fourierflow predict --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
 
 # Train on gadi
 qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
