@@ -982,6 +982,19 @@ traitlets = ">=4.1.0,<6.0"
 test = ["pytest (!=5.3.4)", "pytest-cov", "flaky", "nose", "ipyparallel"]
 
 [[package]]
+name = "ipympl"
+version = "0.8.0"
+description = "Matplotlib Jupyter Extension"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+ipykernel = ">=4.7"
+ipywidgets = ">=7.6.0"
+matplotlib = ">=2.0.0"
+
+[[package]]
 name = "ipython"
 version = "7.28.0"
 description = "IPython: Productive Interactive Computing"
@@ -3332,7 +3345,7 @@ test = ["zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.9.7"
-content-hash = "1ec48bbd02997a153895f5f37bdbd9e6a4f142ca3fe86b0679d916614296f88f"
+content-hash = "88eef658dd76fb2c2b5c1541e9e25afad34dde834308a16188a479a6852dafa4"
 
 [metadata.files]
 absl-py = [
@@ -3937,6 +3950,10 @@ iniconfig = [
 ipykernel = [
     {file = "ipykernel-6.4.1-py3-none-any.whl", hash = "sha256:a3f6c2dda2ecf63b37446808a70ed825fea04790779ca524889c596deae0def8"},
     {file = "ipykernel-6.4.1.tar.gz", hash = "sha256:df3355e5eec23126bc89767a676c5f0abfc7f4c3497d118c592b83b316e8c0cd"},
+]
+ipympl = [
+    {file = "ipympl-0.8.0-py2.py3-none-any.whl", hash = "sha256:03b92f430246766113eecc4113c8129cf4b44c43031af3472ef3467a636e6f15"},
+    {file = "ipympl-0.8.0.tar.gz", hash = "sha256:ef5d21820ed88a8bd6efddb884c333d0eaea7f2f7d4b3054e6d386b07a36dd9d"},
 ]
 ipython = [
     {file = "ipython-7.28.0-py3-none-any.whl", hash = "sha256:f16148f9163e1e526f1008d7c8d966d9c15600ca20d1a754287cf96d00ba6f1d"},
