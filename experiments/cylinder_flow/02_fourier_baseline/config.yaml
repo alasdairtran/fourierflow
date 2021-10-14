@@ -8,7 +8,7 @@ wandb:
   notes: ""
 builder:
   type: cylinder_flow
-  data_path: ${DATA_ROOT}/cylinder_flow/cylinder_flow.h5
+  data_path: ${DATA_ROOT}/cylinder_flow/cylinder_flow_fem.h5
   batch_size: 1
   n_workers: 16
 experiment:
