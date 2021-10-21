@@ -87,6 +87,9 @@ fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylin
 fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow_inv_euclidean.h5 --mode inv_euclidean
 fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow_fem.h5 --mode fem --n-modes 128
 
+# Compute Hilbert curves
+fourierflow mesh hilbert data/cylinder_flow/cylinder_flow_inv_euclidean.h5
+fourierflow mesh hilbert data/cylinder_flow/cylinder_flow_fem.h5
 
 # Reproduce mesh experiment
 poetry install
