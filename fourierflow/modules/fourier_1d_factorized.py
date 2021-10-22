@@ -44,7 +44,7 @@ class FeedForward(nn.Module):
 
 
 class SpectralConv1d(nn.Module):
-    def __init__(self, in_dim, out_dim, n_modes, forecast_ff, backcast_ff,
+    def __init__(self, in_dim, out_dim, n_modes,
                  fourier_weight, factor, norm_locs, group_width, ff_weight_norm,
                  n_ff_layers, layer_norm, dropout, mode):
         super().__init__()
@@ -54,27 +54,9 @@ class SpectralConv1d(nn.Module):
         self.norm_locs = norm_locs
         self.group_width = group_width
         self.mode = mode
-
         self.fourier_weight = fourier_weight
-        if not self.fourier_weight:
-            self.fourier_weight = nn.ParameterList([])
-            for _ in range(1):
-                weight = torch.complex(
-                    torch.FloatTensor(in_dim, out_dim, n_modes),
-                    torch.FloatTensor(in_dim, out_dim, n_modes))
-                param = nn.Parameter(weight)
-                nn.init.xavier_normal_(param)
-                self.fourier_weight.append(param)
-
-        # self.forecast_ff = forecast_ff
-        # if not self.forecast_ff:
-        #     self.forecast_ff = FeedForward(
-        #         out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
-
-        self.backcast_ff = backcast_ff
-        if not self.backcast_ff:
-            self.backcast_ff = FeedForward(
-                out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
+        self.backcast_ff = FeedForward(
+            out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
@@ -94,7 +76,7 @@ class SpectralConv1d(nn.Module):
             out_ft[:, :, :self.n_modes] = torch.einsum(
                 "bix,iox->box",
                 x_fty[:, :, :self.n_modes],
-                self.fourier_weight[0])
+                torch.view_as_complex(self.fourier_weight))
         elif self.mode == 'low-pass':
             out_ft[:, :, :self.n_modes] = x_fty[:, :, :self.n_modes]
 
@@ -115,7 +97,7 @@ class SimpleBlock1dFactorized(nn.Module):
                  n_layers=4, linear_out: bool = False, share_weight: bool = False,
                  avg_outs=False, next_input='subtract', share_fork=False, factor=2,
                  norm_locs=[], group_width=16, ff_weight_norm=False, n_ff_layers=2,
-                 gain=1, layer_norm=False, mode='full'):
+                 gain=1, layer_norm=False, mode='full', output_size=2):
         super().__init__()
 
         """
@@ -141,30 +123,16 @@ class SimpleBlock1dFactorized(nn.Module):
         self.norm_locs = norm_locs
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
-        self.forecast_ff = self.backcast_ff = None
-        if share_fork:
-            self.forecast_ff = FeedForward(
-                width, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
-            self.backcast_ff = FeedForward(
-                width, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
-
-        self.fourier_weight = None
-        if share_weight:
-            self.fourier_weight = nn.ParameterList([])
-            for _ in range(2):
-                weight = torch.complex(torch.FloatTensor(width, width, modes),
-                                       torch.FloatTensor(width, width, modes))
-                param = nn.Parameter(weight)
-                nn.init.xavier_normal_(param, gain=gain)
-                self.fourier_weight.append(param)
+        weight = torch.FloatTensor(width, width, modes, 2)
+        param = nn.Parameter(weight)
+        nn.init.xavier_normal_(param, gain=gain)
+        self.fourier_weight = param
 
         self.spectral_layers = nn.ModuleList([])
         for _ in range(n_layers):
             self.spectral_layers.append(SpectralConv1d(in_dim=width,
                                                        out_dim=width,
                                                        n_modes=modes,
-                                                       forecast_ff=self.forecast_ff,
-                                                       backcast_ff=self.backcast_ff,
                                                        fourier_weight=self.fourier_weight,
                                                        factor=factor,
                                                        norm_locs=norm_locs,
@@ -177,7 +145,7 @@ class SimpleBlock1dFactorized(nn.Module):
 
         self.out = nn.Sequential(
             wnorm(nn.Linear(self.width, 128), ff_weight_norm),
-            wnorm(nn.Linear(128, 1), ff_weight_norm))
+            wnorm(nn.Linear(128, output_size), ff_weight_norm))
 
     def forward(self, x):
         # x.shape == [n_batches, *dim_sizes, input_size]
