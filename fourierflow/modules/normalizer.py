@@ -26,10 +26,8 @@ class Normalizer(nn.Module):
         self.n_accumulations += 1
 
     def _pool_dims(self, x):
-        if self.dim_sizes is None:
-            _, *dim_sizes, _ = x.shape
-            self.dim_sizes = dim_sizes
-
+        _, *dim_sizes, _ = x.shape
+        self.dim_sizes = dim_sizes
         if self.dim_sizes:
             x = rearrange(x, 'b ... h -> (b ...) h')
 
