@@ -288,7 +288,7 @@ def get_step_losses(dataset, group):
 
 
 def plot_step_loss_curves(ax):
-    xs = list(range(10))
+    xs = list(range(1, 11))
     dataset = 'navier-stokes-4'
 
     losses = get_step_losses(dataset, 'zongyi/4_layers')
@@ -403,6 +403,8 @@ def plot_pde_inference_performance_tradeoff(ax):
     ax.set_ylabel('Inference Time (s)')
     ax.set_yscale('log')
     ax.set_xticks([0, 5, 10, 15, 20])
+
+    return lines
 
 
 def plot_pde_training_performance_tradeoff(ax):
