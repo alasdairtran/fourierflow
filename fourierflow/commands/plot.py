@@ -1,6 +1,8 @@
 import h5py
+import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.io
 import seaborn as sns
 import wandb
 from matplotlib.lines import Line2D
@@ -126,6 +128,26 @@ def table_3():
 
     groups = [f'markov/{i}_layers' for i in layers_2]
     get_summary(dataset, groups)
+
+
+@app.command()
+def animation(i: int = 0):
+    fig = plt.figure(figsize=(6, 6))
+    ax = plt.subplot(1, 1, 1)
+
+    data_path = './data/fourier/NavierStokes_V1e-5_N1200_T20.mat'
+    data = scipy.io.loadmat(data_path)['u'].astype(np.float32)
+
+    ims = []
+    for t in range(20):
+        im = ax.imshow(data[i, ..., t], cmap='RdBu', interpolation='bilinear')
+        ax.set_axis_off()
+        ims.append([im])
+
+    ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True,
+                                    repeat_delay=500)
+
+    ani.save("demo.gif", writer='imagemagick')
 
 
 def get_summary(dataset, groups):

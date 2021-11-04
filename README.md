@@ -71,6 +71,8 @@ qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.
 fourierflow plot layer
 fourierflow plot complexity
 fourierflow plot table-3
+# Create plots for presentation
+fourierflow plot animation
 ```
 
 ## Meshgraphnet Experiments
