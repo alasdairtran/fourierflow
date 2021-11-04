@@ -28,6 +28,7 @@ class Fourier2DSingleExperiment(Experiment):
                  clip_val: Optional[float] = 0.1,
                  automatic_optimization: bool = False,
                  noise_std: float = 0.0,
+                 shuffle_grid: bool = False,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -49,6 +50,12 @@ class Fourier2DSingleExperiment(Experiment):
         self.automatic_optimization = automatic_optimization
         self.clip_val = clip_val
         self.noise_std = noise_std
+        self.shuffle_grid = shuffle_grid
+        if self.shuffle_grid:
+            self.x_idx = torch.randperm(64)
+            self.x_inv = torch.argsort(self.x_idx)
+            self.y_idx = torch.randperm(64)
+            self.y_inv = torch.argsort(self.y_idx)
 
     def forward(self, data):
         batch = {'data': data}
@@ -114,7 +121,11 @@ class Fourier2DSingleExperiment(Experiment):
 
     def _training_step(self, batch):
         x = self._build_features(batch)
+        if self.shuffle_grid:
+            x = x[:, self.x_idx][:, :, self.y_idx]
         im = self.conv(x, global_step=self.global_step)['forecast']
+        if self.shuffle_grid:
+            im = im[:, :, self.y_inv][:, self.x_inv]
         if self.should_normalize:
             im = self.normalizer.inverse(im, channel=0)
 
@@ -188,8 +199,12 @@ class Fourier2DSingleExperiment(Experiment):
 
             if self.should_normalize:
                 x = self.normalizer(x)
+            if self.shuffle_grid:
+                x = x[:, self.x_idx][:, :, self.y_idx]
             out = self.conv(x)
             im = out['forecast']
+            if self.shuffle_grid:
+                im = im[:, :, self.y_inv][:, self.x_inv]
             if self.should_normalize:
                 im = self.normalizer.inverse(im, channel=0)
             # im.shape == [batch_size, *dim_sizes, 1]
