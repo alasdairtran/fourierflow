@@ -131,7 +131,7 @@ def table_3():
 
 
 @app.command()
-def animation(i: int = 0):
+def flow(i: int = 0):
     fig = plt.figure(figsize=(6, 6))
     ax = plt.subplot(1, 1, 1)
 

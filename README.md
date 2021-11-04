@@ -72,7 +72,7 @@ fourierflow plot layer
 fourierflow plot complexity
 fourierflow plot table-3
 # Create plots for presentation
-fourierflow plot animation
+fourierflow plot flow
 ```
 
 ## Meshgraphnet Experiments
