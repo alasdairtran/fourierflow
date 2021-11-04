@@ -1,9 +1,11 @@
 from typing import Optional
 
+import numpy as np
 import torch
 from einops import rearrange, repeat
 
 from fourierflow.modules import Normalizer, fourier_encode
+from fourierflow.modules.hilbert import linearize
 from fourierflow.modules.loss import LpLoss
 from fourierflow.registries import Experiment, Module
 from fourierflow.viz import log_navier_stokes_heatmap
@@ -29,6 +31,7 @@ class Fourier2DSingleExperiment(Experiment):
                  automatic_optimization: bool = False,
                  noise_std: float = 0.0,
                  shuffle_grid: bool = False,
+                 use_hilbert: bool = False,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -51,11 +54,36 @@ class Fourier2DSingleExperiment(Experiment):
         self.clip_val = clip_val
         self.noise_std = noise_std
         self.shuffle_grid = shuffle_grid
+        self.use_hilbert = use_hilbert
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
             self.y_idx = torch.randperm(64)
             self.y_inv = torch.argsort(self.y_idx)
+        if self.use_hilbert:
+            M = 64
+            dim_sizes = (M, M)
+
+            def generate_grid(size):
+                return np.linspace(0, M - 1, num=size)
+
+            grid_list = list(map(generate_grid, dim_sizes))
+            pos = np.stack(np.meshgrid(*grid_list)[::-1], axis=-1)
+            mesh_pos = rearrange(pos, 'm n d -> (m n) d')
+            indices = list(range(len(mesh_pos)))
+            for shape in 'DUNE':
+                curve = linearize(indices, mesh_pos, shape)
+                path = curve.get_path()
+                idx = mesh_pos[path].astype(int)
+                # idx.shape == [M * M, 2]
+
+                x, y = np.moveaxis(idx, 1, 0)
+                r = np.argsort(path)
+                # x.shape == y.shape == r.shape == [M]
+
+                self.register_buffer(f'{shape}x', torch.from_numpy(x))
+                self.register_buffer(f'{shape}y', torch.from_numpy(y))
+                self.register_buffer(f'{shape}r', torch.from_numpy(r))
 
     def forward(self, data):
         batch = {'data': data}
@@ -121,9 +149,21 @@ class Fourier2DSingleExperiment(Experiment):
 
     def _training_step(self, batch):
         x = self._build_features(batch)
+        B, M, N, _ = x.shape
+        # x.shape == [batch_size, *dim_sizes, input_size]
+
         if self.shuffle_grid:
             x = x[:, self.x_idx][:, :, self.y_idx]
+
+        if self.use_hilbert:
+            x = x[:, self.Ex, self.Ey]
+            # x.shape == [batch_size, n_cells, input_size]
+
         im = self.conv(x, global_step=self.global_step)['forecast']
+
+        if self.use_hilbert:
+            im = im[:, self.Er].reshape(B, M, N)
+
         if self.shuffle_grid:
             im = im[:, :, self.y_inv][:, self.x_inv]
         if self.should_normalize:
@@ -201,8 +241,17 @@ class Fourier2DSingleExperiment(Experiment):
                 x = self.normalizer(x)
             if self.shuffle_grid:
                 x = x[:, self.x_idx][:, :, self.y_idx]
+
+            if self.use_hilbert:
+                x = x[:, self.Ex, self.Ey]
+                # x.shape == [batch_size, n_cells, input_size]
+
             out = self.conv(x)
             im = out['forecast']
+
+            if self.use_hilbert:
+                im = im[:, self.Er].reshape(B, X, Y, 1)
+
             if self.shuffle_grid:
                 im = im[:, :, self.y_inv][:, self.x_inv]
             if self.should_normalize:

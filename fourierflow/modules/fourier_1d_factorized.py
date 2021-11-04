@@ -115,6 +115,7 @@ class SimpleBlock1dFactorized(nn.Module):
 
         self.modes = modes
         self.width = width
+        self.input_dim = input_dim
         self.in_proj = wnorm(nn.Linear(input_dim, self.width), ff_weight_norm)
         self.drop = nn.Dropout(in_dropout)
         self.next_input = next_input
@@ -147,7 +148,7 @@ class SimpleBlock1dFactorized(nn.Module):
             wnorm(nn.Linear(self.width, 128), ff_weight_norm),
             wnorm(nn.Linear(128, output_size), ff_weight_norm))
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         # x.shape == [n_batches, *dim_sizes, input_size]
         forecast = 0
         x = self.in_proj(x)
@@ -173,4 +174,7 @@ class SimpleBlock1dFactorized(nn.Module):
         if self.avg_outs:
             forecast = forecast / len(self.spectral_layers)
 
-        return forecast, forecast_list, out_fts
+        return {
+            'forecast': forecast,
+            'forecast_list': forecast_list,
+        }
