@@ -58,33 +58,40 @@ class SpectralConv1d(nn.Module):
         self.backcast_ff = FeedForward(
             out_dim, factor, ff_weight_norm, n_ff_layers, layer_norm, dropout)
 
-    def forward(self, x):
-        # x.shape == [batch_size, grid_size, grid_size, in_dim]
-        B, M, I = x.shape
+    def forward(self, xs, orders):
+        # x.shape == [batch_size, n_cells, in_dim]
+        B, C, I = xs.shape
 
-        x = rearrange(x, 'b m i -> b i m')
-        # x.shape == [batch_size, in_dim, grid_size, grid_size]
+        outs = []
+        for o, shape in enumerate('DUNE'):
+            order = orders[shape]
+            x = xs[:, order['p']]
+            x = rearrange(x, 'b m i -> b i m')
+            # x.shape == [batch_size, in_dim, grid_size, grid_size]
 
-        # # # Dimesion Y # # #
-        x_fty = torch.fft.rfft(x, dim=-1, norm='ortho')
-        # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1]
+            # # # Dimesion Y # # #
+            x_fty = torch.fft.rfft(x, dim=-1, norm='ortho')
+            # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1]
 
-        out_ft = x_fty.new_zeros(B, I, M // 2 + 1)
-        # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
+            out_ft = x_fty.new_zeros(B, I, C // 2 + 1)
+            # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
-        if self.mode == 'full':
-            out_ft[:, :, :self.n_modes] = torch.einsum(
-                "bix,iox->box",
-                x_fty[:, :, :self.n_modes],
-                torch.view_as_complex(self.fourier_weight))
-        elif self.mode == 'low-pass':
-            out_ft[:, :, :self.n_modes] = x_fty[:, :, :self.n_modes]
+            if self.mode == 'full':
+                out_ft[:, :, :self.n_modes] = torch.einsum(
+                    "bix,iox->box",
+                    x_fty[:, :, :self.n_modes],
+                    torch.view_as_complex(self.fourier_weight[o]))
+            elif self.mode == 'low-pass':
+                out_ft[:, :, :self.n_modes] = x_fty[:, :, :self.n_modes]
 
-        x = torch.fft.irfft(out_ft, n=M, dim=-1, norm='ortho')
-        # x.shape == [batch_size, in_dim, grid_size, grid_size]
+            x = torch.fft.irfft(out_ft, n=C, dim=-1, norm='ortho')
+            # x.shape == [batch_size, in_dim, grid_size]
 
+            outs.append(x[:, :, order['r']])
+
+        x = outs[0] + outs[1] + outs[2] + outs[3]
         x = rearrange(x, 'b i m -> b m i')
-        # x.shape == [batch_size, grid_size, grid_size, out_dim]
+        # x.shape == [batch_size, grid_size, out_dim]
 
         b = self.backcast_ff(x)
         # f = self.forecast_ff(x)
@@ -122,12 +129,15 @@ class SimpleBlock1dFactorized(nn.Module):
         self.avg_outs = avg_outs
         self.n_layers = n_layers
         self.norm_locs = norm_locs
+        self.orders = None
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
-        weight = torch.FloatTensor(width, width, modes, 2)
-        param = nn.Parameter(weight)
-        nn.init.xavier_normal_(param, gain=gain)
-        self.fourier_weight = param
+        self.fourier_weight = nn.ParameterList([])
+        for _ in range(4):
+            weight = torch.FloatTensor(width, width, modes, 2)
+            param = nn.Parameter(weight)
+            nn.init.xavier_normal_(param, gain=gain)
+            self.fourier_weight.append(param)
 
         self.spectral_layers = nn.ModuleList([])
         for _ in range(n_layers):
@@ -148,8 +158,16 @@ class SimpleBlock1dFactorized(nn.Module):
             wnorm(nn.Linear(self.width, 128), ff_weight_norm),
             wnorm(nn.Linear(128, output_size), ff_weight_norm))
 
+    def register_orders(self, orders):
+        self.orders = orders
+
     def forward(self, x, **kwargs):
+        B, M, N, I = x.shape
         # x.shape == [n_batches, *dim_sizes, input_size]
+
+        x = rearrange(x, 'b m n i -> b (m n) i')
+        # x.shape == [batch_size, n_cells, in_dim]
+
         forecast = 0
         x = self.in_proj(x)
         # temp = x
@@ -158,7 +176,7 @@ class SimpleBlock1dFactorized(nn.Module):
         out_fts = []
         for i in range(self.n_layers):
             layer = self.spectral_layers[i]
-            b, _, out_ft = layer(x)
+            b, _, out_ft = layer(x, self.orders)
             # b, _, out_ft = layer(temp)
             out_fts.append(out_ft)
             # f_out = self.out(f)
@@ -173,6 +191,8 @@ class SimpleBlock1dFactorized(nn.Module):
         forecast = self.out(b)
         if self.avg_outs:
             forecast = forecast / len(self.spectral_layers)
+
+        forecast = rearrange(forecast, 'b (m n) i -> b m n i', m=M, n=N)
 
         return {
             'forecast': forecast,

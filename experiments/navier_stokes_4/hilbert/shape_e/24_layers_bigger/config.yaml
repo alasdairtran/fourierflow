@@ -1,6 +1,6 @@
 wandb:
   project: navier-stokes-4
-  group: hilbert/shape_e/24_layers
+  group: hilbert/shape_e/24_layers/bigger
   tags:
     - pde
     - navier-stokes
@@ -18,7 +18,7 @@ experiment:
   type: fourier_2d_single
   conv:
     type: fourier_1d_factorized
-    modes: 32
+    modes: 256
     width: 64
     linear_out: true
     n_layers: 24

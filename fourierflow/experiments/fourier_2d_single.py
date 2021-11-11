@@ -65,13 +65,15 @@ class Fourier2DSingleExperiment(Experiment):
             dim_sizes = (M, M)
 
             def generate_grid(size):
-                return np.linspace(0, M - 1, num=size)
+                return np.linspace(0, size - 1, num=size)
 
             grid_list = list(map(generate_grid, dim_sizes))
             pos = np.stack(np.meshgrid(*grid_list)[::-1], axis=-1)
             mesh_pos = rearrange(pos, 'm n d -> (m n) d')
             indices = list(range(len(mesh_pos)))
+            orders = {}
             for shape in 'DUNE':
+                orders[shape] = {}
                 curve = linearize(indices, mesh_pos, shape)
                 path = curve.get_path()
                 idx = mesh_pos[path].astype(int)
@@ -84,6 +86,8 @@ class Fourier2DSingleExperiment(Experiment):
                 self.register_buffer(f'{shape}x', torch.from_numpy(x))
                 self.register_buffer(f'{shape}y', torch.from_numpy(y))
                 self.register_buffer(f'{shape}r', torch.from_numpy(r))
+                orders[shape] = {'x': x, 'y': y, 'r': r, 'p': path}
+            self.conv.register_orders(orders)
 
     def forward(self, data):
         batch = {'data': data}
@@ -155,14 +159,7 @@ class Fourier2DSingleExperiment(Experiment):
         if self.shuffle_grid:
             x = x[:, self.x_idx][:, :, self.y_idx]
 
-        if self.use_hilbert:
-            x = x[:, self.Ex, self.Ey]
-            # x.shape == [batch_size, n_cells, input_size]
-
         im = self.conv(x, global_step=self.global_step)['forecast']
-
-        if self.use_hilbert:
-            im = im[:, self.Er].reshape(B, M, N)
 
         if self.shuffle_grid:
             im = im[:, :, self.y_inv][:, self.x_inv]
@@ -242,15 +239,8 @@ class Fourier2DSingleExperiment(Experiment):
             if self.shuffle_grid:
                 x = x[:, self.x_idx][:, :, self.y_idx]
 
-            if self.use_hilbert:
-                x = x[:, self.Ex, self.Ey]
-                # x.shape == [batch_size, n_cells, input_size]
-
             out = self.conv(x)
             im = out['forecast']
-
-            if self.use_hilbert:
-                im = im[:, self.Er].reshape(B, X, Y, 1)
 
             if self.shuffle_grid:
                 im = im[:, :, self.y_inv][:, self.x_inv]
