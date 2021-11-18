@@ -1,15 +1,31 @@
-# fourierflow
+# Factorized Fourier Neural Operator
 
-Experiments with Fourier layers on simulation data.
+![Teaser](figures/teaser.png)
+
+This repository contains the code to reproduce the results in our [NeurIPS 2021
+ML4PS workshop](https://ml4physicalsciences.github.io/2021/) paper, Factorized
+Fourier Neural Operator.
+
+The Fourier Neural Operator (FNO) is a learning-based method for efficiently
+simulating partial differential equations. We propose the Factorized Fourier
+Neural Operator (F-FNO) that allows much better generalization with deeper
+networks. With a careful combination of the Fourier factorization, weight
+sharing, the Markov property, and residual connections, F-FNOs achieve a
+six-fold reduction in error on the most turbulent setting of the Navier-Stokes
+benchmark dataset. We show that our model maintains an error rate of 2% while
+still running an order of magnitude faster than a numerical solver, even when
+the problem setting is extended to include additional contexts such as
+viscosity and time-varying forces. This enables the same pretrained neural
+network to model vastly different conditions.
 
 ## Getting Started
 
 ```sh
-# Set up pyenv and pin python version to 3.10.0
+# Set up pyenv and pin python version to 3.9.7
 curl https://pyenv.run | bash
 # Configure our shell's environment for pyenv
-pyenv install 3.10.0
-pyenv local 3.10.0
+pyenv install 3.9.7
+pyenv local 3.9.7
 
 # Set up poetry
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
@@ -56,16 +72,13 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # take 10 times as long, while the difference between the solutions in step 20
 # is only 0.04%.
 
-# Reproducing SOA model on Navier Stokes.
+# Reproducing SOA model on Navier Stokes from Li et al (2021).
 fourierflow train --trial 0 experiments/navier_stokes_4/zongyi/4_layers/config.yaml
 
 # Train with our best model
 fourierflow train --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
 # Get inference time on test set
 fourierflow predict --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
-
-# Train on gadi
-qsub -N 24_layers -v CONFIG=experiments/navier_stokes_4/markov/24_layers/config.yaml /g/data/v89/at3219/projects/fourierflow/scripts/start_gadi_job.sh
 
 # Create all plots and tables for paper
 fourierflow plot layer
@@ -75,52 +88,6 @@ fourierflow plot table-3
 fourierflow plot flow
 ```
 
-## Meshgraphnet Experiments
-
-```sh
-# DeepMind meshgraphnets simulation data
-fourierflow download meshgraphnets
-
-# Convert cylinder-flow data from TFRecords to HDF5 format.
-fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylinder_flow/cylinder_flow_fem.h5
-fourierflow convert cylinder-flow --data-dir data/cylinder_flow --out data/cylinder_flow/cylinder_flow_inv_euclidean.h5
-
-# Compute the Fourier basis of the cylinder-flow meshes (takes 2h).
-fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow_inv_euclidean.h5 --mode inv_euclidean
-fourierflow mesh basis --data-path data/cylinder_flow/cylinder_flow_fem.h5 --mode fem --n-modes 128
-
-# Compute Hilbert curves
-fourierflow mesh hilbert data/cylinder_flow/cylinder_flow_inv_euclidean.h5
-fourierflow mesh hilbert data/cylinder_flow/cylinder_flow_fem.h5
-
-# Reproduce mesh experiment
-poetry install
-source .venv/bin/activate
-# Set LD_LIBRARY_PATH to cuda-10.0/lib64 location
-
-# Train
-python run_model.py --mode=train --model=cloth --checkpoint_dir=chk/flag_simple --dataset_dir=data/flag_simple
-python run_model.py --mode=train --model=cfd --checkpoint_dir=chk/cylinder_flow --dataset_dir=data/cylinder_flow
-# Roll out
-python run_model.py --mode=eval --model=cloth --checkpoint_dir=chk/flag_simple --dataset_dir=data/flag_simple --rollout_path=data/flag_simple/rollout_flag.pkl
-python run_model.py --mode=eval --model=cfd --checkpoint_dir=chk/cylinder_flow --dataset_dir=data/cylinder_flow --rollout_path=data/cylinder_flow/rollout_flag.pkl
-# Plot
-python plot_cloth.py --rollout_path=data/flag_simple/rollout_flag.pkl
-python plot_cfd.py --rollout_path=data/cylinder_flow/rollout_flag.pkl
-```
-
-## Time Series Experiments
-
-```sh
-# MIMIC-III dataset
-cd data/mimiciii/1.4 && gzip -d *gz
-
-# Vevo experiments
-fourierflow train experiments/vevo/02_nbeats/config.yaml
-fourierflow train experiments/vevo/03_radflow/config.yaml
-# N-BEATS with fourier layer - similar performance
-fourierflow train experiments/54_vevo_perceiver/config.yaml
-```
 
 ## Notes
 

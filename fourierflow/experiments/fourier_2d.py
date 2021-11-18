@@ -2,13 +2,11 @@ from typing import Any, Dict
 
 import torch
 import torch.nn as nn
-from allennlp.common import Lazy
-from allennlp.training.optimizers import Optimizer
 from einops import rearrange, repeat
 
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
-from fourierflow.registries import Experiment, Module, Scheduler
+from fourierflow.registries import Experiment, Module
 from fourierflow.viz import log_navier_stokes_heatmap
 
 

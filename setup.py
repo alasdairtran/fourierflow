@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(name='fourierflow',
       version='0.1',
-      description='Exploration of neural ODE processes and Fourier layers.',
+      description='Exploration of the Factorized Fourier Neural Operator.',
       url='https://github.com/alasdairtran/fourierflow',
       author='Alasdair Tran',
       author_email='alasdair.tran@anu.edu.au',
