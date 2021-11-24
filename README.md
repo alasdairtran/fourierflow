@@ -54,6 +54,20 @@ FNO_DATA_ROOT=/My/Data/Location fourierflow
 
 ## Navier Stokes Experiments
 
+You can download all of our datasets and pretrained model as follows:
+
+```sh
+# Datasets (209GB)
+wget --continue https://object-store.rc.nectar.org.au/v1/AUTH_c0e4d64401cf433fb0260d211c3f23f8/fourierflow/data.tar.gz
+tar -zxvf data.tar.gz
+
+# Pretrained models and results (30GB)
+wget --continue https://object-store.rc.nectar.org.au/v1/AUTH_c0e4d64401cf433fb0260d211c3f23f8/fourierflow/experiments.tar.gz
+tar -zxvf experiments.tar.gz
+```
+
+Alternatively, you can also generate the datasets from scratch:
+
 ```sh
 # Download Navier Stokes datasets
 fourierflow download fno
@@ -71,28 +85,29 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # If we decrease delta from 1e-4 to 1e-5, generating the same dataset would now
 # take 10 times as long, while the difference between the solutions in step 20
 # is only 0.04%.
+```
 
+Training and test commands:
+
+```sh
 # Reproducing SOA model on Navier Stokes from Li et al (2021).
 fourierflow train --trial 0 experiments/navier_stokes_4/zongyi/4_layers/config.yaml
 
 # Train with our best model
 fourierflow train --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
+
 # Get inference time on test set
 fourierflow predict --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
+```
 
+Visualization commands:
+
+```sh
 # Create all plots and tables for paper
 fourierflow plot layer
 fourierflow plot complexity
 fourierflow plot table-3
+
 # Create plots for presentation
 fourierflow plot flow
-```
-
-
-## Notes
-
-```sh
-# Occasionally, we need to manually wandb cache size. Wandb doesn't clean up
-# automatically
-wandb artifact cache cleanup 1GB
 ```
