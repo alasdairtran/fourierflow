@@ -47,6 +47,7 @@ wandb
 /results
 *.h5
 *.mat
+*.tar.gz
 
 # per-machine project settings
 .env
