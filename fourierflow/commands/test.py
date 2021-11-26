@@ -17,10 +17,11 @@ app = Typer()
 
 @app.callback(invoke_without_command=True)
 def main(config_path: str,
-         trial: int,
+         trial: int = 0,
          overrides: str = '',
          map_location: Optional[str] = None,
-         debug: bool = False):
+         debug: bool = False,
+         no_logging: bool = False):
     """Test a Pytorch Lightning experiment."""
     params = yaml_to_params(config_path, overrides)
 
@@ -36,7 +37,7 @@ def main(config_path: str,
 
     # We use Weights & Biases to track our experiments.
     chkpt_dir = Path(save_dir) / 'checkpoints'
-    paths = list(chkpt_dir.glob(f'trial-{trial}-*/*.ckpt'))
+    paths = list(chkpt_dir.glob(f'trial-{trial}-*/epoch*.ckpt'))
     assert len(paths) == 1
     checkpoint_path = paths[0]
     wandb_id = Path(checkpoint_path).parent.name
@@ -61,8 +62,12 @@ def main(config_path: str,
     experiment.load_lightning_model_state(str(checkpoint_path), map_location)
 
     # Start the main testing pipeline.
-    trainer = pl.Trainer(logger=wandb_logger,
-                         **params.pop('trainer').as_dict())
+    if no_logging:
+        trainer = pl.Trainer(logger=False, checkpoint_callback=False,
+                             **params.pop('trainer').as_dict())
+    else:
+        trainer = pl.Trainer(logger=wandb_logger,
+                             **params.pop('trainer').as_dict())
     trainer.test(experiment, datamodule=builder)
 
 
