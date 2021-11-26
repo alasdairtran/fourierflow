@@ -110,6 +110,9 @@ fourierflow plot layer
 fourierflow plot complexity
 fourierflow plot table-3
 
-# Create plots for presentation
+# Create the flow animation for presentation
 fourierflow plot flow
+
+# Create plots for the poster
+fourierflow plot poster
 ```

@@ -150,6 +150,13 @@ def flow(i: int = 0):
     ani.save("demo.gif", writer='imagemagick')
 
 
+@app.command()
+def poster():
+    plot_scalable()
+    plot_10_steps()
+    plot_poster_pde_inference()
+
+
 def get_summary(dataset, groups):
     names = {
         ('zongyi',): 'FNO (reproduced)',
@@ -470,6 +477,108 @@ def get_training_times(dataset, groups):
         times.append([run.summary['_runtime'] for run in runs])
 
     return 100 * np.array(losses), np.array(times) / 3600
+
+
+def plot_scalable():
+    fig = plt.figure(figsize=(4, 3))
+    ax = plt.subplot(1, 1, 1)
+
+    layers_1 = [4, 8, 12, 16, 20]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    xs = [4, 8, 12, 16, 20, 24]
+    dataset = 'navier-stokes-4'
+    lines = []
+
+    groups = [f'zongyi/{i}_layers' for i in layers_1]
+    losses = get_test_losses(dataset, groups)
+    container = plot_line(xs, losses, ax, color=pal[0], linestyle='--')
+    lines.append(container.lines[0])
+
+    groups = [f'markov/{i}_layers' for i in layers_2]
+    losses = get_test_losses(dataset, groups)
+    container = plot_line(xs, losses, ax, color=pal[3])
+    lines.append(container.lines[0])
+
+    ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
+    ax.set_xlabel('Number of Layers')
+    ax.set_ylabel('Normalized MSE (%)')
+
+    labels = ['FNO [Li et al., 2021a]',
+              'F-FNO (our full model)']
+    ax.legend(lines, labels)
+
+    fig.tight_layout()
+    fig.savefig('figures/scalable.png',
+                bbox_inches='tight',
+                dpi=300)
+
+
+def plot_10_steps():
+    fig = plt.figure(figsize=(4, 3))
+    ax = plt.subplot(1, 1, 1)
+
+    xs = list(range(1, 11))
+    dataset = 'navier-stokes-4'
+    lines = []
+
+    losses = get_step_losses(dataset, 'zongyi/4_layers')
+    container = plot_line(xs, losses, ax, axis=0, color=pal[0], linestyle='--')
+    lines.append(container.lines[0])
+
+    losses = get_step_losses(dataset, 'markov/4_layers')
+    container = plot_line(xs, losses, ax, axis=0, color=pal[3])
+    lines.append(container.lines[0])
+
+    ax.set_xticks(xs)
+    ax.set_xlabel('Inference Step')
+    ax.set_ylabel('Normalized MSE (%)')
+    labels = ['FNO [Li et al., 2021a]',
+              'F-FNO (our full model)']
+    ax.legend(lines, labels)
+
+    fig.tight_layout()
+    fig.savefig('figures/10_steps.png',
+                bbox_inches='tight',
+                dpi=300)
+
+
+def plot_poster_pde_inference():
+    fig = plt.figure(figsize=(4, 3))
+    ax = plt.subplot(1, 1, 1)
+
+    dataset = 'navier-stokes-4'
+    layers_1 = [4, 8, 12, 16, 20]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    lines = []
+
+    groups = [f'zongyi/{i}_layers' for i in layers_1]
+    losses, times = get_inference_times(dataset, groups)
+    container = plot_xy_line(losses, times, ax, color=pal[0], linestyle='--')
+    lines.append(container.lines[0])
+
+    groups = [f'markov/{i}_layers' for i in layers_2]
+    losses, times = get_inference_times(dataset, groups)
+    container = plot_xy_line(losses, times, ax, color=pal[3], linestyle='-')
+    lines.append(container.lines[0])
+
+    ax.scatter([0], [244], color=pal[4])
+    ax.set_xlabel('Normalized MSE (%)')
+    ax.set_ylabel('Inference Time (s)')
+    ax.set_yscale('log')
+    ax.set_xticks([0, 5, 10, 15, 20])
+
+    sim_line = Line2D(range(1), range(1), color="white",
+                      marker='o', markerfacecolor=pal[4])
+    lines = [sim_line] + lines
+    labels = ['Crank–Nicolson method',
+              'FNO [Li et al., 2021a]',
+              'F-FNO (our full model)']
+    ax.legend(lines, labels)
+
+    fig.tight_layout()
+    fig.savefig('figures/inference.png',
+                bbox_inches='tight',
+                dpi=300)
 
 
 if __name__ == "__main__":
