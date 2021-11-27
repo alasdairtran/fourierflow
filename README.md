@@ -1,6 +1,6 @@
 # Factorized Fourier Neural Operator
 
-![Teaser](figures/teaser.png)
+![Teaser](figures/poster.png)
 
 This repository contains the code to reproduce the results in our [NeurIPS 2021
 ML4PS workshop](https://ml4physicalsciences.github.io/2021/) paper, Factorized
