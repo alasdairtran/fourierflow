@@ -3,7 +3,7 @@ from typing import Union
 
 import yaml
 from allennlp.common.file_utils import cached_path
-from allennlp.common.params import Params, parse_overrides, with_fallback
+from allennlp.common.params import Params, parse_overrides, with_overrides
 
 
 def yaml_to_params(params_file:  Union[str, PathLike], overrides: str = '') -> Params:
@@ -14,6 +14,6 @@ def yaml_to_params(params_file:  Union[str, PathLike], overrides: str = '') -> P
         file_dict = yaml.safe_load(f)
 
     overrides_dict = parse_overrides(overrides)
-    param_dict = with_fallback(preferred=overrides_dict, fallback=file_dict)
+    param_dict = with_overrides(file_dict, overrides_dict)
 
     return Params(param_dict)
