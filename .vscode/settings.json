@@ -17,7 +17,6 @@
     "**/node_modules/**": true,
     "**/.git": true,
     "**/.venv*": true,
-    "experiments": true,
     "data": true,
   }
 
