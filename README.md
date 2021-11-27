@@ -34,11 +34,11 @@ Please cite with the following BibTeX:
 ## Getting Started
 
 ```sh
-# Set up pyenv and pin python version to 3.9.8
+# Set up pyenv and pin python version to 3.9.9
 curl https://pyenv.run | bash
 # Configure our shell's environment for pyenv
-pyenv install 3.9.8
-pyenv local 3.9.8
+pyenv install 3.9.9
+pyenv local 3.9.9
 
 # Set up poetry
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -

@@ -6,7 +6,7 @@ authors = ["Alasdair Tran <alasdair.tran@anu.edu.au>"]
 repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
-python = "~3.9.8"
+python = "~3.9.9"
 # poetry add allennlp einops entmax gdown hyperopt ipykernel jupyterlab \
 #   matplotlib moviepy pandas plotly poethepoet ptvsd pydocstyle \
 #   python-dotenv pytorch-lightning requests seaborn SpharaPy termcolor \
