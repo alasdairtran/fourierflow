@@ -63,7 +63,7 @@ def main(config_path: str,
 
     # Start the main testing pipeline.
     if no_logging:
-        trainer = pl.Trainer(logger=False, checkpoint_callback=False,
+        trainer = pl.Trainer(logger=False, enable_checkpointing=False,
                              **params.pop('trainer').as_dict())
     else:
         trainer = pl.Trainer(logger=wandb_logger,
