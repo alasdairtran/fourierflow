@@ -53,7 +53,6 @@ trainer:
   precision: 32
   max_epochs: 101 # 1 accumulation epoch + 100 training epochs
   stochastic_weight_avg: false
-  weights_summary: full
   log_every_n_steps: 100
   # Debugging parameters
   log_gpu_memory: None # all
@@ -71,3 +70,5 @@ callbacks:
     every_n_epochs: 1
   - type: learning_rate_monitor
     logging_interval: step
+  - type: model_summary
+    max_depth: 4

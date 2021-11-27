@@ -49,3 +49,5 @@ callbacks:
     filename: "{epoch}-{step}-{valid_loss:.5f}"
   - type: learning_rate_monitor
     logging_interval: step
+  - type: model_summary
+    max_depth: 4
