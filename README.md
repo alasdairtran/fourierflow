@@ -1,10 +1,8 @@
-# Factorized Fourier Neural Operator
-
 ![Teaser](figures/poster.png)
 
 This repository contains the code to reproduce the results in our [NeurIPS 2021
 ML4PS workshop](https://ml4physicalsciences.github.io/2021/) paper, Factorized
-Fourier Neural Operator.
+Fourier Neural Operators.
 
 The Fourier Neural Operator (FNO) is a learning-based method for efficiently
 simulating partial differential equations. We propose the Factorized Fourier
