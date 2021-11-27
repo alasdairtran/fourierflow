@@ -6,55 +6,53 @@ authors = ["Alasdair Tran <alasdair.tran@anu.edu.au>"]
 repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
-python = "~3.9.7"
+python = "~3.9.8"
 # poetry add allennlp einops entmax gdown hyperopt ipykernel jupyterlab \
 #   matplotlib moviepy pandas plotly poethepoet ptvsd pydocstyle \
 #   python-dotenv pytorch-lightning requests seaborn SpharaPy termcolor \
 #   tensorflow-gpu tfrecord torchdiffeq torchtyping typer wandb
-allennlp = "^2.7.0"
+allennlp = "^2.8.0"
 einops = "^0.3.2"
 entmax = "^1.0"
-gdown = "^4.0.2"
-hyperopt = "^0.2.5"
-ipykernel = "^6.4.1"
-jupyterlab = "^3.1.18"
-matplotlib = "^3.4.3"
+gdown = "^4.2.0"
+hyperopt = "^0.2.7"
+ipykernel = "^6.5.1"
+jupyterlab = "^3.2.4"
+matplotlib = "^3.5.0"
 moviepy = "^1.0.3"
-pandas = "^1.3.3"
-plotly = "^5.3.1"
-poethepoet = "^0.10.0"
+pandas = "^1.3.4"
+plotly = "^5.4.0"
+poethepoet = "^0.11.0"
 ptvsd = "^4.3.2"
 pydocstyle = "^6.1.1"
-python-dotenv = "^0.19.0"
-pytorch-lightning = "^1.4.9"
+python-dotenv = "^0.19.2"
+pytorch-lightning = "^1.5.3"
 requests = "^2.26.0"
 seaborn = "^0.11.2"
 SpharaPy = "^1.1.0"
 termcolor = "^1.1.0"
-tensorflow-gpu = "^2.6.0"
+tensorflow-gpu = "^2.7.0"
 tfrecord = "^1.14.1"
 torchdiffeq = "^0.2.2"
 torchtyping = "^0.1.4"
 typer = "^0.4.0"
-wandb = "^0.12.4"
+wandb = "^0.12.7"
 
 [tool.poetry.dev-dependencies]
 # poetry add --dev autopep8 ipympl isort mypy pylint types-requests
-autopep8 = "^1.5.7"
-ipympl = "^0.8.0" # interactive plots in Jupyter notebooks
-isort = "^5.9.3"
+autopep8 = "^1.6.0"
+ipympl = "^0.8.2"
+isort = "^5.10.1"
 mypy = "^0.910"
-pylint = "2.10.2"
-types-requests = "^2.25.9"
+pylint = "^2.12.1"
+types-requests = "^2.26.1"
 
 [tool.poetry.scripts]
 fourierflow = 'fourierflow.commands.__main__:app'
 
 [tool.poe.tasks]
-# Remove when allennlp has upgraded transformers dependencies to 4.11
-update-transformers = "pip install -U transformers"
 # Remove when this is fixed: https://github.com/python-poetry/poetry/issues/2613
-install-torch-cuda11 = "python -m pip install --no-cache-dir -U torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html"
+install-torch-cuda11 = "python -m pip install --no-cache-dir -U torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0 -f https://download.pytorch.org/whl/torch_stable.html"
 
 [build-system]
 requires = ["poetry>=0.12"]

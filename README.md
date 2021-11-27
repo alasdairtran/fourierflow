@@ -34,11 +34,11 @@ Please cite with the following BibTeX:
 ## Getting Started
 
 ```sh
-# Set up pyenv and pin python version to 3.9.7
+# Set up pyenv and pin python version to 3.9.8
 curl https://pyenv.run | bash
 # Configure our shell's environment for pyenv
-pyenv install 3.9.7
-pyenv local 3.9.7
+pyenv install 3.9.8
+pyenv local 3.9.8
 
 # Set up poetry
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
@@ -49,8 +49,6 @@ poetry install
 source .venv/bin/activate # or: poetry shell
 # If we need to use Jupyter notebooks
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
-# Temp fix until allennlp has upgraded transformers dependencies to 4.11
-poe update-transformers
 # Manually reinstall Pytorch with CUDA 11.1 support
 # Monitor poetry's support for pytorch here: https://github.com/python-poetry/poetry/issues/2613
 poe install-torch-cuda11
