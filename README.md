@@ -1,5 +1,7 @@
 ![Teaser](figures/poster.png)
 
+# Factorized Fourier Neural Operators
+
 This repository contains the code to reproduce the results in our [NeurIPS 2021
 ML4PS workshop](https://ml4physicalsciences.github.io/2021/) paper, Factorized
 Fourier Neural Operators.
