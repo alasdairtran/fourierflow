@@ -49,6 +49,8 @@ poetry install
 source .venv/bin/activate # or: poetry shell
 # If we need to use Jupyter notebooks
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
+# Provide a more meaningful prompt when inside the virtual environment
+python -m venv .venv --prompt fourierflow
 # Manually reinstall Pytorch with CUDA 11.1 support
 # Monitor poetry's support for pytorch here: https://github.com/python-poetry/poetry/issues/2613
 poe install-torch-cuda11
