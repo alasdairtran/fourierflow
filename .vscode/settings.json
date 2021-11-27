@@ -1,5 +1,24 @@
 {
   "python.defaultInterpreterPath": ".venv/bin/python",
   "python.linting.pylintEnabled": true,
-  "python.pythonPath": ".venv/bin/python"
+  "python.pythonPath": ".venv/bin/python",
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.git": true,
+    "**/.venv*": true,
+    "experiments": true,
+    "data": true,
+  },
+  "search.exclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.git": true,
+    "**/.venv*": true,
+    "experiments": true,
+    "data": true,
+  }
+
 }
