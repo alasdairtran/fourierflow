@@ -8,7 +8,6 @@ import os
 from fourierflow.registries import Builder
 
 
-@Builder.register('navier_stokes')
 class NavierStokesBuilder(Builder):
     name = 'navier_stokes'
 

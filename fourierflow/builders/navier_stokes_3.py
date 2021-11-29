@@ -9,7 +9,6 @@ from torch.utils.data import DataLoader, Dataset
 from fourierflow.registries import Builder
 
 
-@Builder.register('navier_stokes_3')
 class NavierStokes3Builder(Builder):
     name = 'navier_stokes_3'
 
