@@ -16,7 +16,7 @@ builder:
   batch_size: 20
   n_workers: 4
 routine:
-  _target_: fourierflow.experiments.Fourier2DExperiment
+  _target_: fourierflow.routines.Fourier2DExperiment
   conv:
     type: fourier_net_2d
     modes1: 12

@@ -14,7 +14,7 @@ builder:
   batch_size: 19
   n_workers: 16
 routine:
-  _target_: fourierflow.experiments.Fourier2DSingleExperiment
+  _target_: fourierflow.routines.Fourier2DSingleExperiment
   conv:
     _target_: fourierflow.modules.SimpleBlock2dFactorizedParallel
     modes: 16
