@@ -17,7 +17,7 @@ builder:
 routine:
   _target_: fourierflow.routines.Fourier2DSingleExperiment
   conv:
-    type: fourier_net_2d
+    _target_: fourierflow.modules.SimpleBlock2d
     modes1: 12
     modes2: 12
     width: 20
@@ -25,20 +25,21 @@ routine:
     input_dim: 3
   n_steps: 10
   should_normalize: false
-  clip_val: None
+  clip_val: null
   optimizer:
-    type: adamw
+    _target_: torch.optim.AdamW
     lr: 0.0025
     weight_decay: 0.0001
   scheduler:
-    type: step_lr
-    step_size: 100
-    gamma: 0.5
-  scheduler_config:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: torch.optim.lr_scheduler.StepLR}"]
+      step_size: 100
+      gamma: 0.5
     name: learning_rate
     interval: epoch
     frequency: 1
-    monitor: None
+    monitor: null
   automatic_optimization: true
 trainer:
   gpus: 1

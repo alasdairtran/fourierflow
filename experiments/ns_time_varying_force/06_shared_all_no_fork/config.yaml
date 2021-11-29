@@ -38,19 +38,20 @@ routine:
   append_force: true
   append_mu: true
   optimizer:
-    type: adamw
+    _target_: torch.optim.AdamW
     lr: 0.0025
     weight_decay: 0.0001
   scheduler:
-    type: cosine_with_warmup
-    num_warmup_steps: 500
-    num_training_steps: 100000
-    num_cycles: 0.5
-  scheduler_config:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
+      num_warmup_steps: 500
+      num_training_steps: 100000
+      num_cycles: 0.5
     name: learning_rate
     interval: step
     frequency: 1
-    monitor: None
+    monitor: null
 trainer:
   gpus: 1
   precision: 32
