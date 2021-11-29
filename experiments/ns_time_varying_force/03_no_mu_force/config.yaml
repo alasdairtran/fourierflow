@@ -36,7 +36,8 @@ routine:
   append_force: false
   append_mu: false
   optimizer:
-    _target_: torch.optim.AdamW
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.AdamW}"]
     lr: 0.0025
     weight_decay: 0.0001
   scheduler:
