@@ -18,7 +18,6 @@ class ExponentialLRLambda:
         return self.gamma**progress
 
 
-@Scheduler.register('exponential_with_warmup')
 class ExponentialWithWarmupScheduler(Scheduler, LambdaLR):
     def __init__(self, optimizer, num_warmup_steps: int,
                  gamma=0.9999, last_epoch=-1, verbose=False):

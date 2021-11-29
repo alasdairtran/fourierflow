@@ -19,8 +19,7 @@ class CosineLRLambda:
         return max(0.0, 0.5 * (1.0 + math.cos(math.pi * float(self.num_cycles) * 2.0 * progress)))
 
 
-@Scheduler.register('cosine_with_warmup')
-class CosineWithWarmupScheduler(Scheduler, LambdaLR):
+class CosineWithWarmupScheduler(LambdaLR):
     def __init__(self, optimizer, num_warmup_steps: int,
                  num_training_steps: int, num_cycles: float = 0.5,
                  last_epoch=-1, verbose=False):
