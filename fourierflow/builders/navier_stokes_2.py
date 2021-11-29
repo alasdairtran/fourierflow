@@ -3,11 +3,11 @@ import os
 import numpy as np
 import scipy.io
 import torch
-from einops import rearrange, repeat
+from einops import rearrange
 from einops.einops import rearrange
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.registries import Builder
+from .base import Builder
 
 
 class NavierStokes2Builder(Builder):

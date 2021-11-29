@@ -1,12 +1,9 @@
 import os
 
 import h5py
-import torch
-from einops import rearrange, repeat
-from einops.einops import rearrange
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.registries import Builder
+from .base import Builder
 
 
 class NavierStokes3Builder(Builder):

@@ -2,8 +2,6 @@ import math
 
 from torch.optim.lr_scheduler import LambdaLR
 
-from fourierflow.registries.schedulers import Scheduler
-
 
 class ExponentialLRLambda:
     def __init__(self, num_warmup_steps, gamma):
@@ -18,7 +16,7 @@ class ExponentialLRLambda:
         return self.gamma**progress
 
 
-class ExponentialWithWarmupScheduler(Scheduler, LambdaLR):
+class ExponentialWithWarmupScheduler(LambdaLR):
     def __init__(self, optimizer, num_warmup_steps: int,
                  gamma=0.9999, last_epoch=-1, verbose=False):
         lr_lambda = ExponentialLRLambda(num_warmup_steps, gamma)

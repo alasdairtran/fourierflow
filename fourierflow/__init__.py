@@ -7,7 +7,6 @@ from omegaconf import OmegaConf
 import fourierflow.builders
 import fourierflow.callbacks
 import fourierflow.modules
-import fourierflow.registries
 import fourierflow.routines
 import fourierflow.schedulers
 

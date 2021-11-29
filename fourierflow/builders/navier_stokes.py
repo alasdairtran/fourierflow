@@ -1,11 +1,12 @@
+import os
+
 import numpy as np
 import scipy.io
 import torch
 from einops import repeat
 from torch.utils.data import DataLoader, Dataset
-import os
 
-from fourierflow.registries import Builder
+from .base import Builder
 
 
 class NavierStokesBuilder(Builder):

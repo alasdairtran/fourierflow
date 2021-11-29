@@ -1,6 +1,5 @@
 import math
 
-from pytorch_lightning.utilities.distributed import rank_zero_info
 from torch.optim.lr_scheduler import _LRScheduler
 
 

@@ -106,13 +106,13 @@ Training and test commands:
 
 ```sh
 # Reproducing SOA model on Navier Stokes from Li et al (2021).
-fourierflow train --trial 0 experiments/navier_stokes_4/zongyi/4_layers/config.yaml
+fourierflow train --trial 0 experiments/navier_stokes_4/zongyi/4_layers
 
 # Train with our best model
-fourierflow train --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
+fourierflow train --trial 0 experiments/navier_stokes_4/markov/24_layers
 
 # Get inference time on test set
-fourierflow predict --trial 0 experiments/navier_stokes_4/markov/24_layers/config.yaml
+fourierflow predict --trial 0 experiments/navier_stokes_4/markov/24_layers
 ```
 
 Visualization commands:

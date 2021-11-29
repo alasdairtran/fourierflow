@@ -2,8 +2,6 @@ import math
 
 from torch.optim.lr_scheduler import LambdaLR
 
-from fourierflow.registries.schedulers import Scheduler
-
 
 class LinearLRLambda:
     def __init__(self, num_warmup_steps, num_training_steps):
@@ -17,7 +15,7 @@ class LinearLRLambda:
                    float(max(1, self.num_training_steps - self.num_warmup_steps)))
 
 
-class LinearWithWarmupScheduler(Scheduler, LambdaLR):
+class LinearWithWarmupScheduler(LambdaLR):
     def __init__(self, optimizer, num_warmup_steps: int,
                  num_training_steps: int, last_epoch=-1, verbose=False):
 

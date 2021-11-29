@@ -2,8 +2,6 @@ import math
 
 from torch.optim.lr_scheduler import LambdaLR
 
-from fourierflow.registries.schedulers import Scheduler
-
 
 class CosineLRLambda:
     def __init__(self, num_warmup_steps, num_training_steps, num_cycles):
