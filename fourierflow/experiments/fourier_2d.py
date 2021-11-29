@@ -6,14 +6,13 @@ from einops import rearrange, repeat
 
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
-from fourierflow.registries import Experiment, Module
+from fourierflow.registries import Experiment
 from fourierflow.viz import log_navier_stokes_heatmap
 
 
-@Experiment.register('fourier_2d')
 class Fourier2DExperiment(Experiment):
     def __init__(self,
-                 conv: Module,
+                 conv: nn.Module,
                  n_steps: int,
                  max_freq: int = 32,
                  num_freq_bands: int = 8,

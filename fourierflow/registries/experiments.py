@@ -1,48 +1,35 @@
-from typing import IO, Any, Callable, Dict, Optional, Union
+from typing import IO, Callable, Dict, Optional, Union
 
 import torch
-from allennlp.common import Lazy, Registrable
-from allennlp.training.optimizers import Optimizer
+from omegaconf import OmegaConf
 from pytorch_lightning import LightningModule
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 
-from .schedulers import Scheduler
 
-
-class Experiment(Registrable, LightningModule):
+class Experiment(LightningModule):
     def __init__(self,
-                 optimizer: Lazy[Optimizer],
-                 scheduler: Lazy[Scheduler],
-                 scheduler_config: Dict[str, Any],
+                 optimizer,
+                 scheduler,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.scheduler_config = scheduler_config
 
     def on_train_start(self):
         n = sum(p.numel() for p in self.parameters() if p.requires_grad)
         self.logger.experiment.summary["n_params"] = n
 
     def configure_optimizers(self):
-        parameters = [[n, p] for n, p in self.named_parameters()
-                      if p.requires_grad]
+        parameters = [p for p in self.parameters() if p.requires_grad]
         if hasattr(self, 'lr') and self.lr:
-            opt = self.optimizer.construct(model_parameters=parameters,
-                                           lr=self.lr)
+            opt = self.optimizer(parameters, lr=self.lr)
         else:
-            opt = self.optimizer.construct(model_parameters=parameters)
+            opt = self.optimizer(parameters)
 
-        if self.scheduler:
-            scheduler = {'scheduler': self.scheduler.construct(optimizer=opt),
-                         'name': self.scheduler_config['name'],
-                         'interval': self.scheduler_config['interval'],
-                         'monitor': self.scheduler_config['monitor'],
-                         'frequency': self.scheduler_config['frequency']}
+        sch = OmegaConf.to_container(self.scheduler)
+        sch['scheduler'] = sch['scheduler'](optimizer=opt)
 
-            return [opt], [scheduler]
-        else:
-            return opt
+        return [opt], [sch]
 
     def load_lightning_model_state(self,
                                    checkpoint_path: Union[str, IO],
