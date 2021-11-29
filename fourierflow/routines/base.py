@@ -6,7 +6,7 @@ from pytorch_lightning import LightningModule
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 
 
-class Experiment(LightningModule):
+class Routine(LightningModule):
     def __init__(self,
                  optimizer,
                  scheduler,

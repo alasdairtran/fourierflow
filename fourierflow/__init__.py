@@ -6,9 +6,9 @@ from omegaconf import OmegaConf
 
 import fourierflow.builders
 import fourierflow.callbacks
-import fourierflow.experiments
 import fourierflow.modules
 import fourierflow.registries
+import fourierflow.routines
 import fourierflow.schedulers
 
 # Allow partial instantiations of optimizers and schedulers.

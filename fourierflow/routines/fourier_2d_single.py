@@ -8,11 +8,12 @@ from einops import rearrange, repeat
 from fourierflow.modules import Normalizer, fourier_encode
 from fourierflow.modules.hilbert import linearize
 from fourierflow.modules.loss import LpLoss
-from fourierflow.registries import Experiment
 from fourierflow.viz import log_navier_stokes_heatmap
 
+from .base import Routine
 
-class Fourier2DSingleExperiment(Experiment):
+
+class Fourier2DSingleExperiment(Routine):
     def __init__(self,
                  conv: nn.Module,
                  n_steps: int,
