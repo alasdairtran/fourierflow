@@ -1,74 +1,73 @@
 import os
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
+import hydra
 import numpy as np
 import ptvsd
 import pytorch_lightning as pl
+from hydra.utils import instantiate
+from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
-from typer import Typer
-
-from fourierflow.registries import Builder, Experiment
-from fourierflow.utils import get_save_dir, yaml_to_params
+from typer import Argument, Typer
 
 app = Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(config_path: str,
+def main(config_dir: str,
+         overrides: Optional[List[str]] = Argument(None),
          trial: int = 0,
-         overrides: str = '',
          map_location: Optional[str] = None,
          debug: bool = False,
          no_logging: bool = False):
     """Test a Pytorch Lightning experiment."""
-    params = yaml_to_params(config_path, overrides)
+    hydra.initialize(config_path=Path('../..') / config_dir)
+    config = hydra.compose(config_name='config', overrides=overrides)
+    OmegaConf.set_struct(config, False)
 
     # This debug mode is for those who use VS Code's internal debugger.
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
         # ptvsd doesn't play well with multiple processes.
-        params['builder']['n_workers'] = 0
-
-    # Determine the path where the experimental test results will be saved.
-    save_dir = get_save_dir(config_path)
+        config.builder.n_workers = 0
 
     # We use Weights & Biases to track our experiments.
-    chkpt_dir = Path(save_dir) / 'checkpoints'
+    chkpt_dir = Path(config_dir) / 'checkpoints'
     paths = list(chkpt_dir.glob(f'trial-{trial}-*/epoch*.ckpt'))
     assert len(paths) == 1
     checkpoint_path = paths[0]
     wandb_id = Path(checkpoint_path).parent.name
     trial = int(wandb_id.split('-')[1])
-    params['trial'] = trial
-    params['wandb']['name'] = f"{params['wandb']['group']}/{trial}"
-    wandb_opts = params.get('wandb').as_dict()
-    wandb_logger = WandbLogger(save_dir=save_dir,
+    config.trial = trial
+    config.wandb.name = f"{config.wandb.group}/{trial}"
+    wandb_opts = OmegaConf.to_container(config.wandb)
+    wandb_logger = WandbLogger(save_dir=config_dir,
                                mode=os.environ.get('WANDB_MODE', 'online'),
-                               config=deepcopy(params.as_dict()),
+                               config=deepcopy(OmegaConf.to_container(config)),
                                id=wandb_id,
                                **wandb_opts)
 
     # Set seed for reproducibility.
     rs = np.random.RandomState(7231 + trial)
-    seed = params.get('seed', rs.randint(1000, 1000000))
+    seed = config.get('seed', rs.randint(1000, 1000000))
     pl.seed_everything(seed, workers=True)
-    params['seed'] = seed
+    config.seed = seed
 
-    builder = Builder.from_params(params['builder'])
-    experiment = Experiment.from_params(params['experiment'])
-    experiment.load_lightning_model_state(str(checkpoint_path), map_location)
+    builder = instantiate(config.builder)
+    routine = instantiate(config.routine)
+    routine.load_lightning_model_state(str(checkpoint_path), map_location)
 
     # Start the main testing pipeline.
     if no_logging:
         trainer = pl.Trainer(logger=False, enable_checkpointing=False,
-                             **params.pop('trainer').as_dict())
+                             **OmegaConf.to_container(config.trainer))
     else:
         trainer = pl.Trainer(logger=wandb_logger,
-                             **params.pop('trainer').as_dict())
-    trainer.test(experiment, datamodule=builder)
+                             **OmegaConf.to_container(config.trainer))
+    trainer.test(routine, datamodule=builder)
 
 
 if __name__ == "__main__":
