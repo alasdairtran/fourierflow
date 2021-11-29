@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 
-from fourierflow.registries import Module
-
 from .linear import WNLinear
 
 
@@ -108,7 +106,6 @@ class SpectralConv2d(nn.Module):
         return x
 
 
-@Module.register('fourier_2d_full')
 class SimpleBlock2dFull(nn.Module):
     def __init__(self, modes, width, input_dim=12, dropout=0.0, in_dropout=0.0,
                  n_layers=4, linear_out: bool = False, share_weight: bool = False,

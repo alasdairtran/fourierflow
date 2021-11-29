@@ -12,8 +12,6 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 
-from fourierflow.registries import Module
-
 
 class SpectralConv2d(nn.Module):
     def __init__(self, in_dim, out_dim, n_modes, resdiual=True, dropout=0.1):
@@ -77,7 +75,6 @@ class SpectralConv2d(nn.Module):
         return x
 
 
-@Module.register('fourier_net_2d')
 class SimpleBlock2d(nn.Module):
     def __init__(self, modes1, modes2, width, input_dim=12, dropout=0.1, n_layers=4, residual=False, conv_residual=True):
         super(SimpleBlock2d, self).__init__()
