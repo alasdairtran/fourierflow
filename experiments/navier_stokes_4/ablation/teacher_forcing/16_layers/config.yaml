@@ -7,16 +7,16 @@ wandb:
     - fourier
   notes: ""
 builder:
-  type: navier_stokes
-  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
+  _target_: fourierflow.builders.NavierStokesBuilder
+  data_path: ${oc.env:DATA_ROOT}/zongyi/NavierStokes_V1e-5_N1200_T20.mat
   train_size: 1000
   test_size: 200
   ssr: 1 # sub-sampling rate
   n_steps: 10
   batch_size: 20
   n_workers: 4
-experiment:
-  type: fourier_2d
+routine:
+  _target_: fourierflow.experiments.Fourier2DExperiment
   conv:
     type: fourier_net_2d
     modes1: 12
@@ -43,9 +43,9 @@ trainer:
   precision: 32
   max_epochs: 500
 callbacks:
-  - type: model_checkpoint
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
     filename: "{epoch}-{step}-{valid_loss:.5f}"
-  - type: learning_rate_monitor
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
     logging_interval: step
-  - type: model_summary
+  - _target_: pytorch_lightning.callbacks.ModelSummary
     max_depth: 4

@@ -8,17 +8,17 @@ wandb:
   notes: ""
   log_model: all
 builder:
-  type: navier_stokes_2
-  data_path: ${FNO_DATA_ROOT}/NavierStokes_V1e-5_N1200_T20.mat
+  _target_: fourierflow.builders.NavierStokes2Builder
+  data_path: ${oc.env:DATA_ROOT}/zongyi/NavierStokes_V1e-5_N1200_T20.mat
   train_size: 1000
   test_size: 200
   ssr: 1 # sub-sampling rate
   batch_size: 19
   n_workers: 4
-experiment:
-  type: fourier_2d_single
+routine:
+  _target_: fourierflow.experiments.Fourier2DSingleExperiment
   conv:
-    type: fourier_2d_factorized_parallel
+    _target_: fourierflow.modules.SimpleBlock2dFactorizedParallel
     modes: 16
     width: 64
     linear_out: true
@@ -56,12 +56,11 @@ trainer:
   stochastic_weight_avg: false
   log_every_n_steps: 100
   # Debugging parameters
-  log_gpu_memory: None # all
   track_grad_norm: -1 # 2
   fast_dev_run: false # 2
   limit_train_batches: 1.0
 callbacks:
-  - type: model_checkpoint
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
     filename: "{epoch}-{step}-{valid_loss:.5f}"
     save_top_k: 1
     save_last: false # not needed when save_top_k == 1
@@ -69,7 +68,7 @@ callbacks:
     mode: min
     every_n_train_steps: None
     every_n_epochs: 1
-  - type: learning_rate_monitor
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
     logging_interval: step
-  - type: model_summary
+  - _target_: pytorch_lightning.callbacks.ModelSummary
     max_depth: 4
