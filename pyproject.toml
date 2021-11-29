@@ -7,11 +7,10 @@ repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
 python = "~3.9.9"
-# poetry add allennlp einops entmax gdown hyperopt ipykernel jupyterlab \
+# poetry add einops entmax gdown hyperopt ipykernel jupyterlab \
 #   matplotlib moviepy pandas plotly poethepoet ptvsd pydocstyle \
-#   python-dotenv pytorch-lightning requests seaborn SpharaPy termcolor \
+#   python-dotenv pytorch-lightning requests seaborn termcolor \
 #   tensorflow-gpu tfrecord torchdiffeq torchtyping typer wandb
-allennlp = "^2.8.0"
 einops = "^0.3.2"
 entmax = "^1.0"
 gdown = "^4.2.0"
@@ -30,7 +29,6 @@ python-dotenv = "^0.19.2"
 pytorch-lightning = "^1.5.3"
 requests = "^2.26.0"
 seaborn = "^0.11.2"
-SpharaPy = "^1.1.0"
 termcolor = "^1.1.0"
 tensorflow-gpu = "^2.7.0"
 tfrecord = "^1.14.1"
