@@ -1,3 +1,6 @@
 [submodule "ml4ps2021"]
 	path = ml4ps2021
 	url = https://git.overleaf.com/6138b837b0ad3c9a84e68323
+[submodule "icml2022"]
+	path = icml2022
+	url = https://git.overleaf.com/61a5a2ece2d294c0c75e2d4f
