@@ -5,13 +5,9 @@
 tar -zcvf experiments.tar.gz experiments
 tar -zcvf data.tar.gz data
 
-# Extract the archives
-tar -zxvf experiments.tar.gz
-tar -zxvf data.tar.gz
-
 # Upload to Nectar Containers
-swift upload fourierflow experiments.tar.gz --info
-swift upload fourierflow data.tar.gz --info
+swift upload fourierflow experiments.tar.gz --info -S 1073741824
+swift upload fourierflow data.tar.gz  --info -S 1073741824
 
 # Occasionally, we need to manually wandb cache size. Wandb doesn't clean up
 # automatically
