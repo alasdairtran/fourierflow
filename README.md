@@ -1,4 +1,4 @@
-![Teaser](figures/poster.png)
+![Teaser](https://raw.githubusercontent.com/alasdairtran/fourierflow/main/figures/poster.png)
 
 # Factorized Fourier Neural Operators
 
