@@ -104,7 +104,7 @@ class Fourier2DSingleExperiment(Routine):
             return torch.linspace(low, high, steps=size,
                                   device=self._float.device)
         grid_list = list(map(generate_grid, dim_sizes))
-        pos = torch.stack(torch.meshgrid(*grid_list), dim=-1)
+        pos = torch.stack(torch.meshgrid(*grid_list, indexing='ij'), dim=-1)
         # pos.shape == [*dim_sizes, n_dims]
 
         if not fourier:

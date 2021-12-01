@@ -39,7 +39,7 @@ def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles=None,
         # Forcing function: 0.1*(sin(2pi(x+y)) + cos(2pi(x+y)))
         ft = torch.linspace(0, 1, N+1, device=w0.device)
         ft = ft[0:-1]
-        X, Y = torch.meshgrid(ft, ft)
+        X, Y = torch.meshgrid(ft, ft, indexing='ij')
         f = 0.1*(torch.sin(2 * math.pi * (X + Y)) +
                  torch.cos(2 * math.pi * (X + Y)))
     elif force == Force.random and not varying_force:
@@ -167,7 +167,7 @@ def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles=None,
 def get_random_force(b, s, device, cycles, scaling, t, t_scaling, seed):
     ft = torch.linspace(0, 1, s+1).to(device)
     ft = ft[0:-1]
-    X, Y = torch.meshgrid(ft, ft)
+    X, Y = torch.meshgrid(ft, ft, indexing='ij')
     X = repeat(X, 'x y -> b x y', b=b)
     Y = repeat(Y, 'x y -> b x y', b=b)
 

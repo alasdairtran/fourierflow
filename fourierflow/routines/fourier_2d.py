@@ -62,7 +62,7 @@ class Fourier2DExperiment(Routine):
         def generate_grid(size):
             return torch.linspace(-1., 1., steps=size, device=device)
         grid_list = list(map(generate_grid, dim_sizes))
-        pos = torch.stack(torch.meshgrid(*grid_list), dim=-1)
+        pos = torch.stack(torch.meshgrid(*grid_list, indexing='ij'), dim=-1)
         # pos.shape == [*dim_sizes, n_dims]
 
         # To get the fourier encodings, we will go one step further
