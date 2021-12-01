@@ -34,6 +34,11 @@ Please cite with the following BibTeX:
 ## Getting Started
 
 ```sh
+# If you'd like to reproduce the exact numbers in our ML4PS workshop paper,
+# checkout v0.2.0 to use the same seeds and package versions.
+git checkout v0.2.0
+
+# Otherwise we can use latest Python and Pytorch versions.
 # Set up pyenv and pin python version to 3.9.9
 curl https://pyenv.run | bash
 # Configure our shell's environment for pyenv
