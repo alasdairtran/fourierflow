@@ -6,7 +6,6 @@ import torch.nn as nn
 from einops import rearrange, repeat
 
 from fourierflow.modules import Normalizer, fourier_encode
-from fourierflow.modules.hilbert import linearize
 from fourierflow.modules.loss import LpLoss
 from fourierflow.viz import log_navier_stokes_heatmap
 
@@ -32,7 +31,6 @@ class Fourier2DSingleExperiment(Routine):
                  automatic_optimization: bool = False,
                  noise_std: float = 0.0,
                  shuffle_grid: bool = False,
-                 use_hilbert: bool = False,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -55,40 +53,11 @@ class Fourier2DSingleExperiment(Routine):
         self.clip_val = clip_val
         self.noise_std = noise_std
         self.shuffle_grid = shuffle_grid
-        self.use_hilbert = use_hilbert
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
             self.y_idx = torch.randperm(64)
             self.y_inv = torch.argsort(self.y_idx)
-        if self.use_hilbert:
-            M = 64
-            dim_sizes = (M, M)
-
-            def generate_grid(size):
-                return np.linspace(0, size - 1, num=size)
-
-            grid_list = list(map(generate_grid, dim_sizes))
-            pos = np.stack(np.meshgrid(*grid_list)[::-1], axis=-1)
-            mesh_pos = rearrange(pos, 'm n d -> (m n) d')
-            indices = list(range(len(mesh_pos)))
-            orders = {}
-            for shape in 'DUNE':
-                orders[shape] = {}
-                curve = linearize(indices, mesh_pos, shape)
-                path = curve.get_path()
-                idx = mesh_pos[path].astype(int)
-                # idx.shape == [M * M, 2]
-
-                x, y = np.moveaxis(idx, 1, 0)
-                r = np.argsort(path)
-                # x.shape == y.shape == r.shape == [M]
-
-                self.register_buffer(f'{shape}x', torch.from_numpy(x))
-                self.register_buffer(f'{shape}y', torch.from_numpy(y))
-                self.register_buffer(f'{shape}r', torch.from_numpy(r))
-                orders[shape] = {'x': x, 'y': y, 'r': r, 'p': path}
-            self.conv.register_orders(orders)
 
     def forward(self, data):
         batch = {'data': data}
