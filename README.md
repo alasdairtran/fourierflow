@@ -3,8 +3,8 @@
 # Factorized Fourier Neural Operators
 
 This repository contains the code to reproduce the results in our [NeurIPS 2021
-ML4PS workshop](https://ml4physicalsciences.github.io/2021/) paper, Factorized
-Fourier Neural Operators.
+ML4PS workshop](https://ml4physicalsciences.github.io/2021/) paper, [Factorized
+Fourier Neural Operators](https://arxiv.org/abs/2111.13802).
 
 The Fourier Neural Operator (FNO) is a learning-based method for efficiently
 simulating partial differential equations. We propose the Factorized Fourier
@@ -17,6 +17,19 @@ still running an order of magnitude faster than a numerical solver, even when
 the problem setting is extended to include additional contexts such as
 viscosity and time-varying forces. This enables the same pretrained neural
 network to model vastly different conditions.
+
+Please cite with the following BibTeX:
+
+```raw
+@misc{Tran2021Factorized,
+  title         = {Factorized Fourier Neural Operators},
+  author        = {Alasdair Tran and Alexander Mathews and Lexing Xie and Cheng Soon Ong},
+  year          = {2021},
+  eprint        = {2111.13802},
+  archiveprefix = {arXiv},
+  primaryclass  = {cs.LG}
+}
+```
 
 ## Getting Started
 
