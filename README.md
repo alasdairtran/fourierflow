@@ -129,3 +129,8 @@ fourierflow plot flow
 # Create plots for the poster
 fourierflow plot poster
 ```
+
+## Acknowledgement
+
+Our model is based on the code of the original author of the Fourier Neural
+Operators paper: https://github.com/zongyi-li/fourier_neural_operator
