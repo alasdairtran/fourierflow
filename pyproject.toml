@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "fourierflow"
-version = "0.2.0"
-description = "Exploration of neural ODE processes and Fourier layers."
+version = "0.3.0"
+description = "Experiments with Fourier layers on simulation data."
 authors = ["Alasdair Tran <alasdair.tran@anu.edu.au>"]
 repository = "https://github.com/alasdairtran/fourierflow"
 
