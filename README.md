@@ -46,7 +46,7 @@ pyenv install 3.9.9
 pyenv local 3.9.9
 
 # Set up poetry
-curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
+curl -sSL https://install.python-poetry.org | python3 -
 export PATH="$HOME/.local/bin:$PATH"
 
 # Install all python dependencies
