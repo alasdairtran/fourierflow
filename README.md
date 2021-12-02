@@ -67,7 +67,7 @@ cp example.env .env
 export $(cat .env | xargs)
 
 # Alternatively, you can pass the paths to the system using env vars, e.g.
-FNO_DATA_ROOT=/My/Data/Location fourierflow
+DATA_ROOT=/My/Data/Location fourierflow train ...
 ```
 
 ## Navier Stokes Experiments

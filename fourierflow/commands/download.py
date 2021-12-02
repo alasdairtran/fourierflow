@@ -49,7 +49,7 @@ def fno():
     }
 
     startdir = os.getcwd()
-    workdir = os.path.expandvars('$FNO_DATA_ROOT')
+    workdir = os.path.expandvars('$DATA_ROOT/zongyi')
     os.makedirs(workdir, exist_ok=True)
     try:
         os.chdir(workdir)
