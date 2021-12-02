@@ -768,6 +768,54 @@ colors = ["colorama (>=0.4.3,<0.5.0)"]
 plugins = ["setuptools"]
 
 [[package]]
+name = "jax"
+version = "0.2.25"
+description = "Differentiate, compile, and transform Numpy code."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+absl-py = "*"
+numpy = ">=1.18"
+opt_einsum = "*"
+scipy = ">=1.2.1"
+typing_extensions = "*"
+
+[package.extras]
+cpu = ["jaxlib (==0.1.73)"]
+cuda = ["jaxlib (==0.1.73+cuda11.cudnn82)"]
+cuda11_cudnn805 = ["jaxlib (==0.1.73+cuda11.cudnn805)"]
+cuda11_cudnn82 = ["jaxlib (==0.1.73+cuda11.cudnn82)"]
+minimum-jaxlib = ["jaxlib (==0.1.69)"]
+tpu = ["jaxlib (==0.1.73)", "libtpu-nightly (==0.1.dev20211018)", "requests"]
+
+[[package]]
+name = "jax-cfd"
+version = "0.1.0"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3"
+develop = false
+
+[package.dependencies]
+jax = "*"
+numpy = "*"
+scipy = "*"
+
+[package.extras]
+data = ["matplotlib", "seaborn", "pillow", "xarray"]
+ml = ["dm-haiku", "einops", "gin-config"]
+tests = ["absl-py", "pytest", "pytest-xdist", "scikit-image"]
+
+[package.source]
+type = "git"
+url = "https://github.com/google/jax-cfd.git"
+reference = "f2446fe966386836680013d80f38eda4e0b48b53"
+resolved_reference = "f2446fe966386836680013d80f38eda4e0b48b53"
+
+[[package]]
 name = "jedi"
 version = "0.18.1"
 description = "An autocompletion tool for Python that can be used for text editors."
@@ -2377,7 +2425,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.9.9"
-content-hash = "98b4d3b45aacc1fd76bcd0c2342b641c41de235660ef0120836a4aa8d6267670"
+content-hash = "1f65a1b29d272ad7dc5a0ea975012957c0bdd29e006966a3b86fe407a13b7e89"
 
 [metadata.files]
 absl-py = [
@@ -2956,6 +3004,10 @@ isort = [
     {file = "isort-5.10.1-py3-none-any.whl", hash = "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7"},
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
+jax = [
+    {file = "jax-0.2.25.tar.gz", hash = "sha256:822e8d1e06257eaa0fdc4c0a0686c4556e9f33647fa2a766755f984786ae7446"},
+]
+jax-cfd = []
 jedi = [
     {file = "jedi-0.18.1-py2.py3-none-any.whl", hash = "sha256:637c9635fcf47945ceb91cd7f320234a7be540ded6f3e99a50cb6febdfd1ba8d"},
     {file = "jedi-0.18.1.tar.gz", hash = "sha256:74137626a64a99c8eb6ae5832d99b3bdd7d29a3850fe2aa80a4126b2a7d949ab"},

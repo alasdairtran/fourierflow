@@ -8,6 +8,7 @@ repository = "https://github.com/alasdairtran/fourierflow"
 [tool.poetry.dependencies]
 python = "~3.9.9"
 # poetry add einops entmax gdown hyperopt ipykernel jupyterlab \
+#   git+https://github.com/google/jax-cfd.git@f2446fe966386836680013d80f38eda4e0b48b5 \
 #   matplotlib moviepy pandas plotly poethepoet ptvsd pydocstyle \
 #   python-dotenv pytorch-lightning requests rich seaborn termcolor \
 #   tensorflow-gpu tfrecord torchdiffeq torchtyping typer wandb
@@ -17,6 +18,7 @@ gdown = "^4.2.0"
 hydra-core = "^1.1.1"
 hyperopt = "^0.2.7"
 ipykernel = "^6.5.1"
+jax-cfd = {git = "https://github.com/google/jax-cfd.git", rev = "f2446fe966386836680013d80f38eda4e0b48b53"}
 jupyterlab = "^3.2.4"
 matplotlib = "^3.5.0"
 moviepy = "^1.0.3"
