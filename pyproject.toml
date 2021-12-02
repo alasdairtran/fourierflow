@@ -55,6 +55,7 @@ fourierflow = 'fourierflow.commands.__main__:app'
 [tool.poe.tasks]
 # Remove when this is fixed: https://github.com/python-poetry/poetry/issues/2613
 install-torch-cuda11 = "python -m pip install --no-cache-dir -U torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu113 -f https://download.pytorch.org/whl/torch_stable.html"
+install-jax-cuda11 = "python -m pip install -U \"jax[cuda]\" -f https://storage.googleapis.com/jax-releases/jax_releases.html"
 
 [build-system]
 requires = ["poetry>=0.12"]
