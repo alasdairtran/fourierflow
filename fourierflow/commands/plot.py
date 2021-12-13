@@ -135,7 +135,7 @@ def flow(i: int = 0):
     fig = plt.figure(figsize=(6, 6))
     ax = plt.subplot(1, 1, 1)
 
-    data_path = './data/fourier/NavierStokes_V1e-5_N1200_T20.mat'
+    data_path = './data/zongyi/NavierStokes_V1e-5_N1200_T20.mat'
     data = scipy.io.loadmat(data_path)['u'].astype(np.float32)
 
     ims = []
