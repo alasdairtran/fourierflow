@@ -570,7 +570,7 @@ def plot_poster_pde_inference():
     sim_line = Line2D(range(1), range(1), color="white",
                       marker='o', markerfacecolor=pal[4])
     lines = [sim_line] + lines
-    labels = ['Crank–Nicolson method',
+    labels = ['Crank-Nicolson method',
               'FNO [Li et al., 2021a]',
               'F-FNO (our full model)']
     ax.legend(lines, labels)
