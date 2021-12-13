@@ -1,3 +1,9 @@
+"""Solve Navier-Stokes equations with the Crank-Nicolson method.
+
+Adapted from:
+https://github.com/zongyi-li/fourier_neural_operator/blob/master/data_generation/navier_stokes/ns_2d.py
+"""
+
 import math
 from enum import Enum
 
@@ -10,17 +16,33 @@ from tqdm import tqdm
 class Force(str, Enum):
     li = 'li'
     random = 'random'
+    none = 'none'
+    kolmogorov = 'kolmogorov'
 
 
-# w0: initial vorticity
-# f: forcing term
-#visc: viscosity (1/Re)
-# T: final time
-# delta_t: internal time-step for solve (descrease if blow-up)
-# record_steps: number of in-time snapshots to record
 def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles=None,
                            scaling=None, t_scaling=None, force=Force.li,
                            varying_force=False):
+    """Solve Navier-Stokes equations in 2D using Crank-Nicolson method.
+
+    Parameters
+    ----------
+    w0 : torch.Tensor
+        Initial vorticity field.
+
+    visc : float
+        Viscosity (1/Re).
+
+    T : float
+        Final time.
+
+    delta_t : float
+        Internal time-step for solve (descrease if blow-up).
+
+    record_steps : int
+        Number of in-time snapshots to record.
+
+    """
     seed = np.random.randint(1, 1000000000)
 
     # Grid size - must be power of 2
@@ -42,12 +64,21 @@ def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles=None,
         X, Y = torch.meshgrid(ft, ft, indexing='ij')
         f = 0.1*(torch.sin(2 * math.pi * (X + Y)) +
                  torch.cos(2 * math.pi * (X + Y)))
+    elif force == Force.kolmogorov:
+        ft = torch.linspace(0, 2 * np.pi, N + 1, device=w0.device)
+        ft = ft[0:-1]
+        X, Y = torch.meshgrid(ft, ft, indexing='ij')
+        f = -4 * torch.cos(4 * Y)
     elif force == Force.random and not varying_force:
         f = get_random_force(
             w0.shape[0], N, w0.device, cycles, scaling, 0, 0, seed)
+    else:
+        f = None
 
     # Forcing to Fourier space
-    if not varying_force:
+    if force == Force.none:
+        f_h = 0
+    elif not varying_force:
         f_h = torch.fft.fftn(f, dim=[-2, -1], norm='backward')
 
         # If same forcing for the whole batch
@@ -131,7 +162,9 @@ def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles=None,
         # Dealias
         F_h *= dealias
 
-        if varying_force:
+        if force == Force.none:
+            f_h = 0
+        elif varying_force:
             f = get_random_force(w0.shape[0], N, w0.device, cycles,
                                  scaling, t, t_scaling, seed)
             f_h = torch.fft.fftn(f, dim=[-2, -1], norm='backward')
@@ -161,7 +194,10 @@ def solve_navier_stokes_2d(w0, visc, T, delta_t, record_steps, cycles=None,
     if varying_force:
         f = fs
 
-    return sol.cpu().numpy(), f.cpu().numpy()
+    if force != Force.none:
+        f = f.cpu().numpy()
+
+    return sol.cpu().numpy(), f
 
 
 def get_random_force(b, s, device, cycles, scaling, t, t_scaling, seed):

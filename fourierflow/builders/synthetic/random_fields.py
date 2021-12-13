@@ -1,3 +1,8 @@
+"""Generate random Gaussian fields.
+
+Adapted from:
+https://github.com/zongyi-li/fourier_neural_operator/blob/master/data_generation/navier_stokes/random_fields.py
+"""
 import math
 
 import torch
@@ -50,7 +55,7 @@ class GaussianRF:
             self.sqrt_eig[0, 0, 0] = 0.0
 
         self.size = []
-        for j in range(self.n_dims):
+        for _ in range(self.n_dims):
             self.size.append(size)
 
         self.size = tuple(self.size)
