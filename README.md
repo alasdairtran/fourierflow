@@ -136,6 +136,13 @@ fourierflow plot flow
 fourierflow plot poster
 ```
 
+## Experiments with JAX-CFD
+
+```sh
+# Download jax-cfd datasets
+gsutil -m cp -r gs://gresearch/jax-cfd data/
+```
+
 ## Acknowledgement
 
 Our model is based on the code of the original author of the Fourier Neural
