@@ -1,3 +1,4 @@
+import math
 from typing import Optional
 
 import numpy as np
@@ -31,6 +32,8 @@ class Fourier2DSingleExperiment(Routine):
                  automatic_optimization: bool = False,
                  noise_std: float = 0.0,
                  shuffle_grid: bool = False,
+                 use_psi: bool = False,
+                 use_velocity: bool = False,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -53,11 +56,25 @@ class Fourier2DSingleExperiment(Routine):
         self.clip_val = clip_val
         self.noise_std = noise_std
         self.shuffle_grid = shuffle_grid
+        self.use_psi = use_psi
+        self.use_velocity = use_velocity
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
             self.y_idx = torch.randperm(64)
             self.y_inv = torch.argsort(self.y_idx)
+
+        # Wavenumbers in y-direction
+        k_y = torch.cat((
+            torch.arange(start=0, end=k_max, step=1),
+            torch.arange(start=-k_max, end=0, step=1)),
+            0).repeat(64, 1)
+        # Wavenumbers in x-direction
+        k_x = k_y.transpose(0, 1)
+        # Negative Laplacian in Fourier space
+        lap = 4 * (math.pi**2) * (k_x**2 + k_y**2)
+        lap[0, 0] = 1.0
+        self.register_buffer('lap', lap)
 
     def forward(self, data):
         batch = {'data': data}
@@ -94,6 +111,15 @@ class Fourier2DSingleExperiment(Routine):
         B, *dim_sizes, _ = x.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes]
+
+        if self.use_psi:
+            omega_hat = torch.fft.fftn(x, dim=[1, 2], norm='backward')
+            psi_hat = omega_hat / repeat(self.lap, 'm n -> b m n 1', b=B)
+            psi = torch.fft.ifftn(psi_hat, dim=[1, 2], norm='backward').real
+            x = torch.cat([x, psi], dim=-1)
+
+            if self.use_velocity:
+                pass
 
         if self.use_position:
             pos_feats = self.encode_positions(
@@ -149,8 +175,14 @@ class Fourier2DSingleExperiment(Routine):
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
 
-        xx = repeat(data, '... -> ... 1')
-        # xx.shape == [batch_size, *dim_sizes, total_steps, 1]
+        inputs = repeat(data, '... -> ... 1')
+        # inputs.shape == [batch_size, *dim_sizes, total_steps, 1]
+
+        if self.use_psi:
+            w_hat = torch.fft.fftn(inputs, dim=[1, 2], norm='backward')
+            psi_hat = w_hat / repeat(self.lap, 'm n -> b m n t 1', b=B, t=T)
+            psi = torch.fft.ifftn(psi_hat, dim=[1, 2], norm='backward').real
+            inputs = torch.cat([inputs, psi], dim=-1)
 
         if self.use_position:
             pos_feats = self.encode_positions(
@@ -162,11 +194,13 @@ class Fourier2DSingleExperiment(Routine):
 
             all_pos_feats = repeat(pos_feats, '... e -> ... t e', t=T)
 
-            xx = torch.cat([xx, all_pos_feats], dim=-1)
-            # xx.shape == [batch_size, *dim_sizes, total_steps, 3]
+            inputs = torch.cat([inputs, all_pos_feats], dim=-1)
+            # inputs.shape == [batch_size, *dim_sizes, total_steps, 3]
 
-        xx = xx[..., -self.n_steps-1:-1, :]
-        # xx.shape == [batch_size, *dim_sizes, n_steps, 3]
+        inputs = inputs[..., -self.n_steps-1:-1, :]
+        # inputs.shape == [batch_size, *dim_sizes, n_steps, 3]
+
+        xx = inputs
 
         if self.append_force:
             if len(batch['f'].shape) == 3:
@@ -193,14 +227,20 @@ class Fourier2DSingleExperiment(Routine):
         for t in range(self.n_steps):
             if t == 0:
                 x = xx[..., t, :]
-            elif self.use_position and self.append_force and self.append_mu:
-                x = torch.cat(
-                    [im, pos_feats, force[..., t, :], mu[..., t, :]], dim=-1)
-            elif self.use_position and self.append_force:
-                x = torch.cat([im, pos_feats, force[..., t, :]], dim=-1)
-            elif self.use_position:
-                x = torch.cat([im, pos_feats], dim=-1)
             else:
+                if self.use_psi:
+                    w_hat = torch.fft.fftn(im, dim=[1, 2], norm='backward')
+                    psi_hat = w_hat / \
+                        repeat(self.lap, 'm n -> b m n t', b=B, t=im.shape[-1])
+                    psi = torch.fft.ifftn(
+                        psi_hat, dim=[1, 2], norm='backward').real
+                    im = torch.cat([im, psi], dim=-1)
+                if self.use_position:
+                    im = torch.cat([im, pos_feats], dim=-1)
+                if self.append_force:
+                    im = torch.cat([im, force[..., t, :]], dim=-1)
+                if self.append_mu:
+                    im = torch.cat([im, mu[..., t, :]], dim=-1)
                 x = im
             # x.shape == [batch_size, *dim_sizes, 3]
 
