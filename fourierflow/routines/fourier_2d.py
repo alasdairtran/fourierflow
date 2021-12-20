@@ -15,7 +15,7 @@ class Fourier2DExperiment(Routine):
     def __init__(self,
                  conv: nn.Module,
                  n_steps: int,
-                 max_freq: int = 32,
+                 k_max: int = 32,
                  num_freq_bands: int = 8,
                  freq_base: int = 2,
                  use_fourier_position: bool = False,
@@ -28,7 +28,7 @@ class Fourier2DExperiment(Routine):
         self.n_steps = n_steps
         self.l2_loss = LpLoss(size_average=True)
         self.use_fourier_position = use_fourier_position
-        self.max_freq = max_freq
+        self.k_max = k_max
         self.num_freq_bands = num_freq_bands
         self.freq_base = freq_base
         self.append_pos = append_pos
@@ -67,7 +67,7 @@ class Fourier2DExperiment(Routine):
 
         # To get the fourier encodings, we will go one step further
         fourier_feats = fourier_encode(
-            pos, self.max_freq, self.num_freq_bands, base=self.freq_base)
+            pos, self.k_max, self.num_freq_bands, base=self.freq_base)
         # fourier_feats.shape == [*dim_sizes, n_dims, n_bands * 2 + 1]
 
         fourier_feats = rearrange(fourier_feats, '... n d -> ... (n d)')
