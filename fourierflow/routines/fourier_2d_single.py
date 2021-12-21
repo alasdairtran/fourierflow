@@ -32,7 +32,6 @@ class Fourier2DSingleExperiment(Routine):
                  automatic_optimization: bool = False,
                  noise_std: float = 0.0,
                  shuffle_grid: bool = False,
-                 use_psi: bool = False,
                  use_velocity: bool = False,
                  **kwargs):
         super().__init__(**kwargs)
@@ -56,7 +55,6 @@ class Fourier2DSingleExperiment(Routine):
         self.clip_val = clip_val
         self.noise_std = noise_std
         self.shuffle_grid = shuffle_grid
-        self.use_psi = use_psi
         self.use_velocity = use_velocity
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
@@ -74,6 +72,8 @@ class Fourier2DSingleExperiment(Routine):
         # Negative Laplacian in Fourier space
         lap = 4 * (math.pi**2) * (k_x**2 + k_y**2)
         lap[0, 0] = 1.0
+        self.register_buffer('k_x', k_x)
+        self.register_buffer('k_y', k_y)
         self.register_buffer('lap', lap)
 
     def forward(self, data):
@@ -112,14 +112,27 @@ class Fourier2DSingleExperiment(Routine):
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes]
 
-        if self.use_psi:
+        if self.use_velocity:
             omega_hat = torch.fft.fftn(x, dim=[1, 2], norm='backward')
             psi_hat = omega_hat / repeat(self.lap, 'm n -> b m n 1', b=B)
-            psi = torch.fft.ifftn(psi_hat, dim=[1, 2], norm='backward').real
-            x = torch.cat([x, psi], dim=-1)
+            k_y = repeat(self.k_y, 'm n -> b m n 1', b=B)
+            k_x = repeat(self.k_x, 'm n -> b m n 1', b=B)
 
-            if self.use_velocity:
-                pass
+            # Velocity field in x-direction = psi_y
+            q = psi_hat.clone()
+            q_real_temp = q.real.clone()
+            q.real = -2 * math.pi * k_y * q.imag
+            q.imag = 2 * math.pi * k_y * q_real_temp
+            q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
+
+            # Velocity field in y-direction = -psi_x
+            v = psi_hat.clone()
+            v_real_temp = v.real.clone()
+            v.real = 2 * math.pi * k_x * v.imag
+            v.imag = -2 * math.pi * k_x * v_real_temp
+            v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
+
+            x = torch.cat([x, q, v], dim=-1)
 
         if self.use_position:
             pos_feats = self.encode_positions(
@@ -178,11 +191,27 @@ class Fourier2DSingleExperiment(Routine):
         inputs = repeat(data, '... -> ... 1')
         # inputs.shape == [batch_size, *dim_sizes, total_steps, 1]
 
-        if self.use_psi:
+        if self.use_velocity:
             w_hat = torch.fft.fftn(inputs, dim=[1, 2], norm='backward')
             psi_hat = w_hat / repeat(self.lap, 'm n -> b m n t 1', b=B, t=T)
-            psi = torch.fft.ifftn(psi_hat, dim=[1, 2], norm='backward').real
-            inputs = torch.cat([inputs, psi], dim=-1)
+            k_y = repeat(self.k_y, 'm n -> b m n t 1', b=B, t=T)
+            k_x = repeat(self.k_x, 'm n -> b m n t 1', b=B, t=T)
+
+            # Velocity field in x-direction = psi_y
+            q = psi_hat.clone()
+            q_real_temp = q.real.clone()
+            q.real = -2 * math.pi * k_y * q.imag
+            q.imag = 2 * math.pi * k_y * q_real_temp
+            q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
+
+            # Velocity field in y-direction = -psi_x
+            v = psi_hat.clone()
+            v_real_temp = v.real.clone()
+            v.real = 2 * math.pi * k_x * v.imag
+            v.imag = -2 * math.pi * k_x * v_real_temp
+            v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
+
+            inputs = torch.cat([inputs, q, v], dim=-1)
 
         if self.use_position:
             pos_feats = self.encode_positions(
@@ -228,13 +257,30 @@ class Fourier2DSingleExperiment(Routine):
             if t == 0:
                 x = xx[..., t, :]
             else:
-                if self.use_psi:
+                if self.use_velocity:
                     w_hat = torch.fft.fftn(im, dim=[1, 2], norm='backward')
                     psi_hat = w_hat / \
                         repeat(self.lap, 'm n -> b m n t', b=B, t=im.shape[-1])
-                    psi = torch.fft.ifftn(
-                        psi_hat, dim=[1, 2], norm='backward').real
-                    im = torch.cat([im, psi], dim=-1)
+                    k_y = repeat(self.k_y, 'm n -> b m n t',
+                                 b=B, t=im.shape[-1])
+                    k_x = repeat(self.k_x, 'm n -> b m n t',
+                                 b=B, t=im.shape[-1])
+
+                    # Velocity field in x-direction = psi_y
+                    q = psi_hat.clone()
+                    q_real_temp = q.real.clone()
+                    q.real = -2 * math.pi * k_y * q.imag
+                    q.imag = 2 * math.pi * k_y * q_real_temp
+                    q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
+
+                    # Velocity field in y-direction = -psi_x
+                    v = psi_hat.clone()
+                    v_real_temp = v.real.clone()
+                    v.real = 2 * math.pi * k_x * v.imag
+                    v.imag = -2 * math.pi * k_x * v_real_temp
+                    v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
+
+                    im = torch.cat([im, q, v], dim=-1)
                 if self.use_position:
                     im = torch.cat([im, pos_feats], dim=-1)
                 if self.append_force:
