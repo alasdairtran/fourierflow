@@ -11,6 +11,7 @@ builder:
   _target_: fourierflow.builders.NavierStokes4Builder
   train_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/train_2048x2048_64x64.nc
   valid_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc
+  k: 10
   batch_size: 19
   n_workers: 4
 routine:

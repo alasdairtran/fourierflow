@@ -8,16 +8,16 @@ from .base import Builder
 class NavierStokes4Builder(Builder):
     name = 'navier_stokes_4'
 
-    def __init__(self, train_path: str, valid_path: str, n_workers: int, batch_size: int):
+    def __init__(self, train_path: str, valid_path: str, k: int, n_workers: int, batch_size: int):
         super().__init__()
         self.n_workers = n_workers
         self.batch_size = batch_size
 
-        train_ds = xarray.open_dataset(train_path).thin(time=10)
+        train_ds = xarray.open_dataset(train_path)
         train_ds['vorticity'] = xru.vorticity_2d(train_ds)
         train_w = train_ds['vorticity'].values
         train_w = train_w.transpose(0, 2, 3, 1)
-        # train_w.shape == [32, 64, 64, 488]
+        # train_w.shape == [32, 64, 64, 4880]
 
         eval_ds = xarray.open_dataset(valid_path)
         eval_ds['vorticity'] = xru.vorticity_2d(eval_ds)
@@ -25,7 +25,7 @@ class NavierStokes4Builder(Builder):
         eval_w = eval_w.transpose(0, 2, 3, 1)
         # eval_w.shape == [32, 64, 64, 488]
 
-        self.train_dataset = NavierStokesTrainingDataset(train_w)
+        self.train_dataset = NavierStokesTrainingDataset(train_w, k)
         self.valid_dataset = NavierStokesDataset(eval_w)
         self.test_dataset = NavierStokesDataset(eval_w)
 
@@ -58,11 +58,12 @@ class NavierStokes4Builder(Builder):
 
 
 class NavierStokesTrainingDataset(Dataset):
-    def __init__(self, data):
+    def __init__(self, data, k):
         self.data = data
+        self.k = k
 
         self.B = self.data.shape[0]
-        self.T = self.data.shape[-1] - 1
+        self.T = self.data.shape[-1] - self.k
 
     def __len__(self):
         return self.B * self.T
@@ -72,7 +73,7 @@ class NavierStokesTrainingDataset(Dataset):
         t = idx % self.T
         return {
             'x': self.data[b, :, :, t:t+1],
-            'y': self.data[b, :, :, t+1:t+2],
+            'y': self.data[b, :, :, t+self.k:t+self.k+1],
         }
 
 
