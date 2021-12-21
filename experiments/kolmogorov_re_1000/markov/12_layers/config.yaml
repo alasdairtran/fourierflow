@@ -11,7 +11,10 @@ builder:
   _target_: fourierflow.builders.NavierStokes4Builder
   train_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/train_2048x2048_64x64.nc
   valid_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc
-  k: 10
+  test_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc
+  train_k: 80
+  valid_k: 8
+  test_k: 8
   batch_size: 32
   n_workers: 4
 routine:
@@ -31,7 +34,7 @@ routine:
     dropout: 0.0
     in_dropout: 0.0
     avg_outs: true
-  n_steps: 10
+  n_steps: 60
   max_accumulations: 1000
   noise_std: 0.01
   optimizer:
@@ -44,7 +47,7 @@ routine:
       _target_: functools.partial
       _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
       num_warmup_steps: 500
-      num_training_steps: 48700
+      num_training_steps: 48000
       num_cycles: 0.5
     name: learning_rate
     interval: step

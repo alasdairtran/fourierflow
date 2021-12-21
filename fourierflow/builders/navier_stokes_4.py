@@ -8,7 +8,8 @@ from .base import Builder
 class NavierStokes4Builder(Builder):
     name = 'navier_stokes_4'
 
-    def __init__(self, train_path: str, valid_path: str, k: int, n_workers: int, batch_size: int):
+    def __init__(self, train_path: str, valid_path: str, test_path: str, train_k: int,
+                 valid_k: int, test_k: int, n_workers: int, batch_size: int):
         super().__init__()
         self.n_workers = n_workers
         self.batch_size = batch_size
@@ -19,15 +20,21 @@ class NavierStokes4Builder(Builder):
         train_w = train_w.transpose(0, 2, 3, 1)
         # train_w.shape == [32, 64, 64, 4880]
 
-        eval_ds = xarray.open_dataset(valid_path)
-        eval_ds['vorticity'] = xru.vorticity_2d(eval_ds)
-        eval_w = eval_ds['vorticity'].values
-        eval_w = eval_w.transpose(0, 2, 3, 1)
-        # eval_w.shape == [32, 64, 64, 488]
+        valid_ds = xarray.open_dataset(valid_path)
+        valid_ds['vorticity'] = xru.vorticity_2d(valid_ds)
+        valid_w = valid_ds['vorticity'].values
+        valid_w = valid_w.transpose(0, 2, 3, 1)
+        # valid_w.shape == [32, 64, 64, 488]
 
-        self.train_dataset = NavierStokesTrainingDataset(train_w, k)
-        self.valid_dataset = NavierStokesDataset(eval_w)
-        self.test_dataset = NavierStokesDataset(eval_w)
+        test_ds = xarray.open_dataset(test_path)
+        test_ds['vorticity'] = xru.vorticity_2d(test_ds)
+        test_w = test_ds['vorticity'].values
+        test_w = test_w.transpose(0, 2, 3, 1)
+        # valid_w.shape == [32, 64, 64, 488]
+
+        self.train_dataset = NavierStokesTrainingDataset(train_w, train_k)
+        self.valid_dataset = NavierStokesDataset(valid_w, valid_k)
+        self.test_dataset = NavierStokesDataset(test_w, test_k)
 
     def train_dataloader(self) -> DataLoader:
         loader = DataLoader(self.train_dataset,
@@ -78,8 +85,9 @@ class NavierStokesTrainingDataset(Dataset):
 
 
 class NavierStokesDataset(Dataset):
-    def __init__(self, data):
+    def __init__(self, data, k):
         self.data = data
+        self.k = k
         self.B = self.data.shape[0]
 
     def __len__(self):
@@ -87,5 +95,5 @@ class NavierStokesDataset(Dataset):
 
     def __getitem__(self, b):
         return {
-            'data': self.data[b],
+            'data': self.data[b, :, :, ::self.k],
         }
