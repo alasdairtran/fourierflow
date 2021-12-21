@@ -65,7 +65,7 @@ class NavierStokesTrainingDataset(Dataset):
         return self.B * self.T
 
     def __getitem__(self, idx):
-        b = idx // self.B
+        b = idx // self.T
         t = idx % self.T
         if self.constant_force:
             f = self.f[b, ::self.ssr, ::self.ssr]
