@@ -1,0 +1,78 @@
+wandb:
+  project: kolmogorov_re_1000
+  group: markov/24_layers_2
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+  log_model: all
+builder:
+  _target_: fourierflow.builders.NavierStokes4Builder
+  train_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/train_2048x2048_64x64.nc
+  valid_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc
+  test_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc
+  train_k: 20
+  valid_k: 2
+  test_k: 2
+  batch_size: 32
+  n_workers: 4
+routine:
+  _target_: fourierflow.routines.Fourier2DSingleExperiment
+  conv:
+    _target_: fourierflow.modules.SimpleBlock2dFactorizedParallel
+    modes: 16
+    width: 64
+    linear_out: true
+    n_layers: 24
+    input_dim: 3
+    share_weight: true
+    factor: 4
+    ff_weight_norm: true
+    next_input: add
+    gain: 0.1
+    dropout: 0.0
+    in_dropout: 0.0
+    avg_outs: true
+  n_steps: 243
+  max_accumulations: 1000
+  noise_std: 0.01
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.AdamW}"]
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
+      num_warmup_steps: 500
+      num_training_steps: 48600
+      num_cycles: 0.5
+    name: learning_rate
+    interval: step
+    frequency: 1
+    monitor: null
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 11 # 1 accumulation epoch + 10 training epochs
+  stochastic_weight_avg: false
+  log_every_n_steps: 100
+  # Debugging parameters
+  track_grad_norm: -1 # 2
+  fast_dev_run: false # 2
+  limit_train_batches: 1.0
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+    save_top_k: 1
+    save_last: false # not needed when save_top_k == 1
+    monitor: null # valid_loss
+    mode: min
+    every_n_train_steps: null
+    every_n_epochs: 1
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4
