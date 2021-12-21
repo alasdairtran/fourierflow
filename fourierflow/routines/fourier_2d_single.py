@@ -312,10 +312,23 @@ class Fourier2DSingleExperiment(Routine):
             if 'forecast_list' in out:
                 pred_layer_list.append(out['forecast_list'])
 
-        loss /= self.n_steps
-        loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
+        # pred.shape == [batch_size, *dim_sizes, n_steps]
+        # yy.shape == [batch_size, *dim_sizes, n_steps]
 
-        return loss, loss_full, pred, pred_layer_list, step_losses
+        pred_norm = torch.norm(pred, dim=[1, 2], keepdim=True)
+        yy_norm = torch.norm(yy, dim=[1, 2], keepdim=True)
+        p = (pred / pred_norm) * (yy / yy_norm)
+        p = p.sum(dim=[1, 2]).mean(dim=0)
+        # p.shape == [n_steps]
+
+        has_diverged = p < 0.95
+        diverged_t = has_diverged.nonzero()[0, 0]
+
+        loss /= self.n_steps
+        loss_full = self.l2_loss(pred.reshape(
+            B, -1), yy.reshape(B, -1))
+
+        return loss, loss_full, pred, pred_layer_list, step_losses, diverged_t
 
     def training_step(self, batch, batch_idx):
         # Accumulate normalization stats in the first epoch
@@ -348,9 +361,11 @@ class Fourier2DSingleExperiment(Routine):
             return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list, _ = self._valid_step(batch)
+        loss, loss_full, preds, pred_list, _, diverged_t = self._valid_step(
+            batch)
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
+        self.log('valid_diverge_t', diverged_t, prog_bar=True)
 
         if batch_idx == 0:
             data = batch['data']
@@ -366,8 +381,10 @@ class Fourier2DSingleExperiment(Routine):
                         expt, layer[0], f'layer {i} t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _, step_losses = self._valid_step(batch)
+        loss, loss_full, _, _, step_losses, diverged_t = self._valid_step(
+            batch)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
+        self.log('test_diverge_t', diverged_t, prog_bar=True)
         for i in range(len(step_losses)):
             self.log(f'test_loss_{i}', step_losses[i])
