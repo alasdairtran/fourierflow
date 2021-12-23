@@ -118,6 +118,7 @@ def main(config_dir: str,
                          plugins=plugins,
                          weights_save_path=config_dir,
                          resume_from_checkpoint=chkpt_path,
+                         enable_model_summary=False,
                          **OmegaConf.to_container(config.trainer))
 
     # Tuning only has an effect when either auto_scale_batch_size or
