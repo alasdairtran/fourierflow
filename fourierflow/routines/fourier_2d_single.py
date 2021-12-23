@@ -367,7 +367,7 @@ class Fourier2DSingleExperiment(Routine):
             batch)
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
-        self.log('valid_diverge_t', diverged_t, prog_bar=True)
+        self.log('valid_diverge_t', float(diverged_t), prog_bar=True)
 
         if batch_idx == 0:
             data = batch['data']
