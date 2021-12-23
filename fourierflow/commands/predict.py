@@ -5,11 +5,13 @@ from pathlib import Path
 from typing import List, Optional
 
 import hydra
+import jax_cfd.data.xarray_utils as xru
 import numpy as np
 import ptvsd
 import pytorch_lightning as pl
 import scipy.io
 import torch
+import xarray
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
@@ -77,15 +79,24 @@ def main(config_dir: Optional[str] = Argument(None),
     routine = instantiate(config.routine)
     routine.load_lightning_model_state(str(checkpoint_path), map_location)
 
-    data_path = 'data/fourier/NavierStokes_V1e-5_N1200_T20.mat'
-    data = scipy.io.loadmat(data_path)['u'].astype(np.float32)[:512]
-    data = torch.from_numpy(data).cuda()
+    if 'kolmogorov' in config_dir:
+        test_path = 'data/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc'
+        test_ds = xarray.open_dataset(test_path)
+        test_ds['vorticity'] = xru.vorticity_2d(test_ds)
+        test_w = test_ds['vorticity'].values
+        test_w = test_w.transpose(0, 2, 3, 1)
+        data = torch.from_numpy(test_w).cuda()[0:1]
+    else:
+        data_path = 'data/fourier/NavierStokes_V1e-5_N1200_T20.mat'
+        data = scipy.io.loadmat(data_path)['u'].astype(np.float32)[:512]
+        data = torch.from_numpy(data).cuda()
+
     routine = routine.cuda()
     start = time.time()
     with torch.no_grad():
         routine(data)
     elasped = time.time() - start
-    wandb_logger.routine.log({'inference_time': elasped})
+    wandb_logger.experiment.log({'inference_time': elasped})
 
 
 if __name__ == "__main__":
