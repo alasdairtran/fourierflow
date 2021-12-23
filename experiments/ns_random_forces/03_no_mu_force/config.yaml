@@ -1,5 +1,5 @@
 wandb:
-  project: ns-force-mu
+  project: ns_random_forces
   group: 03_no_mu_force
   tags:
     - pde

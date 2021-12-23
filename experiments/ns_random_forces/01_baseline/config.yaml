@@ -1,6 +1,6 @@
 wandb:
-  project: ns-time-varying-force
-  group: 03_no_mu_force
+  project: ns_random_forces
+  group: 01_baseline
   tags:
     - pde
     - navier-stokes
@@ -8,7 +8,7 @@ wandb:
   notes: ""
 builder:
   _target_: fourierflow.builders.NSContextualBuilder
-  data_path: ${oc.env:DATA_ROOT}/navier-stokes/random_varying_force_mu.h5
+  data_path: ${oc.env:DATA_ROOT}/navier-stokes/random_force_mu.h5
   ssr: 4 # sub-sampling rate
   k: 10 # the number of steps between input and output
   batch_size: 19
@@ -21,7 +21,7 @@ routine:
     width: 64
     linear_out: true
     n_layers: 24
-    input_dim: 3
+    input_dim: 5
     share_weight: true
     factor: 4
     ff_weight_norm: true
@@ -33,8 +33,8 @@ routine:
   n_steps: 10
   max_accumulations: 10000
   noise_std: 0.01
-  append_force: false
-  append_mu: false
+  append_force: true
+  append_mu: true
   optimizer:
     _target_: functools.partial
     _args_: ["${get_method: torch.optim.AdamW}"]

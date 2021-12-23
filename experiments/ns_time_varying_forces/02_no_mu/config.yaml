@@ -1,5 +1,5 @@
 wandb:
-  project: ns-time-varying-force
+  project: ns_time_varying_forces
   group: 02_no_mu
   tags:
     - pde
