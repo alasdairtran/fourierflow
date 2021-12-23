@@ -33,6 +33,7 @@ class Grid2DMarkovExperiment(Routine):
                  noise_std: float = 0.0,
                  shuffle_grid: bool = False,
                  use_velocity: bool = False,
+                 learn_difference: bool = False,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -56,25 +57,27 @@ class Grid2DMarkovExperiment(Routine):
         self.noise_std = noise_std
         self.shuffle_grid = shuffle_grid
         self.use_velocity = use_velocity
+        self.learn_difference = learn_difference
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
             self.y_idx = torch.randperm(64)
             self.y_inv = torch.argsort(self.y_idx)
 
-        # Wavenumbers in y-direction
-        k_y = torch.cat((
-            torch.arange(start=0, end=k_max, step=1),
-            torch.arange(start=-k_max, end=0, step=1)),
-            0).repeat(64, 1)
-        # Wavenumbers in x-direction
-        k_x = k_y.transpose(0, 1)
-        # Negative Laplacian in Fourier space
-        lap = 4 * (math.pi**2) * (k_x**2 + k_y**2)
-        lap[0, 0] = 1.0
-        self.register_buffer('k_x', k_x)
-        self.register_buffer('k_y', k_y)
-        self.register_buffer('lap', lap)
+        if self.use_velocity:
+            # Wavenumbers in y-direction
+            k_y = torch.cat((
+                torch.arange(start=0, end=k_max, step=1),
+                torch.arange(start=-k_max, end=0, step=1)),
+                0).repeat(64, 1)
+            # Wavenumbers in x-direction
+            k_x = k_y.transpose(0, 1)
+            # Negative Laplacian in Fourier space
+            lap = 4 * (math.pi**2) * (k_x**2 + k_y**2)
+            lap[0, 0] = 1.0
+            self.register_buffer('k_x', k_x)
+            self.register_buffer('k_y', k_y)
+            self.register_buffer('lap', lap)
 
     def forward(self, data):
         batch = {'data': data}
@@ -107,7 +110,7 @@ class Grid2DMarkovExperiment(Routine):
         return fourier_feats
 
     def _build_features(self, batch):
-        x = batch['x']
+        x = batch['dx'] if self.learn_difference else batch['x']
         B, *dim_sizes, _ = x.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes]
@@ -178,17 +181,22 @@ class Grid2DMarkovExperiment(Routine):
         # im.shape == [batch_size * time, *dim_sizes, 1]
 
         BN = im.shape[0]
-        loss = self.l2_loss(im.reshape(BN, -1), batch['y'].reshape(BN, -1))
+        targets = batch['dy'] if self.learn_difference else batch['y']
+        loss = self.l2_loss(im.reshape(BN, -1), targets.reshape(BN, -1))
 
         return loss
 
     def _valid_step(self, batch):
         data = batch['data']
-        B, *dim_sizes, T = data.shape
+        inputs = data
+        if self.learn_difference:
+            inputs = inputs[..., 1:] - inputs[..., :-1]
+
+        B, *dim_sizes, T = inputs.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes, total_steps]
 
-        inputs = repeat(data, '... -> ... 1')
+        inputs = repeat(inputs, '... -> ... 1')
         # inputs.shape == [batch_size, *dim_sizes, total_steps, 1]
 
         if self.use_velocity:
@@ -246,7 +254,12 @@ class Grid2DMarkovExperiment(Routine):
                         m=X, n=Y, t=xx.shape[-2])
             xx = torch.cat([xx, mu], dim=-1)
 
-        yy = data[:, ..., -self.n_steps:]
+        if self.learn_difference:
+            yy = data[:, ..., -self.n_steps:] - \
+                data[:, ..., -self.n_steps-1:-1]
+            raw_preds = [data[:, ..., -self.n_steps-1:-self.n_steps]]
+        else:
+            yy = data[:, ..., -self.n_steps:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
         loss = 0
@@ -309,15 +322,23 @@ class Grid2DMarkovExperiment(Routine):
             step_losses.append(l)
             loss += l
             pred = im if t == 0 else torch.cat((pred, im), dim=-1)
+            if self.learn_difference:
+                raw_preds.append(im + raw_preds[-1])
             if 'forecast_list' in out:
                 pred_layer_list.append(out['forecast_list'])
 
         # pred.shape == [batch_size, *dim_sizes, n_steps]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
-        pred_norm = torch.norm(pred, dim=[1, 2], keepdim=True)
-        yy_norm = torch.norm(yy, dim=[1, 2], keepdim=True)
-        p = (pred / pred_norm) * (yy / yy_norm)
+        targets = data[:, ..., -self.n_steps:]
+        if self.learn_difference:
+            preds = torch.cat(raw_preds[1:], dim=-1)
+        else:
+            preds = pred
+
+        pred_norm = torch.norm(preds, dim=[1, 2], keepdim=True)
+        targets_norm = torch.norm(targets, dim=[1, 2], keepdim=True)
+        p = (preds / pred_norm) * (targets / targets_norm)
         p = p.sum(dim=[1, 2]).mean(dim=0)
         # p.shape == [n_steps]
 
@@ -327,8 +348,8 @@ class Grid2DMarkovExperiment(Routine):
             diverged_idx) > 0 else len(has_diverged)
 
         loss /= self.n_steps
-        loss_full = self.l2_loss(pred.reshape(
-            B, -1), yy.reshape(B, -1))
+        loss_full = self.l2_loss(preds.reshape(
+            B, -1), targets.reshape(B, -1))
 
         return loss, loss_full, pred, pred_layer_list, step_losses, diverged_t
 
@@ -387,6 +408,6 @@ class Grid2DMarkovExperiment(Routine):
             batch)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
-        self.log('test_diverge_t', diverged_t, prog_bar=True)
+        self.log('test_diverge_t', float(diverged_t), prog_bar=True)
         for i in range(len(step_losses)):
             self.log(f'test_loss_{i}', step_losses[i])

@@ -65,15 +65,22 @@ class NSMarkovBuilder(Builder):
 class NavierStokesTrainingDataset(Dataset):
     def __init__(self, data):
         # data.shape == [B, X, Y, T]
-        x = data[..., :-1]
-        y = data[..., 1:]
+        x = data[..., 1:-1]
+        y = data[..., 2:]
+
+        dx = data[..., 1:-1] - data[..., :-2]
+        dy = data[..., 2:] - data[..., 1:-1]
 
         x = rearrange(x, 'b m n t -> (b t) m n 1')
         y = rearrange(y, 'b m n t -> (b t) m n 1')
-        # x.shape == [19000, 64, 64, 1]
+
+        dx = rearrange(dx, 'b m n t -> (b t) m n 1')
+        dy = rearrange(dy, 'b m n t -> (b t) m n 1')
 
         self.x = x
         self.y = y
+        self.dx = dx
+        self.dy = dy
 
     def __len__(self):
         return self.x.shape[0]
@@ -82,6 +89,8 @@ class NavierStokesTrainingDataset(Dataset):
         return {
             'x': self.x[idx],
             'y': self.y[idx],
+            'dx': self.dx[idx],
+            'dy': self.dy[idx],
         }
 
 
