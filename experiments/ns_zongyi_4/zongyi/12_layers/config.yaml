@@ -18,7 +18,7 @@ builder:
 routine:
   _target_: fourierflow.routines.Fourier2DExperiment
   conv:
-    _target_: fourierflow.modules.SimpleBlock2d
+    _target_: fourierflow.modules.FNOZongyi2DBlock
     modes1: 12
     modes2: 12
     width: 20

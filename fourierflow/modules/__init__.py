@@ -1,6 +1,6 @@
-from .fourier_2d import SimpleBlock2d
-from .fourier_2d_factorized_parallel import SimpleBlock2dFactorizedParallel
-from .fourier_2d_full import SimpleBlock2dFull
+from .fno_factorized_2d import FNOFactorized2DBlock
+from .fno_plus_2d import FNOPlus2DBlock
+from .fno_zongyi_2d import FNOZongyi2DBlock
 from .linear import GehringLinear, WNLinear
 from .normalizer import Normalizer
 from .position import fourier_encode

@@ -45,8 +45,7 @@ class SpectralConv2d(nn.Module):
         if not self.fourier_weight:
             self.fourier_weight = nn.ParameterList([])
             for _ in range(2):
-                weight = torch.FloatTensor(
-                    in_dim, out_dim, n_modes, n_modes, 2)
+                weight = torch.FloatTensor(in_dim, out_dim, n_modes, 2)
                 param = nn.Parameter(weight)
                 nn.init.xavier_normal_(param)
                 self.fourier_weight.append(param)
@@ -78,27 +77,43 @@ class SpectralConv2d(nn.Module):
         B, I, M, N = x.shape
 
         # # # Dimesion Y # # #
-        x_ft = torch.fft.rfft2(x, s=(M, N), norm='ortho')
+        x_fty = torch.fft.rfft(x, dim=-1, norm='ortho')
         # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1]
 
-        out_ft = x_ft.new_zeros(B, I, N, M // 2 + 1)
+        out_ft = x_fty.new_zeros(B, I, N, M // 2 + 1)
         # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
         if self.mode == 'full':
-            out_ft[:, :, :self.n_modes, :self.n_modes] = torch.einsum(
-                "bixy,ioxy->boxy",
-                x_ft[:, :, :self.n_modes, :self.n_modes],
+            out_ft[:, :, :, :self.n_modes] = torch.einsum(
+                "bixy,ioy->boxy",
+                x_fty[:, :, :, :self.n_modes],
                 torch.view_as_complex(self.fourier_weight[0]))
+        elif self.mode == 'low-pass':
+            out_ft[:, :, :, :self.n_modes] = x_fty[:, :, :, :self.n_modes]
 
-            out_ft[:, :, -self.n_modes:, :self.n_modes] = torch.einsum(
-                "bixy,ioxy->boxy",
-                x_ft[:, :, -self.n_modes:, :self.n_modes],
+        xy = torch.fft.irfft(out_ft, n=N, dim=-1, norm='ortho')
+        # x.shape == [batch_size, in_dim, grid_size, grid_size]
+
+        # # # Dimesion X # # #
+        x_ftx = torch.fft.rfft(x, dim=-2, norm='ortho')
+        # x_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size]
+
+        out_ft = x_ftx.new_zeros(B, I, N // 2 + 1, M)
+        # out_ft.shape == [batch_size, in_dim, grid_size // 2 + 1, grid_size, 2]
+
+        if self.mode == 'full':
+            out_ft[:, :, :self.n_modes, :] = torch.einsum(
+                "bixy,iox->boxy",
+                x_ftx[:, :, :self.n_modes, :],
                 torch.view_as_complex(self.fourier_weight[1]))
         elif self.mode == 'low-pass':
-            raise
+            out_ft[:, :, :self.n_modes, :] = x_ftx[:, :, :self.n_modes, :]
 
-        x = torch.fft.irfft2(out_ft, s=(M, N), norm='ortho')
+        xx = torch.fft.irfft(out_ft, n=M, dim=-2, norm='ortho')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
+
+        # # Combining Dimensions # #
+        x = xx + xy
 
         x = rearrange(x, 'b i m n -> b m n i')
         # x.shape == [batch_size, grid_size, grid_size, out_dim]
@@ -106,7 +121,7 @@ class SpectralConv2d(nn.Module):
         return x
 
 
-class SimpleBlock2dFull(nn.Module):
+class FNOFactorized2DBlock(nn.Module):
     def __init__(self, modes, width, input_dim=12, dropout=0.0, in_dropout=0.0,
                  n_layers=4, linear_out: bool = False, share_weight: bool = False,
                  avg_outs=False, next_input='subtract', share_fork=False, factor=2,
@@ -151,7 +166,7 @@ class SimpleBlock2dFull(nn.Module):
         if share_weight:
             self.fourier_weight = nn.ParameterList([])
             for _ in range(2):
-                weight = torch.FloatTensor(width, width, modes, modes, 2)
+                weight = torch.FloatTensor(width, width, modes, 2)
                 param = nn.Parameter(weight)
                 nn.init.xavier_normal_(param, gain=gain)
                 self.fourier_weight.append(param)

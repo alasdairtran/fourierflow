@@ -18,7 +18,7 @@ builder:
 routine:
   _target_: fourierflow.routines.Fourier2DSingleExperiment
   conv:
-    _target_: fourierflow.modules.SimpleBlock2dFull
+    _target_: fourierflow.modules.FNOPlus2DBlock
     modes: 16
     width: 64
     linear_out: true

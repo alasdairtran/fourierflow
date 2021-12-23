@@ -75,9 +75,9 @@ class SpectralConv2d(nn.Module):
         return x
 
 
-class SimpleBlock2d(nn.Module):
+class FNOZongyi2DBlock(nn.Module):
     def __init__(self, modes1, modes2, width, input_dim=12, dropout=0.1, n_layers=4, residual=False, conv_residual=True):
-        super(SimpleBlock2d, self).__init__()
+        super().__init__()
 
         """
         The overall network. It contains 4 layers of the Fourier layer.
