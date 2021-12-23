@@ -50,9 +50,6 @@ routine:
       num_training_steps: 100000
       num_cycles: 0.5
     name: learning_rate
-    interval: step
-    frequency: 1
-    monitor: null
 trainer:
   gpus: 1
   precision: 32
