@@ -8,7 +8,7 @@ wandb:
   notes: ""
 builder:
   _target_: fourierflow.builders.NSContextualBuilder
-  data_path: ${oc.env:DATA_ROOT}/navier-stokes/random_varying_force_mu.h5
+  data_path: ${oc.env:DATA_ROOT}/ns_contextual/ns_time_varying_forces.h5
   ssr: 4 # sub-sampling rate
   k: 10 # the number of steps between input and output
   batch_size: 19

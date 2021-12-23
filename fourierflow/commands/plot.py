@@ -81,7 +81,7 @@ def complexity():
 
 @app.command()
 def heatmaps():
-    data_path = './data/navier-stokes/random_varying_force_mu.h5'
+    data_path = './data/ns_contextual/ns_time_varying_forces.h5'
     h5f = h5py.File(data_path)
 
     plot_heatmap(h5f['train']['f'][897, ..., 50], cmap='PuOr',
