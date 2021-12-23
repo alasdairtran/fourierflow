@@ -8,7 +8,7 @@ wandb:
   notes: ""
   log_model: all
 builder:
-  _target_: fourierflow.builders.NavierStokes2Builder
+  _target_: fourierflow.builders.NSMarkovBuilder
   data_path: ${oc.env:DATA_ROOT}/zongyi/NavierStokes_V1e-5_N1200_T20.mat
   train_size: 1000
   test_size: 200

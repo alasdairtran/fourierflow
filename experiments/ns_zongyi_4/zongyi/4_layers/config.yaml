@@ -7,7 +7,7 @@ wandb:
     - fourier
   notes: Reproduced experiment of Li et al (2020)
 builder:
-  _target_: fourierflow.builders.NavierStokesBuilder
+  _target_: fourierflow.builders.NSZongyiBuilder
   data_path: ${oc.env:DATA_ROOT}/zongyi/NavierStokes_V1e-5_N1200_T20.mat
   train_size: 1000
   test_size: 200

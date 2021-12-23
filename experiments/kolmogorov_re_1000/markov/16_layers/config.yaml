@@ -8,7 +8,7 @@ wandb:
   notes: ""
   log_model: all
 builder:
-  _target_: fourierflow.builders.NavierStokes4Builder
+  _target_: fourierflow.builders.KolmogorovBuilder
   train_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/train_2048x2048_64x64.nc
   valid_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc
   test_path: ${oc.env:DATA_ROOT}/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc

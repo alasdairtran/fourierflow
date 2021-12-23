@@ -1,40 +1,25 @@
-import jax_cfd.data.xarray_utils as xru
-import xarray
+import os
+
+import h5py
 from torch.utils.data import DataLoader, Dataset
 
 from .base import Builder
 
 
-class NavierStokes4Builder(Builder):
-    name = 'navier_stokes_4'
+class NSContextualBuilder(Builder):
+    name = 'ns_contextual'
 
-    def __init__(self, train_path: str, valid_path: str, test_path: str, train_k: int,
-                 valid_k: int, test_k: int, n_workers: int, batch_size: int):
+    def __init__(self, data_path: str, ssr: int, k: int, n_workers: int, batch_size: int):
         super().__init__()
         self.n_workers = n_workers
         self.batch_size = batch_size
 
-        train_ds = xarray.open_dataset(train_path)
-        train_ds['vorticity'] = xru.vorticity_2d(train_ds)
-        train_w = train_ds['vorticity'].values
-        train_w = train_w.transpose(0, 2, 3, 1)
-        # train_w.shape == [32, 64, 64, 4880]
+        data_path = os.path.expandvars(data_path)
+        h5f = h5py.File(data_path)
 
-        valid_ds = xarray.open_dataset(valid_path)
-        valid_ds['vorticity'] = xru.vorticity_2d(valid_ds)
-        valid_w = valid_ds['vorticity'].values
-        valid_w = valid_w.transpose(0, 2, 3, 1)
-        # valid_w.shape == [32, 64, 64, 488]
-
-        test_ds = xarray.open_dataset(test_path)
-        test_ds['vorticity'] = xru.vorticity_2d(test_ds)
-        test_w = test_ds['vorticity'].values
-        test_w = test_w.transpose(0, 2, 3, 1)
-        # valid_w.shape == [32, 64, 64, 488]
-
-        self.train_dataset = NavierStokesTrainingDataset(train_w, train_k)
-        self.valid_dataset = NavierStokesDataset(valid_w, valid_k)
-        self.test_dataset = NavierStokesDataset(test_w, test_k)
+        self.train_dataset = NavierStokesTrainingDataset(h5f['train'], ssr, k)
+        self.valid_dataset = NavierStokesDataset(h5f['valid'], ssr, k)
+        self.test_dataset = NavierStokesDataset(h5f['test'], ssr, k)
 
     def train_dataloader(self) -> DataLoader:
         loader = DataLoader(self.train_dataset,
@@ -65,12 +50,16 @@ class NavierStokes4Builder(Builder):
 
 
 class NavierStokesTrainingDataset(Dataset):
-    def __init__(self, data, k):
-        self.data = data
+    def __init__(self, data, ssr, k):
+        self.u = data['u']
+        self.f = data['f']
+        self.mu = data['mu']
+        self.ssr = ssr
         self.k = k
+        self.constant_force = len(self.f.shape) == 3
 
-        self.B = self.data.shape[0]
-        self.T = self.data.shape[-1] - self.k
+        self.B = self.u.shape[0]
+        self.T = self.u.shape[-1] - k
 
     def __len__(self):
         return self.B * self.T
@@ -78,22 +67,41 @@ class NavierStokesTrainingDataset(Dataset):
     def __getitem__(self, idx):
         b = idx // self.T
         t = idx % self.T
+        if self.constant_force:
+            f = self.f[b, ::self.ssr, ::self.ssr]
+        else:
+            f = self.f[b, ::self.ssr, ::self.ssr, t + self.k]
         return {
-            'x': self.data[b, :, :, t:t+1],
-            'y': self.data[b, :, :, t+self.k:t+self.k+1],
+            'x': self.u[b, ::self.ssr, ::self.ssr, t:t+1],
+            'y': self.u[b, ::self.ssr, ::self.ssr, t+self.k:t+self.k+1],
+            'mu': self.mu[b],
+            'f': f,
         }
 
 
 class NavierStokesDataset(Dataset):
-    def __init__(self, data, k):
-        self.data = data
+    def __init__(self, data, ssr, k):
+        self.u = data['u']
+        self.f = data['f']
+        self.mu = data['mu']
+        self.ssr = ssr
         self.k = k
-        self.B = self.data.shape[0]
+        self.constant_force = len(self.f.shape) == 3
+
+        self.B = self.u.shape[0]
+        self.T = self.u.shape[-1] - k
 
     def __len__(self):
         return self.B
 
     def __getitem__(self, b):
+        if self.constant_force:
+            f = self.f[b, ::self.ssr, ::self.ssr]
+        else:
+            f = self.f[b, ::self.ssr, ::self.ssr, ::self.k]
+
         return {
-            'data': self.data[b, :, :, ::self.k],
+            'data': self.u[b, ::self.ssr, ::self.ssr, ::self.k],
+            'mu': self.mu[b],
+            'f': f,
         }

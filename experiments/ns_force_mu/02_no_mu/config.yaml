@@ -7,7 +7,7 @@ wandb:
     - fourier
   notes: ""
 builder:
-  _target_: fourierflow.builders.NavierStokes3Builder
+  _target_: fourierflow.builders.NSContextualBuilder
   data_path: ${oc.env:DATA_ROOT}/navier-stokes/random_force_mu.h5
   ssr: 4 # sub-sampling rate
   k: 10 # the number of steps between input and output
