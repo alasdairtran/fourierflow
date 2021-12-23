@@ -128,20 +128,6 @@ class FNOFactorized2DBlock(nn.Module):
                  norm_locs=[], group_width=16, ff_weight_norm=False, n_ff_layers=2,
                  gain=1, layer_norm=False, use_fork=False, mode='full'):
         super().__init__()
-
-        """
-        The overall network. It contains 4 layers of the Fourier layer.
-        1. Lift the input to the desire channel dimension by self.fc0 .
-        2. 4 layers of the integral operators u' = (W + K)(u).
-            W defined by self.w; K defined by self.conv .
-        3. Project from the channel space to the output space by self.fc1 and self.fc2 .
-
-        input: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
-        input shape: (batchsize, x=64, y=64, c=12)
-        output: the solution of the next timestep
-        output shape: (batchsize, x=64, y=64, c=1)
-        """
-
         self.modes = modes
         self.width = width
         self.input_dim = input_dim
@@ -152,7 +138,6 @@ class FNOFactorized2DBlock(nn.Module):
         self.n_layers = n_layers
         self.norm_locs = norm_locs
         self.use_fork = use_fork
-        # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
         self.forecast_ff = self.backcast_ff = None
         if share_fork:
