@@ -1,0 +1,52 @@
+wandb:
+  project: ns_zongyi_4
+  group: zongyi/20_layers
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+builder:
+  _target_: fourierflow.builders.NavierStokesBuilder
+  data_path: ${oc.env:DATA_ROOT}/zongyi/NavierStokes_V1e-5_N1200_T20.mat
+  train_size: 1000
+  test_size: 200
+  ssr: 1 # sub-sampling rate
+  n_steps: 10
+  batch_size: 20
+  n_workers: 4
+routine:
+  _target_: fourierflow.routines.Fourier2DExperiment
+  conv:
+    _target_: fourierflow.modules.SimpleBlock2d
+    modes1: 12
+    modes2: 12
+    width: 20
+    n_layers: 20
+  n_steps: 10
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.AdamW}"]
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: torch.optim.lr_scheduler.StepLR}"]
+      step_size: 100
+      gamma: 0.5
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: null
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 500
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4
