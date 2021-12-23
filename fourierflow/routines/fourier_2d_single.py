@@ -322,7 +322,9 @@ class Fourier2DSingleExperiment(Routine):
         # p.shape == [n_steps]
 
         has_diverged = p < 0.95
-        diverged_t = has_diverged.nonzero()[0, 0]
+        diverged_idx = has_diverged.nonzero()
+        diverged_t = diverged_idx[0, 0] if len(
+            diverged_idx) > 0 else len(has_diverged) + 1
 
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(
