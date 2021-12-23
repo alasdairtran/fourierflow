@@ -11,7 +11,7 @@ from fourierflow.viz import log_navier_stokes_heatmap
 from .base import Routine
 
 
-class Fourier2DExperiment(Routine):
+class Grid2DRolloutExperiment(Routine):
     def __init__(self,
                  conv: nn.Module,
                  n_steps: int,

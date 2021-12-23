@@ -14,7 +14,7 @@ builder:
   batch_size: 19
   n_workers: 16
 routine:
-  _target_: fourierflow.routines.Fourier2DSingleExperiment
+  _target_: fourierflow.routines.Grid2DMarkovExperiment
   conv:
     _target_: fourierflow.modules.FNOFactorized2DBlock
     modes: 16

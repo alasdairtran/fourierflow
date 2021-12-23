@@ -1,2 +1,2 @@
-from .fourier_2d import Fourier2DExperiment
-from .fourier_2d_single import Fourier2DSingleExperiment
+from .grid_2d_markov import Grid2DMarkovExperiment
+from .grid_2d_rollout import Grid2DRolloutExperiment

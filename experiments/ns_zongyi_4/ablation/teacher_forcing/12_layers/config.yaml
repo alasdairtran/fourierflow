@@ -16,7 +16,7 @@ builder:
   batch_size: 20
   n_workers: 4
 routine:
-  _target_: fourierflow.routines.Fourier2DExperiment
+  _target_: fourierflow.routines.Grid2DRolloutExperiment
   conv:
     _target_: fourierflow.modules.FNOZongyi2DBlock
     modes1: 12
