@@ -78,11 +78,11 @@ You can download all of our datasets and pretrained model as follows:
 ```sh
 # Datasets (209GB)
 wget --continue https://object-store.rc.nectar.org.au/v1/AUTH_c0e4d64401cf433fb0260d211c3f23f8/fourierflow/data-2021-21-24.tar.gz
-tar -zxvf data.tar.gz
+tar -zxvf data-2021-21-24.tar.gz
 
 # Pretrained models and results (30GB)
 wget --continue https://object-store.rc.nectar.org.au/v1/AUTH_c0e4d64401cf433fb0260d211c3f23f8/fourierflow/experiments-2021-21-24.tar.gz
-tar -zxvf experiments.tar.gz
+tar -zxvf experiments-2021-21-24.tar.gz
 ```
 
 Alternatively, you can also generate the datasets from scratch:
@@ -136,12 +136,12 @@ fourierflow plot flow
 fourierflow plot poster
 ```
 
-## Experiments with JAX-CFD
+<!-- ## Experiments with JAX-CFD
 
 ```sh
 # Download jax-cfd datasets
 gsutil -m cp -r gs://gresearch/jax-cfd data/
-```
+``` -->
 
 ## Acknowledgement
 
