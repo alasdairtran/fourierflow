@@ -21,7 +21,6 @@ routine:
     _target_: fourierflow.modules.FNOPlus2DBlock
     modes: 16
     width: 64
-    linear_out: true
     n_layers: 4
     input_dim: 3
     share_weight: true
