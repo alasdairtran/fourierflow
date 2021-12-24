@@ -110,7 +110,7 @@ class Grid2DMarkovExperiment(Routine):
         return fourier_feats
 
     def _build_features(self, batch):
-        x = batch['dx'] if self.learn_difference else batch['x']
+        x = batch['x']
         B, *dim_sizes, _ = x.shape
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes]
@@ -189,8 +189,6 @@ class Grid2DMarkovExperiment(Routine):
     def _valid_step(self, batch):
         data = batch['data']
         inputs = data
-        if self.learn_difference:
-            inputs = inputs[..., 1:] - inputs[..., :-1]
 
         B, *dim_sizes, T = inputs.shape
         X, Y = dim_sizes
@@ -254,12 +252,7 @@ class Grid2DMarkovExperiment(Routine):
                         m=X, n=Y, t=xx.shape[-2])
             xx = torch.cat([xx, mu], dim=-1)
 
-        if self.learn_difference:
-            yy = data[:, ..., -self.n_steps:] - \
-                data[:, ..., -self.n_steps-1:-1]
-            raw_preds = [data[:, ..., -self.n_steps-1:-self.n_steps]]
-        else:
-            yy = data[:, ..., -self.n_steps:]
+        yy = data[:, ..., -self.n_steps:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
         loss = 0
@@ -269,6 +262,7 @@ class Grid2DMarkovExperiment(Routine):
         for t in range(self.n_steps):
             if t == 0:
                 x = xx[..., t, :]
+                prev_im = x[..., 0:1]
             else:
                 if self.use_velocity:
                     w_hat = torch.fft.fftn(im, dim=[1, 2], norm='backward')
@@ -317,28 +311,26 @@ class Grid2DMarkovExperiment(Routine):
                 im = self.normalizer.inverse(im, channel=0)
             # im.shape == [batch_size, *dim_sizes, 1]
 
-            y = yy[..., t]
+            if self.learn_difference:
+                y = yy[..., t] - yy[..., t-1]
+            else:
+                y = yy[..., t]
             l = self.l2_loss(im.reshape(B, -1), y.reshape(B, -1))
             step_losses.append(l)
             loss += l
-            pred = im if t == 0 else torch.cat((pred, im), dim=-1)
             if self.learn_difference:
-                raw_preds.append(im + raw_preds[-1])
+                im = prev_im + im
+                prev_im = im
+            preds = im if t == 0 else torch.cat((preds, im), dim=-1)
             if 'forecast_list' in out:
                 pred_layer_list.append(out['forecast_list'])
 
-        # pred.shape == [batch_size, *dim_sizes, n_steps]
+        # preds.shape == [batch_size, *dim_sizes, n_steps]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
-        targets = data[:, ..., -self.n_steps:]
-        if self.learn_difference:
-            preds = torch.cat(raw_preds[1:], dim=-1)
-        else:
-            preds = pred
-
         pred_norm = torch.norm(preds, dim=[1, 2], keepdim=True)
-        targets_norm = torch.norm(targets, dim=[1, 2], keepdim=True)
-        p = (preds / pred_norm) * (targets / targets_norm)
+        yy_norm = torch.norm(yy, dim=[1, 2], keepdim=True)
+        p = (preds / pred_norm) * (yy / yy_norm)
         p = p.sum(dim=[1, 2]).mean(dim=0)
         # p.shape == [n_steps]
 
@@ -349,9 +341,9 @@ class Grid2DMarkovExperiment(Routine):
 
         loss /= self.n_steps
         loss_full = self.l2_loss(preds.reshape(
-            B, -1), targets.reshape(B, -1))
+            B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, pred, pred_layer_list, step_losses, diverged_t
+        return loss, loss_full, preds, pred_layer_list, step_losses, diverged_t
 
     def training_step(self, batch, batch_idx):
         # Accumulate normalization stats in the first epoch
