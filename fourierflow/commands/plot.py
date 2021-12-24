@@ -62,7 +62,7 @@ def complexity():
     sim_line = Line2D(range(1), range(1), color="white",
                       marker='o', markerfacecolor=pal[4])
     lines = [sim_line] + lines_2[-1:] + lines_1
-    labels = ['Crank–Nicolson numerical simulator',
+    labels = ['Crank-Nicolson numerical simulator',
               'FNO (proposed by Li et al. [2021a])',
               'FNO++ (with a bag of tricks)',
               'F-FNO-NW (without weight sharing)',
@@ -102,7 +102,7 @@ def heatmaps():
 
 @app.command()
 def table_3():
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
 
@@ -243,7 +243,7 @@ def plot_performance_vs_layer(ax):
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     lines = []
 
     groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
@@ -276,7 +276,7 @@ def plot_performance_vs_layer(ax):
 def plot_ablation(ax):
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     lines = []
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
@@ -318,7 +318,7 @@ def get_step_losses(dataset, group):
 
 def plot_step_loss_curves(ax):
     xs = list(range(1, 11))
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
 
     losses = get_step_losses(dataset, 'zongyi/4_layers')
     plot_line(xs, losses, ax, axis=0, color=pal[0], linestyle='--')
@@ -350,7 +350,7 @@ def get_paramter_count(dataset, groups):
 
 
 def plot_parameters(ax):
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     xs = [4, 8, 12, 16, 20, 24]
     lines = []
 
@@ -407,7 +407,7 @@ def plot_xy_line(xs, ys, ax, axis=1, **kwargs):
 
 
 def plot_pde_inference_performance_tradeoff(ax):
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     lines = []
@@ -437,7 +437,7 @@ def plot_pde_inference_performance_tradeoff(ax):
 
 
 def plot_pde_training_performance_tradeoff(ax):
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     lines = []
@@ -486,7 +486,7 @@ def plot_scalable():
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     lines = []
 
     groups = [f'zongyi/{i}_layers' for i in layers_1]
@@ -518,7 +518,7 @@ def plot_10_steps():
     ax = plt.subplot(1, 1, 1)
 
     xs = list(range(1, 11))
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     lines = []
 
     losses = get_step_losses(dataset, 'zongyi/4_layers')
@@ -546,7 +546,7 @@ def plot_poster_pde_inference():
     fig = plt.figure(figsize=(4, 3))
     ax = plt.subplot(1, 1, 1)
 
-    dataset = 'navier-stokes-4'
+    dataset = 'ns_zongyi_4'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     lines = []
