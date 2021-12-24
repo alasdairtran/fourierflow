@@ -29,14 +29,12 @@ class FeedForward(nn.Module):
 
 class SpectralConv2d(nn.Module):
     def __init__(self, in_dim, out_dim, n_modes, forecast_ff, backcast_ff,
-                 fourier_weight, factor, norm_locs, group_width, ff_weight_norm,
+                 fourier_weight, factor, ff_weight_norm,
                  n_ff_layers, layer_norm, use_fork, dropout, mode):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.n_modes = n_modes
-        self.norm_locs = norm_locs
-        self.group_width = group_width
         self.mode = mode
         self.use_fork = use_fork
 
@@ -109,7 +107,7 @@ class FNOPlus2DBlock(nn.Module):
     def __init__(self, modes, width, input_dim=12, dropout=0.0, in_dropout=0.0,
                  n_layers=4, share_weight: bool = False,
                  next_input='subtract', share_fork=False, factor=2,
-                 norm_locs=[], group_width=16, ff_weight_norm=False, n_ff_layers=2,
+                 ff_weight_norm=False, n_ff_layers=2,
                  gain=1, layer_norm=False, use_fork=False, mode='full'):
         super().__init__()
         self.modes = modes
@@ -119,7 +117,6 @@ class FNOPlus2DBlock(nn.Module):
         self.drop = nn.Dropout(in_dropout)
         self.next_input = next_input
         self.n_layers = n_layers
-        self.norm_locs = norm_locs
         self.use_fork = use_fork
 
         self.forecast_ff = self.backcast_ff = None
@@ -148,8 +145,6 @@ class FNOPlus2DBlock(nn.Module):
                                                        backcast_ff=self.backcast_ff,
                                                        fourier_weight=self.fourier_weight,
                                                        factor=factor,
-                                                       norm_locs=norm_locs,
-                                                       group_width=group_width,
                                                        ff_weight_norm=ff_weight_norm,
                                                        n_ff_layers=n_ff_layers,
                                                        layer_norm=layer_norm,
