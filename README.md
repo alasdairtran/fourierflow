@@ -77,11 +77,11 @@ You can download all of our datasets and pretrained model as follows:
 
 ```sh
 # Datasets (209GB)
-wget --continue https://object-store.rc.nectar.org.au/v1/AUTH_c0e4d64401cf433fb0260d211c3f23f8/fourierflow/data.tar.gz
+wget --continue https://object-store.rc.nectar.org.au/v1/AUTH_c0e4d64401cf433fb0260d211c3f23f8/fourierflow/data-2021-21-24.tar.gz
 tar -zxvf data.tar.gz
 
 # Pretrained models and results (30GB)
-wget --continue https://object-store.rc.nectar.org.au/v1/AUTH_c0e4d64401cf433fb0260d211c3f23f8/fourierflow/experiments.tar.gz
+wget --continue https://object-store.rc.nectar.org.au/v1/AUTH_c0e4d64401cf433fb0260d211c3f23f8/fourierflow/experiments-2021-21-24.tar.gz
 tar -zxvf experiments.tar.gz
 ```
 
