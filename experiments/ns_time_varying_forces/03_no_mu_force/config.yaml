@@ -29,7 +29,6 @@ routine:
     gain: 0.1
     dropout: 0.0
     in_dropout: 0.0
-    avg_outs: true
   n_steps: 10
   max_accumulations: 10000
   noise_std: 0.01

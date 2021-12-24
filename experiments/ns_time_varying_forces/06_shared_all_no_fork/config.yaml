@@ -30,7 +30,6 @@ routine:
     gain: 0.1
     dropout: 0.0
     in_dropout: 0.0
-    avg_outs: true
     use_fork: false
   n_steps: 10
   max_accumulations: 10000
