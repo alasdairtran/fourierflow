@@ -26,7 +26,6 @@ routine:
     share_weight: true
     factor: 4
     ff_weight_norm: true
-    next_input: add
     gain: 0.1
     dropout: 0.0
     in_dropout: 0.0

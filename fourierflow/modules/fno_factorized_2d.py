@@ -122,7 +122,7 @@ class SpectralConv2d(nn.Module):
 class FNOFactorized2DBlock(nn.Module):
     def __init__(self, modes, width, input_dim=12, dropout=0.0, in_dropout=0.0,
                  n_layers=4, share_weight: bool = False,
-                 next_input='subtract', share_fork=False, factor=2,
+                 share_fork=False, factor=2,
                  ff_weight_norm=False, n_ff_layers=2,
                  gain=1, layer_norm=False, use_fork=False, mode='full'):
         super().__init__()
@@ -131,7 +131,6 @@ class FNOFactorized2DBlock(nn.Module):
         self.input_dim = input_dim
         self.in_proj = WNLinear(input_dim, self.width, wnorm=ff_weight_norm)
         self.drop = nn.Dropout(in_dropout)
-        self.next_input = next_input
         self.n_layers = n_layers
         self.use_fork = use_fork
 
@@ -187,10 +186,7 @@ class FNOFactorized2DBlock(nn.Module):
                 forecast = forecast + f_out
                 forecast_list.append(f_out)
 
-            if self.next_input == 'subtract':
-                x = x - b
-            elif self.next_input == 'add':
-                x = x + b
+            x = x + b
 
         if not self.use_fork:
             forecast = self.out(b)
