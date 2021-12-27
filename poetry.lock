@@ -581,6 +581,17 @@ six = ">=1.5.2"
 protobuf = ["grpcio-tools (>=1.42.0)"]
 
 [[package]]
+name = "h5netcdf"
+version = "0.12.0"
+description = "netCDF4 via h5py"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+h5py = "*"
+
+[[package]]
 name = "h5py"
 version = "3.6.0"
 description = "Read and write HDF5 files from Python"
@@ -2500,7 +2511,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.9.9"
-content-hash = "d1a4b23d86b942dd92504988cf921429e21c68741b15e07f6e073b575f25822d"
+content-hash = "dbed60266c4b12e4984625c3c335a911ed0ae3aefbc0dedbc09f8a18ff19306a"
 
 [metadata.files]
 absl-py = [
@@ -3012,6 +3023,10 @@ grpcio = [
     {file = "grpcio-1.42.0-cp39-cp39-win32.whl", hash = "sha256:5441d343602ce10ba48fcb36bb5de197a15a01dc9ee0f71c2a73cd5cd3d7f5ac"},
     {file = "grpcio-1.42.0-cp39-cp39-win_amd64.whl", hash = "sha256:17433f7eb01737240581b33fbc2eae7b7fa6d3429571782580bceaf05ec56cb8"},
     {file = "grpcio-1.42.0.tar.gz", hash = "sha256:4a8f2c7490fe3696e0cdd566e2f099fb91b51bc75446125175c55581c2f7bc11"},
+]
+h5netcdf = [
+    {file = "h5netcdf-0.12.0-py2.py3-none-any.whl", hash = "sha256:83f27c9176108836d0641036bb240cfe7c2da0484c9c3d130032e903c46a6400"},
+    {file = "h5netcdf-0.12.0.tar.gz", hash = "sha256:6d3623f9ea46747249333792f13b515d05ff652dcec1ee436fa969bee03a8dd5"},
 ]
 h5py = [
     {file = "h5py-3.6.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a5320837c60870911645e9a935099bdb2be6a786fcf0dac5c860f3b679e2de55"},
