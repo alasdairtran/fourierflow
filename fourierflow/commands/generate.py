@@ -1,9 +1,12 @@
 import os
 from pathlib import Path
+from typing import List, Optional
 
 import dask
 import dask.array as da
 import h5py
+import hydra
+import jax
 import jax.numpy as jnp
 import jax_cfd.base as cfd
 import numpy as np
@@ -12,6 +15,8 @@ import torch
 import xarray as xr
 from dask.delayed import Delayed
 from dask.diagnostics import ProgressBar
+from hydra.utils import instantiate
+from omegaconf import OmegaConf
 from typer import Argument, Option, Typer
 
 from fourierflow.builders import generate_kolmogorov
@@ -22,75 +27,72 @@ app = Typer()
 
 
 @app.command()
-def kolmogorov(
-    path: Path = Argument(..., help='Path to store the generated samples'),
-    n_train: int = Option(32, help='Number of train solutions to generate'),
-    size: int = Option(2048, help='Size of the domain'),
-    density: float = Option(1.0, help='Density of the fluid'),
-    viscosity: float = Option(1e-3, help='Viscosity of the fluid'),
-    max_velocity: float = Option(2.0, help='Maximum velocity of the fluid'),
-    seed: int = Option(0, help='Random seed'),
-    inner_steps: int = Option(25, help='Number of steps in the inner loop'),
-    outer_steps: int = Option(200, help='Number of steps in the outer loop'),
-    cfl_safety_factor: float = Option(0.5, help='CFL safety factor'),
-):
-    # Create directories to store the simulation data.
-    data_dir = path.parent
-    data_dir.mkdir(parents=True, exist_ok=True)
+def kolmogorov(config_dir: Path,
+               overrides: Optional[List[str]] = Argument(None),
+               debug: bool = Option(False, help='Enable debugging mode with ptvsd')):
+    # This debug mode is for those who use VS Code's internal debugger.
+    if debug:
+        ptvsd.enable_attach(address=('0.0.0.0', 5678))
+        ptvsd.wait_for_attach()
+
+    hydra.initialize(config_path=str('../..' / config_dir))
+    c = hydra.compose(config_name='config', overrides=overrides or [])
+    OmegaConf.set_struct(c, False)
 
     # Define the physical dimensions of the simulation.
-    grid = cfd.grids.Grid(shape=(size, size),
+    grid = cfd.grids.Grid(shape=(c.size, c.size),
                           domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
 
     # Choose a time step.
     dt = cfd.equations.stable_time_step(
-        max_velocity, cfl_safety_factor, viscosity, grid)
+        c.max_velocity, c.cfl_safety_factor, c.equation.kwargs.viscosity, grid)
 
-    rs = np.random.RandomState(seed)
+    rng_key = jax.random.PRNGKey(c.seed)
+    keys = jax.random.split(rng_key, c.n_train)
 
     # Appending to netCDF files is not supported yet, but we can use
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
-    us, vs = [], []
-    for _ in range(n_train):
+    vorticities = []
+    shape = (200, c.size, c.size)
+    for i in range(c.n_train):
         trajectory = dask.delayed(generate_kolmogorov)(
-            size=size,
+            size=c.size,
             dt=dt,
-            density=density,
-            viscosity=viscosity,
-            max_velocity=max_velocity,
-            seed=rs.randint(int(1e9)),
-            inner_steps=inner_steps,
-            outer_steps=outer_steps)
-        u = da.from_delayed(trajectory[0], (200, size, size), np.float32)
-        v = da.from_delayed(trajectory[1], (200, size, size), np.float32)
-        us.append(u)
-        vs.append(v)
+            equation=c.equation,
+            peak_wavenumber=c.peak_wavenumber,
+            max_velocity=c.max_velocity,
+            seed=keys[i],
+            inner_steps=c.inner_steps,
+            outer_steps=c.outer_steps)
+        vorticity = da.from_delayed(trajectory, shape, np.float32)
+        vorticities.append(vorticity)
 
-    us = da.stack(us)
-    vs = da.stack(vs)
+    vorticities = da.stack(vorticities)
 
     ds = xr.Dataset(
         data_vars={
-            'u': (('sample', 'time', 'x', 'y'), us),
-            'v': (('sample', 'time', 'x', 'y'), vs),
+            'vorticity': (('sample', 'time', 'x', 'y'), vorticities),
         },
         coords={
-            'sample': range(n_train),
-            'time': dt * inner_steps * np.arange(outer_steps),
+            'sample': range(c.n_train),
+            'time': dt * c.inner_steps * np.arange(c.outer_steps),
             'x': grid.axes()[0],
             'y': grid.axes()[1],
         },
         attrs={
             'dt': dt,
-            'density': density,
-            'viscosity': viscosity,
-            'max_velocity': max_velocity,
-            'seed': seed,
+            'density': c.density,
+            'viscosity': c.equation.kwargs.viscosity,
+            'max_velocity': c.max_velocity,
+            'seed': c.seed,
+            'domain_size': 2 * jnp.pi,
+            'cfl_safety_factor': c.cfl_safety_factor,
         }
     )
 
+    path = config_dir / 'train.nc'
     task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
 
     with ProgressBar():
