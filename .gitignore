@@ -41,15 +41,19 @@ wandb
 *.brf
 
 *.pdf
-/data/*
 /expt/**/serialization
 /notebooks
 /results
-*.h5
-*.mat
 *.tar.gz
 
 # per-machine project settings
 .env
 
 dask-worker-space
+
+# Data
+*.nc
+*.h5
+*.mat
+*.csv
+*.pickle
