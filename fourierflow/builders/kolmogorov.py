@@ -1,14 +1,12 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import jax
 import jax.numpy as jnp
 import jax_cfd.base as cfd
 import jax_cfd.data.xarray_utils as xru
-import numpy as np
 import xarray as xr
 from jax_cfd.base.funcutils import repeated, trajectory
-from jax_cfd.spectral.time_stepping import (ImplicitExplicitODE,
-                                            crank_nicolson_rk4)
+from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset
 
@@ -131,10 +129,15 @@ def generate_kolmogorov(size: int,
     # function ensures that the initial velocity is divergence free and it
     # filters out high frequency fluctuations.
     v0 = cfd.initial_conditions.filtered_velocity_field(
-        seed, grid, max_velocity)
+        seed, grid, max_velocity, peak_wavenumber)
+
+    # Compute the fft of the vorticity. The spectral code assumes an fft'd
+    # vorticity for an initial state.
+    vorticity0 = cfd.finite_differences.curl_2d(v0).data
+    vorticity_hat0 = jnp.fft.rfftn(vorticity0)
 
     Equation = import_string(equation.target)
-    kwargs = OmegaConf.to_object(equation.kwargs)
+    kwargs = cast(Dict, OmegaConf.to_object(equation.kwargs))
     if 'forcing_fn' in kwargs:
         kwargs['forcing_fn'] = import_string(kwargs['forcing_fn'])
     eqn = Equation(grid=grid, **kwargs)
@@ -142,14 +145,6 @@ def generate_kolmogorov(size: int,
     # Define a step function and use it to compute a trajectory.
     step_fn = repeated(crank_nicolson_rk4(eqn, dt), inner_steps)
     trajectory_fn = jax.jit(trajectory(step_fn, outer_steps))
-
-    # create an initial velocity field and compute the fft of the vorticity.
-    # the spectral code assumes an fft'd vorticity for an initial state
-    v0 = cfd.initial_conditions.filtered_velocity_field(
-        jax.random.PRNGKey(42), grid, max_velocity, peak_wavenumber)
-    vorticity0 = cfd.finite_differences.curl_2d(v0).data
-    vorticity_hat0 = jnp.fft.rfftn(vorticity0)
-
     _, traj = trajectory_fn(vorticity_hat0)
 
     return jnp.fft.irfftn(traj, axes=(1, 2))
