@@ -51,3 +51,5 @@ wandb
 
 # per-machine project settings
 .env
+
+dask-worker-space
