@@ -106,6 +106,10 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # If we decrease delta from 1e-4 to 1e-5, generating the same dataset would now
 # take 10 times as long, while the difference between the solutions in step 20
 # is only 0.04%.
+
+# Generate 2D Kolmogorov flows, similar to Kochkov et al (2021).
+fourierflow generate kolmogorov \
+    --path data/kolmogorov/test.nc
 ```
 
 Training and test commands:
