@@ -108,9 +108,7 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # is only 0.04%.
 
 # Generate 2D Kolmogorov flows, similar to Kochkov et al (2021).
-# Here for e.g., we're using 2 GPUs.
-CUDA_DEVICE_ORDER=PCI_BUS_ID fourierflow generate kolmogorov \
-    --devices 1,2 data/kolmogorov/train.nc
+fourierflow generate kolmogorov data/kolmogorov/train.nc
 ```
 
 Training and test commands:

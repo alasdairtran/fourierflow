@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import List
 
 import dask
 import dask.array as da
@@ -11,8 +10,8 @@ import numpy as np
 import ptvsd
 import torch
 import xarray as xr
-from dask.distributed import Client
-from dask_cuda import LocalCUDACluster
+from dask.delayed import Delayed
+from dask.diagnostics import ProgressBar
 from typer import Argument, Option, Typer
 
 from fourierflow.builders import generate_kolmogorov
@@ -25,7 +24,6 @@ app = Typer()
 @app.command()
 def kolmogorov(
     path: Path = Argument(..., help='Path to store the generated samples'),
-    devices: str = Option('0', help='Comma-separated list of GPU devices'),
     n_train: int = Option(32, help='Number of train solutions to generate'),
     size: int = Option(2048, help='Size of the domain'),
     density: float = Option(1.0, help='Density of the fluid'),
@@ -36,10 +34,6 @@ def kolmogorov(
     outer_steps: int = Option(200, help='Number of steps in the outer loop'),
     cfl_safety_factor: float = Option(0.5, help='CFL safety factor'),
 ):
-    devices = [int(d) for d in devices.split(',')]
-    cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=devices)
-    client = Client(cluster)
-
     # Create directories to store the simulation data.
     data_dir = path.parent
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -97,7 +91,10 @@ def kolmogorov(
         }
     )
 
-    ds.to_netcdf(path, engine='h5netcdf')
+    task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
+
+    with ProgressBar():
+        task.compute(num_workers=1)
 
 
 @app.command()
