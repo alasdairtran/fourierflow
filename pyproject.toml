@@ -7,12 +7,13 @@ repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
 python = "~3.9.9"
-# poetry add dask einops entmax gdown graphviz h5netcdf hyperopt ipykernel jupyterlab \
+# poetry add bokeh dask-cuda einops entmax gdown graphviz h5netcdf hyperopt ipykernel jupyterlab \
 #   git+https://github.com/google/jax-cfd.git@f2446fe966386836680013d80f38eda4e0b48b5 \
 #   matplotlib moviepy pandas plotly poethepoet ptvsd pydocstyle \
 #   python-dotenv pytorch-lightning requests rich seaborn termcolor \
 #   tensorflow-gpu tfrecord torchdiffeq torchtyping typer wandb xarray
-dask = "^2021.12.0"
+bokeh = "^2.4.2"
+dask-cuda = "^21.12.0"
 einops = "^0.3.2"
 entmax = "^1.0"
 gdown = "^4.2.0"
