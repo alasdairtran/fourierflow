@@ -74,7 +74,7 @@ def kolmogorov(config_dir: Path,
 
     attrs = pd.json_normalize(OmegaConf.to_object(c), sep='.')
     attrs = attrs.to_dict(orient='records')[0]
-    attrs = {k: (str(v) if type(v) is bool else v)
+    attrs = {k: (str(v) if isinstance(v, bool) else v)
              for k, v in attrs.items()}
 
     ds = xr.Dataset(
