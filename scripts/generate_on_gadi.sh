@@ -17,4 +17,4 @@
 source $HOME/.bashrc
 cd /g/data/v89/at3219/projects/fourierflow
 
-CUDA_VISIBLE_DEVICES=0 poetry run fourierflow generate $DATA $PATH
+CUDA_VISIBLE_DEVICES=0 poetry run fourierflow generate $DATA $CONFIG_DIR
