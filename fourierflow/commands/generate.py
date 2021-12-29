@@ -10,6 +10,7 @@ import jax
 import jax.numpy as jnp
 import jax_cfd.base as cfd
 import numpy as np
+import pandas as pd
 import ptvsd
 import torch
 import xarray as xr
@@ -47,15 +48,15 @@ def kolmogorov(config_dir: Path,
         c.max_velocity, c.cfl_safety_factor, c.equation.kwargs.viscosity, grid)
 
     rng_key = jax.random.PRNGKey(c.seed)
-    keys = jax.random.split(rng_key, c.n_train)
+    keys = jax.random.split(rng_key, c.n_trajectories)
 
     # Appending to netCDF files is not supported yet, but we can use
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
     vorticities = []
-    shape = (200, c.size, c.size)
-    for i in range(c.n_train):
+    shape = (c.outer_steps, c.size, c.size)
+    for i in range(c.n_trajectories):
         trajectory = dask.delayed(generate_kolmogorov)(
             size=c.size,
             dt=dt,
@@ -70,28 +71,29 @@ def kolmogorov(config_dir: Path,
 
     vorticities = da.stack(vorticities)
 
+    attrs = pd.json_normalize(OmegaConf.to_object(c), sep='.')
+    attrs = attrs.to_dict(orient='records')[0]
+    attrs = {k: (str(v) if type(v) is bool else v)
+             for k, v in attrs.items()}
+
     ds = xr.Dataset(
         data_vars={
             'vorticity': (('sample', 'time', 'x', 'y'), vorticities),
         },
         coords={
-            'sample': range(c.n_train),
+            'sample': range(c.n_trajectories),
             'time': dt * c.inner_steps * np.arange(c.outer_steps),
             'x': grid.axes()[0],
             'y': grid.axes()[1],
         },
         attrs={
+            **attrs,
             'dt': dt,
-            'density': c.density,
-            'viscosity': c.equation.kwargs.viscosity,
-            'max_velocity': c.max_velocity,
-            'seed': c.seed,
             'domain_size': 2 * jnp.pi,
-            'cfl_safety_factor': c.cfl_safety_factor,
         }
     )
 
-    path = config_dir / 'train.nc'
+    path = config_dir / 'trajectories.nc'
     task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
 
     with ProgressBar():

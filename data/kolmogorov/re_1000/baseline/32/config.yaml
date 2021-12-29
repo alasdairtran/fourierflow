@@ -1,11 +1,11 @@
-size: 256 # size of the domain
-n_train: 32 # number of train solutions to generate
+size: 32 # size of the domain
+n_trajectories: 32 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
-seed: 42
-inner_steps: 25 # number of steps in the inner loop
-outer_steps: 200 # number of steps in the outer loop
+seed: 7598 # random seed for the initial velocity field
+inner_steps: 25 # take a snapshot of the field once every these many ODE steps
+outer_steps: 2441 # the data saved on disk will have these many snapshots
 cfl_safety_factor: 0.5
 equation:
   target: jax_cfd.spectral.equations.NavierStokes2D
