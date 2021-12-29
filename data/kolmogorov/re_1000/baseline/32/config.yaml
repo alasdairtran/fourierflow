@@ -6,6 +6,7 @@ peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
 seed: 7598 # random seed for the initial velocity field
 inner_steps: 25 # take a snapshot of the field once every these many ODE steps
 outer_steps: 2441 # the data saved on disk will have these many snapshots
+warmup_steps: 40 # skip these many steps before taking any snapshots
 cfl_safety_factor: 0.5
 equation:
   target: jax_cfd.spectral.equations.NavierStokes2D

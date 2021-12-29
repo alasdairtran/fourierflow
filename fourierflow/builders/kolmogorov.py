@@ -116,7 +116,8 @@ def generate_kolmogorov(size: int,
                         peak_wavenumber: float = 4.0,
                         max_velocity: float = 7.0,
                         inner_steps: int = 25,
-                        outer_steps: int = 200):
+                        outer_steps: int = 200,
+                        warmup_steps: int = 40):
     """Generate 2D Kolmogorov flows, similar to Kochkov et al (2021).
 
     Adapted from https://github.com/google/jax-cfd/blob/main/notebooks/demo.ipynb
@@ -146,5 +147,8 @@ def generate_kolmogorov(size: int,
     step_fn = repeated(crank_nicolson_rk4(eqn, dt), inner_steps)
     trajectory_fn = jax.jit(trajectory(step_fn, outer_steps))
     _, traj = trajectory_fn(vorticity_hat0)
+
+    # Discard the warmup steps
+    traj = traj[warmup_steps:]
 
     return jnp.fft.irfftn(traj, axes=(1, 2))

@@ -65,7 +65,8 @@ def kolmogorov(config_dir: Path,
             max_velocity=c.max_velocity,
             seed=keys[i],
             inner_steps=c.inner_steps,
-            outer_steps=c.outer_steps)
+            outer_steps=c.outer_steps,
+            warmup_steps=c.warmup_steps)
         vorticity = da.from_delayed(trajectory, shape, np.float32)
         vorticities.append(vorticity)
 
