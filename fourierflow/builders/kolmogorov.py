@@ -146,10 +146,10 @@ def generate_kolmogorov(size: int,
 
     # Warmup steps
     if warmup_steps > 0:
-        trajectory_fn = jax.jit(trajectory(step_fn, warmup_steps))
+        trajectory_fn = trajectory(step_fn, warmup_steps)
         vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
 
-    trajectory_fn = jax.jit(trajectory(step_fn, outer_steps))
+    trajectory_fn = trajectory(step_fn, outer_steps)
     _, traj = trajectory_fn(vorticity_hat0)
 
     return jnp.fft.irfftn(traj, axes=(1, 2))
