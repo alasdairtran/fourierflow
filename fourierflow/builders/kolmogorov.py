@@ -145,7 +145,8 @@ def generate_kolmogorov(size: int,
 
     # Define a step function and use it to compute a trajectory.
     step_fn = repeated(crank_nicolson_rk4(eqn, dt), inner_steps)
-    trajectory_fn = jax.jit(trajectory(step_fn, outer_steps))
+    total_steps = outer_steps + warmup_steps
+    trajectory_fn = jax.jit(trajectory(step_fn, total_steps))
     _, traj = trajectory_fn(vorticity_hat0)
 
     # Discard the warmup steps
