@@ -142,14 +142,14 @@ def generate_kolmogorov(size: int,
     if 'forcing_fn' in kwargs:
         kwargs['forcing_fn'] = import_string(kwargs['forcing_fn'])
     eqn = Equation(grid=grid, **kwargs)
-
-    # Define a step function and use it to compute a trajectory.
     step_fn = repeated(crank_nicolson_rk4(eqn, dt), inner_steps)
-    total_steps = outer_steps + warmup_steps
-    trajectory_fn = jax.jit(trajectory(step_fn, total_steps))
-    _, traj = trajectory_fn(vorticity_hat0)
 
-    # Discard the warmup steps
-    traj = traj[warmup_steps:]
+    # Warmup steps
+    if warmup_steps > 0:
+        trajectory_fn = jax.jit(trajectory(step_fn, warmup_steps))
+        vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
+
+    trajectory_fn = jax.jit(trajectory(step_fn, outer_steps))
+    _, traj = trajectory_fn(vorticity_hat0)
 
     return jnp.fft.irfftn(traj, axes=(1, 2))
