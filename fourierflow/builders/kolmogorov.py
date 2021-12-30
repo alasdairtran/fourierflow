@@ -145,15 +145,17 @@ def generate_kolmogorov(size: int,
     cnrk4 = crank_nicolson_rk4(eqn, dt)
     step_fn = repeated(cnrk4, inner_steps)
 
+    # During warming up, we ignore intermediate results and just return
+    # the final field
     if warmup_steps > 0:
-        # Calling the nested scan, i.e. trajectory(repeated()), seems to cause
-        # a memory leak, so we'll just call jax.lax.scan directly.
-        def f(carry, _):
-            return cnrk4(carry), None
-        length = warmup_steps * inner_steps
-        vorticity_hat0, _ = jax.lax.scan(f, vorticity_hat0, None, length)
+        def postprocess(_):
+            return None
+        trajectory_fn = trajectory(step_fn, warmup_steps, postprocess)
+        vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
 
-    trajectory_fn = trajectory(step_fn, outer_steps)
+    def postprocess(x):
+        return x
+    trajectory_fn = trajectory(step_fn, outer_steps, postprocess)
     _, traj = trajectory_fn(vorticity_hat0)
 
     return jnp.fft.irfftn(traj, axes=(1, 2))
