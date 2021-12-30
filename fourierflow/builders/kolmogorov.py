@@ -142,12 +142,16 @@ def generate_kolmogorov(size: int,
     if 'forcing_fn' in kwargs:
         kwargs['forcing_fn'] = import_string(kwargs['forcing_fn'])
     eqn = Equation(grid=grid, **kwargs)
-    step_fn = repeated(crank_nicolson_rk4(eqn, dt), inner_steps)
+    cnrk4 = crank_nicolson_rk4(eqn, dt)
+    step_fn = repeated(cnrk4, inner_steps)
 
-    # Warmup steps
     if warmup_steps > 0:
-        trajectory_fn = trajectory(step_fn, warmup_steps)
-        vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
+        # Calling the nested scan, i.e. trajectory(repeated()), seems to cause
+        # a memory leak, so we'll just call jax.lax.scan directly.
+        def f(carry, _):
+            return cnrk4(carry), None
+        length = warmup_steps * inner_steps
+        vorticity_hat0, _ = jax.lax.scan(f, vorticity_hat0, None, length)
 
     trajectory_fn = trajectory(step_fn, outer_steps)
     _, traj = trajectory_fn(vorticity_hat0)
