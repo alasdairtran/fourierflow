@@ -107,8 +107,11 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # take 10 times as long, while the difference between the solutions in step 20
 # is only 0.04%.
 
-# Generate 2D Kolmogorov flows, similar to Kochkov et al (2021).
-fourierflow generate kolmogorov data/kolmogorov/train.nc
+# Generate initial conditions for 2D Kolmogorov flows, similar to Kochkov
+# et al (2021).
+fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/train.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/valid.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/test.yaml
 ```
 
 Training and test commands:
@@ -139,12 +142,12 @@ fourierflow plot flow
 fourierflow plot poster
 ```
 
-<!-- ## Experiments with JAX-CFD
+## Experiments with JAX-CFD
 
 ```sh
 # Download jax-cfd datasets
 gsutil -m cp -r gs://gresearch/jax-cfd data/
-``` -->
+```
 
 ## Acknowledgement
 
