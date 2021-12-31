@@ -55,7 +55,10 @@ def kolmogorov(config_dir: Path,
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
     vorticities = []
-    shape = (c.outer_steps, c.size, c.size)
+    if c.outer_steps > 0:
+        shape = (c.outer_steps, c.size, c.size)
+    else:
+        shape = (c.size, c.size)
     for i in range(c.n_trajectories):
         trajectory = dask.delayed(generate_kolmogorov)(
             size=c.size,
@@ -77,22 +80,39 @@ def kolmogorov(config_dir: Path,
     attrs = {k: (str(v) if isinstance(v, bool) else v)
              for k, v in attrs.items()}
 
-    ds = xr.Dataset(
-        data_vars={
-            'vorticity': (('sample', 'time', 'x', 'y'), vorticities),
-        },
-        coords={
-            'sample': range(c.n_trajectories),
-            'time': dt * c.inner_steps * np.arange(c.outer_steps),
-            'x': grid.axes()[0],
-            'y': grid.axes()[1],
-        },
-        attrs={
-            **attrs,
-            'dt': dt,
-            'domain_size': 2 * jnp.pi,
-        }
-    )
+    if c.outer_steps > 0:
+        ds = xr.Dataset(
+            data_vars={
+                'vorticity': (('sample', 'time', 'x', 'y'), vorticities),
+            },
+            coords={
+                'sample': range(c.n_trajectories),
+                'time': dt * c.inner_steps * np.arange(c.outer_steps),
+                'x': grid.axes()[0],
+                'y': grid.axes()[1],
+            },
+            attrs={
+                **attrs,
+                'dt': dt,
+                'domain_size': 2 * jnp.pi,
+            }
+        )
+    else:
+        ds = xr.Dataset(
+            data_vars={
+                'vorticity': (('sample', 'x', 'y'), vorticities),
+            },
+            coords={
+                'sample': range(c.n_trajectories),
+                'x': grid.axes()[0],
+                'y': grid.axes()[1],
+            },
+            attrs={
+                **attrs,
+                'dt': dt,
+                'domain_size': 2 * jnp.pi,
+            }
+        )
 
     path = config_dir / 'trajectories.nc'
     task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)

@@ -148,14 +148,15 @@ def generate_kolmogorov(size: int,
     # During warming up, we ignore intermediate results and just return
     # the final field
     if warmup_steps > 0:
-        def postprocess(_):
+        def ignore(_):
             return None
-        trajectory_fn = trajectory(step_fn, warmup_steps, postprocess)
+        trajectory_fn = trajectory(step_fn, warmup_steps, ignore)
         vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
+        return jnp.fft.irfftn(vorticity_hat0, axes=(0, 1))
 
-    def postprocess(x):
-        return x
-    trajectory_fn = trajectory(step_fn, outer_steps, postprocess)
-    _, traj = trajectory_fn(vorticity_hat0)
-
-    return jnp.fft.irfftn(traj, axes=(1, 2))
+    if outer_steps > 0:
+        def downsample(x):
+            return x
+        trajectory_fn = trajectory(step_fn, outer_steps, downsample)
+        _, traj = trajectory_fn(vorticity_hat0)
+        return jnp.fft.irfftn(traj, axes=(1, 2))
