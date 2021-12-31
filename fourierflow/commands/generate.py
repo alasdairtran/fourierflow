@@ -16,6 +16,8 @@ import torch
 import xarray as xr
 from dask.delayed import Delayed
 from dask.diagnostics import ProgressBar
+from dask.distributed import Client
+from dask_cuda import LocalCUDACluster
 from omegaconf import OmegaConf
 from typer import Argument, Option, Typer
 
@@ -28,12 +30,18 @@ app = Typer()
 
 @app.command()
 def kolmogorov(config_path: Path,
+               devices: str = Option('0', help='Comma-separated list of GPUs'),
                overrides: Optional[List[str]] = Argument(None),
                debug: bool = Option(False, help='Enable debugging mode with ptvsd')):
     # This debug mode is for those who use VS Code's internal debugger.
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
+
+    device_list = [int(d) for d in devices.split(',')]
+    if len(device_list) > 1:
+        cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=device_list)
+        client = Client(cluster)
 
     config_dir = config_path.parent
     stem = config_path.stem
@@ -117,10 +125,13 @@ def kolmogorov(config_path: Path,
         )
 
     path = config_dir / f'{stem}.nc'
-    task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
 
-    with ProgressBar():
-        task.compute(num_workers=1)
+    if len(device_list) > 1:
+        ds.to_netcdf(path, engine='h5netcdf')
+    else:
+        task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
+        with ProgressBar():
+            task.compute(num_workers=1)
 
 
 @app.command()
