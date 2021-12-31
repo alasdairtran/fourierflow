@@ -27,7 +27,7 @@ app = Typer()
 
 
 @app.command()
-def kolmogorov(config_dir: Path,
+def kolmogorov(config_path: Path,
                overrides: Optional[List[str]] = Argument(None),
                debug: bool = Option(False, help='Enable debugging mode with ptvsd')):
     # This debug mode is for those who use VS Code's internal debugger.
@@ -35,8 +35,10 @@ def kolmogorov(config_dir: Path,
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
 
+    config_dir = config_path.parent
+    stem = config_path.stem
     hydra.initialize(config_path=str('../..' / config_dir))
-    c = hydra.compose(config_name='config', overrides=overrides or [])
+    c = hydra.compose(config_name=stem, overrides=overrides or [])
     OmegaConf.set_struct(c, False)
 
     # Define the physical dimensions of the simulation.
@@ -114,7 +116,7 @@ def kolmogorov(config_dir: Path,
             }
         )
 
-    path = config_dir / 'trajectories.nc'
+    path = config_dir / f'{stem}.nc'
     task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
 
     with ProgressBar():
