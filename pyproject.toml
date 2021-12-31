@@ -60,12 +60,13 @@ xarray = "^0.20.2"
 # ]
 
 [tool.poetry.dev-dependencies]
-# poetry add --dev autopep8 ipympl isort mypy pylint types-requests
+# poetry add --dev autopep8 ipympl isort mypy pylint pytest types-requests
 autopep8 = "^1.6.0"
 ipympl = "^0.8.4"
 isort = "^5.10.1"
 mypy = "^0.930"
 pylint = "^2.12.2"
+pytest = "^6.2.5"
 types-requests = "^2.26.3"
 
 [tool.poetry.scripts]
