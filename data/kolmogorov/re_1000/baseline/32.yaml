@@ -1,3 +1,4 @@
+# time_step: 0.014024967203525862
 sim_size: 32 # size of the domain during simulation
 out_size: 32 # size of the domain for saving to disk
 n_trajectories: 32 # number of trajectories to generate
