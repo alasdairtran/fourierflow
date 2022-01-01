@@ -108,7 +108,7 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # is only 0.04%.
 
 # Generate initial conditions for 2D Kolmogorov flows, similar to Kochkov
-# et al (2021).
+# et al (2021). This takes 47 GPU hours.
 fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/train.yaml
 fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/valid.yaml
 fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/test.yaml
