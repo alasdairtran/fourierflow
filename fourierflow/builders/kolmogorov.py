@@ -6,15 +6,13 @@ import jax_cfd.base as cfd
 import jax_cfd.data.xarray_utils as xru
 import xarray as xr
 from jax_cfd.base.funcutils import repeated, trajectory
-from jax_cfd.base.grids import Array, GridArray
-from jax_cfd.base.resize import downsample_staggered_velocity
-from jax_cfd.data.xarray_utils import vorticity_2d
+from jax_cfd.base.grids import Array
 from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
 from jax_cfd.spectral.utils import vorticity_to_velocity
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset
 
-from fourierflow.utils import import_string
+from fourierflow.utils import downsample_vorticity_hat, import_string
 
 from .base import Builder
 
@@ -146,7 +144,7 @@ def generate_kolmogorov(sim_size: int,
         # vorticity for an initial state.
         vorticity0 = cfd.finite_differences.curl_2d(v0).data
 
-    vorticity_hat0 = jnp.fft.rfftn(vorticity0)
+    vorticity_hat0 = jnp.fft.rfftn(vorticity0, axes=(0, 1))
 
     Equation = import_string(equation.target)
     kwargs = cast(Dict, OmegaConf.to_object(equation.kwargs))
@@ -170,23 +168,8 @@ def generate_kolmogorov(sim_size: int,
             if sim_size == out_size:
                 return jnp.fft.irfftn(vorticity_hat, axes=(0, 1))
 
-            # Convert the vorticity field to the velocity field.
-            vxhat, vyhat = velocity_solve(vorticity_hat)
-            vx, vy = jnp.fft.irfftn(vxhat), jnp.fft.irfftn(vyhat)
-            velocity = (GridArray(vx, offset=(1, 0.5), grid=sim_grid),
-                        GridArray(vy, offset=(0.5, 1), grid=sim_grid))
-
-            # Downsample the velocity field.
-            vx, vy = downsample_staggered_velocity(
-                sim_grid, out_grid, velocity)
-
-            # Convert back to the vorticity field.
-            x, y = out_grid.axes()
-            dx = x[1] - x[0]
-            dy = y[1] - y[0]
-            dv_dx = (jnp.roll(vy.data, shift=-1, axis=0) - vy.data) / dx
-            du_dy = (jnp.roll(vx.data, shift=-1, axis=1) - vx.data) / dy
-            vorticity = dv_dx - du_dy
+            vorticity = downsample_vorticity_hat(
+                vorticity_hat, velocity_solve, sim_grid, out_grid)
             return vorticity
 
         trajectory_fn = trajectory(step_fn, outer_steps, downsample)
