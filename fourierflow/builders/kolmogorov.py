@@ -6,8 +6,11 @@ import jax_cfd.base as cfd
 import jax_cfd.data.xarray_utils as xru
 import xarray as xr
 from jax_cfd.base.funcutils import repeated, trajectory
-from jax_cfd.base.grids import Array
+from jax_cfd.base.grids import Array, GridArray
+from jax_cfd.base.resize import downsample_staggered_velocity
+from jax_cfd.data.xarray_utils import vorticity_2d
 from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
+from jax_cfd.spectral.utils import vorticity_to_velocity
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset
 
@@ -110,7 +113,8 @@ class NavierStokesDataset(Dataset):
         }
 
 
-def generate_kolmogorov(size: int,
+def generate_kolmogorov(sim_size: int,
+                        out_size: int,
                         dt: float,
                         equation: DictConfig,
                         seed: jax.random.KeyArray,
@@ -125,15 +129,19 @@ def generate_kolmogorov(size: int,
     Adapted from https://github.com/google/jax-cfd/blob/main/notebooks/demo.ipynb
     """
     # Define the physical dimensions of the simulation.
-    grid = cfd.grids.Grid(shape=(size, size),
-                          domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+    sim_grid = cfd.grids.Grid(shape=(sim_size, sim_size),
+                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+    velocity_solve = vorticity_to_velocity(sim_grid)
+
+    out_grid = cfd.grids.Grid(shape=(out_size, out_size),
+                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
 
     if vorticity0 is None:
         # Construct a random initial velocity. The `filtered_velocity_field`
         # function ensures that the initial velocity is divergence free and it
         # filters out high frequency fluctuations.
         v0 = cfd.initial_conditions.filtered_velocity_field(
-            seed, grid, max_velocity, peak_wavenumber)
+            seed, sim_grid, max_velocity, peak_wavenumber)
         # Compute the fft of the vorticity. The spectral code assumes an fft'd
         # vorticity for an initial state.
         vorticity0 = cfd.finite_differences.curl_2d(v0).data
@@ -144,7 +152,7 @@ def generate_kolmogorov(size: int,
     kwargs = cast(Dict, OmegaConf.to_object(equation.kwargs))
     if 'forcing_fn' in kwargs:
         kwargs['forcing_fn'] = import_string(kwargs['forcing_fn'])
-    eqn = Equation(grid=grid, **kwargs)
+    eqn = Equation(grid=sim_grid, **kwargs)
     cnrk4 = crank_nicolson_rk4(eqn, dt)
     step_fn = repeated(cnrk4, inner_steps)
 
@@ -158,8 +166,31 @@ def generate_kolmogorov(size: int,
         return jnp.fft.irfftn(vorticity_hat0, axes=(0, 1))
 
     if outer_steps > 0:
-        def downsample(x):
-            return x
+        def downsample(vorticity_hat):
+            if sim_size == out_size:
+                return jnp.fft.irfftn(vorticity_hat, axes=(0, 1))
+
+            vxhat, vyhat = velocity_solve(vorticity_hat)
+            vx, vy = jnp.fft.irfftn(vxhat), jnp.fft.irfftn(vyhat)
+            velocity = (GridArray(vx, offset=(1, 0.5), grid=sim_grid),
+                        GridArray(vy, offset=(0.5, 1), grid=sim_grid))
+            vx, vy = downsample_staggered_velocity(
+                sim_grid, out_grid, velocity)
+            ds = xr.Dataset(
+                data_vars={
+                    'u': (('x', 'y'), vx.data),
+                    'v': (('x', 'y'), vy.data),
+                },
+                coords={
+                    'x': out_grid.axes()[0],
+                    'y': out_grid.axes()[1],
+                },
+            )
+
+            vorticity = vorticity_2d(ds)
+            return vorticity.data
+
         trajectory_fn = trajectory(step_fn, outer_steps, downsample)
         _, traj = trajectory_fn(vorticity_hat0)
-        return jnp.fft.irfftn(traj, axes=(1, 2))
+
+        return traj

@@ -50,12 +50,12 @@ def kolmogorov(config_path: Path,
     OmegaConf.set_struct(c, False)
 
     # Define the physical dimensions of the simulation.
-    grid = cfd.grids.Grid(shape=(c.size, c.size),
-                          domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+    sim_grid = cfd.grids.Grid(shape=(c.sim_size, c.sim_size),
+                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
 
     # Choose a time step.
     dt = cfd.equations.stable_time_step(
-        c.max_velocity, c.cfl_safety_factor, c.equation.kwargs.viscosity, grid)
+        c.max_velocity, c.cfl_safety_factor, c.equation.kwargs.viscosity, sim_grid)
 
     rng_key = jax.random.PRNGKey(c.seed)
     keys = jax.random.split(rng_key, c.n_trajectories)
@@ -71,12 +71,13 @@ def kolmogorov(config_path: Path,
     # https://github.com/pydata/xarray/issues/1672
     vorticities = []
     if c.outer_steps > 0:
-        shape = (c.outer_steps, c.size, c.size)
+        shape = (c.outer_steps, c.out_size, c.out_size)
     else:
-        shape = (c.size, c.size)
+        shape = (c.out_size, c.out_size)
     for i in range(c.n_trajectories):
         trajectory = dask.delayed(generate_kolmogorov)(
-            size=c.size,
+            sim_size=c.sim_size,
+            out_size=c.out_size,
             dt=dt,
             equation=c.equation,
             peak_wavenumber=c.peak_wavenumber,
@@ -96,6 +97,8 @@ def kolmogorov(config_path: Path,
     attrs = {k: (str(v) if isinstance(v, bool) else v)
              for k, v in attrs.items()}
 
+    out_grid = cfd.grids.Grid(shape=(c.out_size, c.out_size),
+                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
     if c.outer_steps > 0:
         ds = xr.Dataset(
             data_vars={
@@ -104,8 +107,8 @@ def kolmogorov(config_path: Path,
             coords={
                 'sample': range(c.n_trajectories),
                 'time': dt * c.inner_steps * np.arange(c.outer_steps),
-                'x': grid.axes()[0],
-                'y': grid.axes()[1],
+                'x': out_grid.axes()[0],
+                'y': out_grid.axes()[1],
             },
             attrs={
                 **attrs,
@@ -120,8 +123,8 @@ def kolmogorov(config_path: Path,
             },
             coords={
                 'sample': range(c.n_trajectories),
-                'x': grid.axes()[0],
-                'y': grid.axes()[1],
+                'x': out_grid.axes()[0],
+                'y': out_grid.axes()[1],
             },
             attrs={
                 **attrs,
