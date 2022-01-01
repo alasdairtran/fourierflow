@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -18,12 +19,19 @@ from dask.delayed import Delayed
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 from dask_cuda import LocalCUDACluster
+from jax_cfd.base.grids import GridArray
+from jax_cfd.base.resize import downsample_staggered_velocity
+from jax_cfd.spectral.utils import vorticity_to_velocity
 from omegaconf import OmegaConf
+from tqdm import tqdm
 from typer import Argument, Option, Typer
 
 from fourierflow.builders import generate_kolmogorov
 from fourierflow.builders.synthetic import (Force, GaussianRF,
                                             solve_navier_stokes_2d)
+from fourierflow.utils import downsample_vorticity_hat
+
+logger = logging.getLogger(__name__)
 
 app = Typer()
 
@@ -63,13 +71,27 @@ def kolmogorov(config_path: Path,
     init_path = c.get('init_path', None)
     if init_path:
         init_ds = xr.open_dataset(c.init_path, engine='h5netcdf')
-        vorticity0s = init_ds.vorticity.values
+        vorticities0 = init_ds.vorticity.values
+
+        if vorticities0.shape[1] != c.sim_size:
+            vorticities_hat0 = jnp.fft.rfftn(vorticities0, axes=(1, 2))
+
+            init_grid = cfd.grids.Grid(shape=vorticities0.shape[1:3],
+                                    domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+            velocity_solve = vorticity_to_velocity(init_grid)
+
+            logger.info('Downsampling initial vorticity field...')
+            vorticities0 = []
+            for vorticity_hat0 in tqdm(vorticities_hat0):
+                vorticity0 = downsample_vorticity_hat(
+                    vorticity_hat0, velocity_solve, init_grid, sim_grid)
+                vorticities0.append(vorticity0)
 
     # Appending to netCDF files is not supported yet, but we can use
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
-    vorticities = []
+    vorticity_list = []
     if c.outer_steps > 0:
         shape = (c.outer_steps, c.out_size, c.out_size)
     else:
@@ -83,14 +105,14 @@ def kolmogorov(config_path: Path,
             peak_wavenumber=c.peak_wavenumber,
             max_velocity=c.max_velocity,
             seed=keys[i],
-            vorticity0=vorticity0s[i] if init_path else None,
+            vorticity0=vorticities0[i] if init_path else None,
             inner_steps=c.inner_steps,
             outer_steps=c.outer_steps,
             warmup_steps=c.warmup_steps)
         vorticity = da.from_delayed(trajectory, shape, np.float32)
-        vorticities.append(vorticity)
+        vorticity_list.append(vorticity)
 
-    vorticities = da.stack(vorticities)
+    vorticities = da.stack(vorticity_list)
 
     attrs = pd.json_normalize(OmegaConf.to_object(c), sep='.')
     attrs = attrs.to_dict(orient='records')[0]
