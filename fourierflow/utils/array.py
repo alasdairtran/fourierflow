@@ -10,16 +10,16 @@ def correlation(x, y):
     return p.sum(state_dims)
 
 
-def downsample_vorticity_hat(vorticity_hat, velocity_solve, sim_grid, out_grid):
+def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid):
     # Convert the vorticity field to the velocity field.
     vxhat, vyhat = velocity_solve(vorticity_hat)
     vx, vy = jnp.fft.irfftn(vxhat), jnp.fft.irfftn(vyhat)
-    velocity = (GridArray(vx, offset=(1, 0.5), grid=sim_grid),
-                GridArray(vy, offset=(0.5, 1), grid=sim_grid))
+    velocity = (GridArray(vx, offset=(1, 0.5), grid=in_grid),
+                GridArray(vy, offset=(0.5, 1), grid=in_grid))
 
     # Downsample the velocity field.
     vx, vy = downsample_staggered_velocity(
-        sim_grid, out_grid, velocity)
+        in_grid, out_grid, velocity)
 
     # Convert back to the vorticity field.
     x, y = out_grid.axes()
