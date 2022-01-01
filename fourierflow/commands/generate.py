@@ -60,6 +60,11 @@ def kolmogorov(config_path: Path,
     rng_key = jax.random.PRNGKey(c.seed)
     keys = jax.random.split(rng_key, c.n_trajectories)
 
+    init_path = c.get('init_path', None)
+    if init_path:
+        init_ds = xr.open_dataset(c.init_path, engine='h5netcdf')
+        vorticity0s = init_ds.vorticity.values
+
     # Appending to netCDF files is not supported yet, but we can use
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
@@ -77,6 +82,7 @@ def kolmogorov(config_path: Path,
             peak_wavenumber=c.peak_wavenumber,
             max_velocity=c.max_velocity,
             seed=keys[i],
+            vorticity0=vorticity0s[i] if init_path else None,
             inner_steps=c.inner_steps,
             outer_steps=c.outer_steps,
             warmup_steps=c.warmup_steps)

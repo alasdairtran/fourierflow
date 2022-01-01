@@ -1,4 +1,4 @@
-from typing import Any, Dict, cast
+from typing import Dict, Optional, cast
 
 import jax
 import jax.numpy as jnp
@@ -6,6 +6,7 @@ import jax_cfd.base as cfd
 import jax_cfd.data.xarray_utils as xru
 import xarray as xr
 from jax_cfd.base.funcutils import repeated, trajectory
+from jax_cfd.base.grids import Array
 from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset
@@ -113,6 +114,7 @@ def generate_kolmogorov(size: int,
                         dt: float,
                         equation: DictConfig,
                         seed: jax.random.KeyArray,
+                        vorticity0: Optional[Array] = None,
                         peak_wavenumber: float = 4.0,
                         max_velocity: float = 7.0,
                         inner_steps: int = 25,
@@ -126,15 +128,16 @@ def generate_kolmogorov(size: int,
     grid = cfd.grids.Grid(shape=(size, size),
                           domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
 
-    # Construct a random initial velocity. The `filtered_velocity_field`
-    # function ensures that the initial velocity is divergence free and it
-    # filters out high frequency fluctuations.
-    v0 = cfd.initial_conditions.filtered_velocity_field(
-        seed, grid, max_velocity, peak_wavenumber)
+    if vorticity0 is None:
+        # Construct a random initial velocity. The `filtered_velocity_field`
+        # function ensures that the initial velocity is divergence free and it
+        # filters out high frequency fluctuations.
+        v0 = cfd.initial_conditions.filtered_velocity_field(
+            seed, grid, max_velocity, peak_wavenumber)
+        # Compute the fft of the vorticity. The spectral code assumes an fft'd
+        # vorticity for an initial state.
+        vorticity0 = cfd.finite_differences.curl_2d(v0).data
 
-    # Compute the fft of the vorticity. The spectral code assumes an fft'd
-    # vorticity for an initial state.
-    vorticity0 = cfd.finite_differences.curl_2d(v0).data
     vorticity_hat0 = jnp.fft.rfftn(vorticity0)
 
     Equation = import_string(equation.target)
