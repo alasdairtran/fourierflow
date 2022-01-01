@@ -3,10 +3,11 @@ n_trajectories: 32 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
-seed: 7598 # random seed for the initial velocity field
+seed: 83816 # random seed for the initial velocity field
 inner_steps: 1 # take a snapshot of the field once every these many ODE steps
 outer_steps: 2441 # the data saved on disk will have these many snapshots
-warmup_steps: 2852 # equivalent to 40 time units
+warmup_steps: 0 # equivalent to 40 time units
+init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test.nc
 cfl_safety_factor: 0.5
 equation:
   target: jax_cfd.spectral.equations.NavierStokes2D
