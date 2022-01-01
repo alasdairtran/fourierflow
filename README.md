@@ -112,6 +112,15 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/train.yaml
 fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/valid.yaml
 fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/test.yaml
+
+# Run baseline simulations with the numerical solver (no ML)
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/32.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/64.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/128.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/256.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/512.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/1024.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/2048.yaml
 ```
 
 Training and test commands:
