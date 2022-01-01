@@ -107,20 +107,24 @@ fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
 # take 10 times as long, while the difference between the solutions in step 20
 # is only 0.04%.
 
-# Generate initial conditions for 2D Kolmogorov flows, similar to Kochkov
-# et al (2021). This takes 47 GPU hours.
-fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/train.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/valid.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/test.yaml
+# Generate initial conditions for 2D Kolmogorov flows (Kochkov et al, 2021).
+fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/train.yaml # 22 GPU hours
+fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/valid.yaml # 3 GPU hours
+fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/test.yaml # 22 GPU hours
 
-# Run baseline simulations with the numerical solver (no ML)
+# Run baseline simulations with the numerical solver (no ML).
 fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/32.yaml
 fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/64.yaml
 fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/128.yaml
 fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/256.yaml
 fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/512.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/1024.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/1024.yaml # 2 GPU hours
 fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/2048.yaml
+
+# Generating training data for ML models.
+fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/train.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/valid.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/test.yaml
 ```
 
 Training and test commands:
