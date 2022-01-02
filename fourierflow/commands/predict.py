@@ -23,13 +23,13 @@ app = Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(config_dir: Optional[str] = Argument(None),
+def main(config_path: Optional[Path] = Argument(None),
          overrides: Optional[List[str]] = Argument(None),
          trial: Optional[int] = None,
          map_location: Optional[str] = None,
          debug: bool = False):
     """Test a Pytorch Lightning experiment."""
-    if not config_dir:
+    if not config_path:
         data_path = 'data/fourier/NavierStokes_V1e-5_N1200_T20.mat'
         data = scipy.io.loadmat(data_path)['u'].astype(np.float32)
         w0 = data[:512, :, :, 10]
@@ -42,8 +42,10 @@ def main(config_dir: Optional[str] = Argument(None),
         print(elasped)
         return
 
+    config_dir = config_path.parent
+    config_name = config_path.stem
     hydra.initialize(config_path=Path('../..') / config_dir)
-    config = hydra.compose(config_name='config', overrides=overrides)
+    config = hydra.compose(config_name, overrides=overrides)
     OmegaConf.set_struct(config, False)
 
     # This debug mode is for those who use VS Code's internal debugger.

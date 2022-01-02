@@ -23,12 +23,14 @@ app = Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(config_dir: str,
+def main(config_path: Path,
          overrides: Optional[List[str]] = Argument(None),
          debug: bool = False):
     """Train a JAX experiment."""
+    config_dir = config_path.parent
+    config_name = config_path.stem
     hydra.initialize(config_path=Path('../..') / config_dir)
-    config = hydra.compose(config_name='config', overrides=overrides)
+    config = hydra.compose(config_name, overrides=overrides)
     OmegaConf.set_struct(config, False)
 
     # This debug mode is for those who use VS Code's internal debugger.
