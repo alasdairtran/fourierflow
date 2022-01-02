@@ -77,7 +77,7 @@ def kolmogorov(config_path: Path,
             vorticities_hat0 = jnp.fft.rfftn(vorticities0, axes=(1, 2))
 
             init_grid = cfd.grids.Grid(shape=vorticities0.shape[1:3],
-                                    domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+                                       domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
             velocity_solve = vorticity_to_velocity(init_grid)
 
             logger.info('Downsampling initial vorticity field...')
@@ -92,12 +92,13 @@ def kolmogorov(config_path: Path,
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
     vorticity_list = []
+    duration_list = []
     if c.outer_steps > 0:
         shape = (c.outer_steps, c.out_size, c.out_size)
     else:
         shape = (c.out_size, c.out_size)
     for i in range(c.n_trajectories):
-        trajectory = dask.delayed(generate_kolmogorov)(
+        out = dask.delayed(generate_kolmogorov)(
             sim_size=c.sim_size,
             out_size=c.out_size,
             dt=dt,
@@ -109,10 +110,13 @@ def kolmogorov(config_path: Path,
             inner_steps=c.inner_steps,
             outer_steps=c.outer_steps,
             warmup_steps=c.warmup_steps)
+        trajectory, elapsed = out[0], out[1]
         vorticity = da.from_delayed(trajectory, shape, np.float32)
         vorticity_list.append(vorticity)
+        duration_list.append(da.from_delayed(elapsed, (), np.float32))
 
     vorticities = da.stack(vorticity_list)
+    durations = da.stack(duration_list)
 
     attrs = pd.json_normalize(OmegaConf.to_object(c), sep='.')
     attrs = attrs.to_dict(orient='records')[0]
@@ -125,6 +129,7 @@ def kolmogorov(config_path: Path,
         ds = xr.Dataset(
             data_vars={
                 'vorticity': (('sample', 'time', 'x', 'y'), vorticities),
+                'elapsed': ('sample', durations),
             },
             coords={
                 'sample': range(c.n_trajectories),
@@ -142,6 +147,7 @@ def kolmogorov(config_path: Path,
         ds = xr.Dataset(
             data_vars={
                 'vorticity': (('sample', 'x', 'y'), vorticities),
+                'elapsed': ('sample', durations),
             },
             coords={
                 'sample': range(c.n_trajectories),

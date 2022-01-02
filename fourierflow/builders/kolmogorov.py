@@ -1,9 +1,11 @@
+import time
 from typing import Dict, Optional, cast
 
 import jax
 import jax.numpy as jnp
 import jax_cfd.base as cfd
 import jax_cfd.data.xarray_utils as xru
+import numpy as np
 import xarray as xr
 from jax_cfd.base.funcutils import repeated, trajectory
 from jax_cfd.base.grids import Array
@@ -160,8 +162,10 @@ def generate_kolmogorov(sim_size: int,
         def ignore(_):
             return None
         trajectory_fn = trajectory(step_fn, warmup_steps, ignore)
+        start = time.time()
         vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
-        return jnp.fft.irfftn(vorticity_hat0, axes=(0, 1))
+        elapsed = np.float32(time.time() - start)
+        return jnp.fft.irfftn(vorticity_hat0, axes=(0, 1)), elapsed
 
     if outer_steps > 0:
         def downsample(vorticity_hat):
@@ -173,6 +177,8 @@ def generate_kolmogorov(sim_size: int,
             return vorticity
 
         trajectory_fn = trajectory(step_fn, outer_steps, downsample)
+        start = time.time()
         _, traj = trajectory_fn(vorticity_hat0)
+        elapsed = np.float32(time.time() - start)
 
-        return traj
+        return traj, elapsed
