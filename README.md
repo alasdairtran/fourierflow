@@ -113,13 +113,13 @@ fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/valid
 fourierflow generate kolmogorov data/kolmogorov/re_1000/initial_conditions/test.yaml # 22 GPU hours
 
 # Run baseline simulations with the numerical solver (no ML).
-fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/32.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/64.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/128.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/256.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/512.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/32.yaml # 1 GPU min
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/64.yaml # 2 GPU mins
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/128.yaml # 3 GPU mins
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/256.yaml # 6 GPU mins
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/512.yaml # 20 GPU mins
 fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/1024.yaml # 2 GPU hours
-fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/2048.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/2048.yaml # 19 GPU hours
 
 # Generating training data for ML models.
 fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/train.yaml
