@@ -30,3 +30,7 @@ def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid):
     vorticity = dv_dx - du_dy
 
     return vorticity
+
+
+def calculate_time_until(vorticity_corr, threshold=0.95):
+    return (vorticity_corr.mean('sample') >= threshold).idxmin('time').rename('time_until')

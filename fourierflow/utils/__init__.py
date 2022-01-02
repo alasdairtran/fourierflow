@@ -1,4 +1,4 @@
-from .array import correlation, downsample_vorticity_hat
+from .array import calculate_time_until, correlation, downsample_vorticity_hat
 from .exceptions import ExistingExperimentFound
 from .helpers import cache_fn, default, exists
 from .logger import setup_logger
