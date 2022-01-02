@@ -5,13 +5,37 @@ import numpy as np
 import scipy.io
 import seaborn as sns
 import wandb
+import xarray as xr
 from matplotlib.lines import Line2D
 from typer import Typer
 
+from fourierflow.utils import calculate_time_until, correlation
 from fourierflow.viz.heatmap import MidpointNormalize
 
 pal = sns.color_palette()
 app = Typer()
+
+
+@app.command()
+def corerlation():
+    sizes = [32, 64, 128, 256, 512, 1024, 2048]
+    simulations = {}
+    for size in sizes:
+        path = f'data/kolmogorov/re_1000/baseline/{size}.nc'
+        simulations[size] = xr.open_dataset(path)
+
+    combined = xr.concat(simulations.values(), dim='size')
+    combined.coords['size'] = sizes
+
+    # Even the best model diverges from ground truth by time 10. Thus we
+    # only look at the first 10 simulation steps to save computation time.
+    w = combined.vorticity.sel(time=slice(10))
+    rho = correlation(w, w.sel(size=2048)).compute()
+
+    times = calculate_time_until(rho)
+    # array([0.448799, 1.248222, 2.440344, 3.744666, 5.048988, 6.40941 , 0.      ])
+    # Compared to original paper:
+    # array([1.711046, 2.973293, 4.15139 , 5.497787, 7.208833, 0.      ])
 
 
 @app.command()

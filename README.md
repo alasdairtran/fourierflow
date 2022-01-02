@@ -153,6 +153,9 @@ fourierflow plot flow
 
 # Create plots for the poster
 fourierflow plot poster
+
+# Create plots related to comparison with 2D Kolmogorov flows (Kochkov et al, 2021).
+fourierflow plot correlation
 ```
 
 ## Experiments with JAX-CFD
@@ -166,3 +169,5 @@ gsutil -m cp -r gs://gresearch/jax-cfd data/
 
 Our model is based on the code of the original author of the Fourier Neural
 Operators paper: https://github.com/zongyi-li/fourier_neural_operator
+
+JAX-based models are adapted from JAX-CFD: https://github.com/google/jax-cfd
