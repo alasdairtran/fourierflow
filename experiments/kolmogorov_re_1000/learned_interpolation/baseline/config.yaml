@@ -1,0 +1,2 @@
+builder:
+  train_path: ${oc.env:DATA_ROOT}/re_1000/re_1000/kolmogorov_re_1000/initial_conditions/train.nc
