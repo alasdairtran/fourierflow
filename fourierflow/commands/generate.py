@@ -161,7 +161,7 @@ def kolmogorov(config_path: Path,
         ds.to_netcdf(path, engine='h5netcdf')
     else:
         task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
-        with ProgressBar():
+        with ProgressBar(dt=1):
             task.compute(num_workers=1)
 
 
