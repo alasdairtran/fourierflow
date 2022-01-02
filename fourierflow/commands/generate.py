@@ -60,6 +60,8 @@ def kolmogorov(config_path: Path,
     # Define the physical dimensions of the simulation.
     sim_grid = cfd.grids.Grid(shape=(c.sim_size, c.sim_size),
                               domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+    out_grid = cfd.grids.Grid(shape=(c.out_size, c.out_size),
+                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
 
     # Choose a time step.
     dt = cfd.equations.stable_time_step(
@@ -87,16 +89,30 @@ def kolmogorov(config_path: Path,
                     vorticity_hat0, velocity_solve, init_grid, sim_grid)
                 vorticities0.append(vorticity0)
 
+    if c.outer_steps > 0:
+        shape = (c.outer_steps, c.out_size, c.out_size)
+        dim_names = ('sample', 'time', 'x', 'y')
+        coords = {
+            'sample': range(c.n_trajectories),
+            'time': dt * c.inner_steps * np.arange(c.outer_steps),
+            'x': out_grid.axes()[0],
+            'y': out_grid.axes()[1],
+        }
+    else:
+        shape = (c.out_size, c.out_size)
+        dim_names = ('sample', 'x', 'y')
+        coords = {
+            'sample': range(c.n_trajectories),
+            'x': out_grid.axes()[0],
+            'y': out_grid.axes()[1],
+        }
+
     # Appending to netCDF files is not supported yet, but we can use
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
     vorticity_list = []
     duration_list = []
-    if c.outer_steps > 0:
-        shape = (c.outer_steps, c.out_size, c.out_size)
-    else:
-        shape = (c.out_size, c.out_size)
     for i in range(c.n_trajectories):
         out = dask.delayed(generate_kolmogorov)(
             sim_size=c.sim_size,
@@ -123,43 +139,18 @@ def kolmogorov(config_path: Path,
     attrs = {k: (str(v) if isinstance(v, bool) else v)
              for k, v in attrs.items()}
 
-    out_grid = cfd.grids.Grid(shape=(c.out_size, c.out_size),
-                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
-    if c.outer_steps > 0:
-        ds = xr.Dataset(
-            data_vars={
-                'vorticity': (('sample', 'time', 'x', 'y'), vorticities),
-                'elapsed': ('sample', durations),
-            },
-            coords={
-                'sample': range(c.n_trajectories),
-                'time': dt * c.inner_steps * np.arange(c.outer_steps),
-                'x': out_grid.axes()[0],
-                'y': out_grid.axes()[1],
-            },
-            attrs={
-                **attrs,
-                'dt': dt,
-                'domain_size': 2 * jnp.pi,
-            }
-        )
-    else:
-        ds = xr.Dataset(
-            data_vars={
-                'vorticity': (('sample', 'x', 'y'), vorticities),
-                'elapsed': ('sample', durations),
-            },
-            coords={
-                'sample': range(c.n_trajectories),
-                'x': out_grid.axes()[0],
-                'y': out_grid.axes()[1],
-            },
-            attrs={
-                **attrs,
-                'dt': dt,
-                'domain_size': 2 * jnp.pi,
-            }
-        )
+    ds = xr.Dataset(
+        data_vars={
+            'vorticity': (dim_names, vorticities),
+            'elapsed': ('sample', durations),
+        },
+        coords=coords,
+        attrs={
+            **attrs,
+            'dt': dt,
+            'domain_size': 2 * jnp.pi,
+        }
+    )
 
     path = config_dir / f'{stem}.nc'
 
