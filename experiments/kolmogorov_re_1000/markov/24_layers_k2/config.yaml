@@ -16,7 +16,8 @@ builder:
   valid_k: 2
   test_k: 2
   batch_size: 32
-  n_workers: 4
+  num_workers: 4
+  pin_memory: true
 routine:
   _target_: fourierflow.routines.Grid2DMarkovExperiment
   conv:

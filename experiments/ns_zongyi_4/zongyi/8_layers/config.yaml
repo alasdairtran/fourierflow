@@ -14,7 +14,8 @@ builder:
   ssr: 1 # sub-sampling rate
   n_steps: 10
   batch_size: 20
-  n_workers: 4
+  num_workers: 4
+  pin_memory: true
 routine:
   _target_: fourierflow.routines.Grid2DRolloutExperiment
   conv:

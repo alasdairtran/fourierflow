@@ -12,7 +12,8 @@ builder:
   ssr: 4 # sub-sampling rate
   k: 10 # the number of steps between input and output
   batch_size: 19
-  n_workers: 16
+  num_workers: 16
+  pin_memory: true
 routine:
   _target_: fourierflow.routines.Grid2DMarkovExperiment
   conv:
