@@ -19,8 +19,6 @@ from dask.delayed import Delayed
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 from dask_cuda import LocalCUDACluster
-from jax_cfd.base.grids import GridArray
-from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.spectral.utils import vorticity_to_velocity
 from omegaconf import OmegaConf
 from tqdm import tqdm

@@ -7,14 +7,12 @@ import jax.numpy as jnp
 import jax_cfd.base as cfd
 import numpy as np
 import xarray as xr
-from elegy.data import DataLoader as ElegyDataLoader
 from elegy.data import Dataset as ElegyDataset
 from jax_cfd.base.funcutils import repeated, trajectory
 from jax_cfd.base.grids import Array, Grid
 from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
 from jax_cfd.spectral.utils import vorticity_to_velocity
 from omegaconf import DictConfig, OmegaConf
-from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import Dataset as TorchDataset
 
 from fourierflow.utils import downsample_vorticity_hat, import_string
