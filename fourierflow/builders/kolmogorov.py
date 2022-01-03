@@ -1,18 +1,21 @@
 import time
 from typing import Dict, Optional, cast
 
+import elegy as eg
 import jax
 import jax.numpy as jnp
 import jax_cfd.base as cfd
-import jax_cfd.data.xarray_utils as xru
 import numpy as np
 import xarray as xr
+from elegy.data import DataLoader as ElegyDataLoader
+from elegy.data import Dataset as ElegyDataset
 from jax_cfd.base.funcutils import repeated, trajectory
-from jax_cfd.base.grids import Array
+from jax_cfd.base.grids import Array, Grid
 from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
 from jax_cfd.spectral.utils import vorticity_to_velocity
 from omegaconf import DictConfig, OmegaConf
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader as TorchDataLoader
+from torch.utils.data import Dataset as TorchDataset
 
 from fourierflow.utils import downsample_vorticity_hat, import_string
 
@@ -22,69 +25,49 @@ from .base import Builder
 class KolmogorovBuilder(Builder):
     name = 'kolmogorov'
 
-    def __init__(self, train_path: str, valid_path: str, test_path: str, train_k: int,
-                 valid_k: int, test_k: int, n_workers: int, batch_size: int):
+    def __init__(self, train_path: str, valid_path: str, test_path: str,
+                 train_k: int, valid_k: int, test_k: int, size: int,
+                 loader_target: str = 'torch.utils.data.DataLoader', **kwargs):
         super().__init__()
-        self.n_workers = n_workers
-        self.batch_size = batch_size
+        self.kwargs = kwargs
+        self.train_dataset = KolmogorovMarkovDataset(train_path, size, train_k)
+        self.valid_dataset = KolmogorovMarkovDataset(valid_path, size, valid_k)
+        self.test_dataset = KolmogorovMarkovDataset(test_path, size, test_k)
+        self.DataLoader = import_string(loader_target)
 
-        train_ds = xr.open_dataset(train_path)
-        train_ds['vorticity'] = xru.vorticity_2d(train_ds)
-        train_w = train_ds['vorticity'].values
-        train_w = train_w.transpose(0, 2, 3, 1)
-        # train_w.shape == [32, 64, 64, 4880]
-
-        valid_ds = xr.open_dataset(valid_path)
-        valid_ds['vorticity'] = xru.vorticity_2d(valid_ds)
-        valid_w = valid_ds['vorticity'].values
-        valid_w = valid_w.transpose(0, 2, 3, 1)
-        # valid_w.shape == [32, 64, 64, 488]
-
-        test_ds = xr.open_dataset(test_path)
-        test_ds['vorticity'] = xru.vorticity_2d(test_ds)
-        test_w = test_ds['vorticity'].values
-        test_w = test_w.transpose(0, 2, 3, 1)
-        # valid_w.shape == [32, 64, 64, 488]
-
-        self.train_dataset = NavierStokesTrainingDataset(train_w, train_k)
-        self.valid_dataset = NavierStokesDataset(valid_w, valid_k)
-        self.test_dataset = NavierStokesDataset(test_w, test_k)
-
-    def train_dataloader(self) -> DataLoader:
-        loader = DataLoader(self.train_dataset,
-                            batch_size=self.batch_size,
-                            shuffle=True,
-                            num_workers=self.n_workers,
-                            drop_last=False,
-                            pin_memory=True)
+    def train_dataloader(self) -> eg.data.DataLoader:
+        loader = self.DataLoader(self.train_dataset,
+                                 shuffle=True,
+                                 **self.kwargs)
         return loader
 
-    def val_dataloader(self) -> DataLoader:
-        loader = DataLoader(self.valid_dataset,
-                            batch_size=self.batch_size,
-                            shuffle=False,
-                            num_workers=self.n_workers,
-                            drop_last=False,
-                            pin_memory=True)
+    def val_dataloader(self) -> eg.data.DataLoader:
+        loader = self.DataLoader(self.valid_dataset,
+                                 shuffle=False,
+                                 **self.kwargs)
         return loader
 
-    def test_dataloader(self) -> DataLoader:
-        loader = DataLoader(self.test_dataset,
-                            batch_size=self.batch_size,
-                            shuffle=False,
-                            num_workers=self.n_workers,
-                            drop_last=False,
-                            pin_memory=True)
+    def test_dataloader(self) -> eg.data.DataLoader:
+        loader = self.DataLoader(self.test_dataset,
+                                 shuffle=False,
+                                 **self.kwargs)
         return loader
 
 
-class NavierStokesTrainingDataset(Dataset):
-    def __init__(self, data, k):
-        self.data = data
+class KolmogorovMarkovDataset(TorchDataset, ElegyDataset):
+    def __init__(self, path, size, k):
+        ds = xr.open_dataset(path)
+        self.vorticity = ds.vorticity
         self.k = k
 
-        self.B = self.data.shape[0]
-        self.T = self.data.shape[-1] - self.k
+        self.B = self.vorticity.shape[0]
+        self.T = self.vorticity.shape[1] - self.k
+        init_size = self.vorticity.shape[2]
+
+        domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
+        self.init_grid = Grid(shape=(init_size, init_size), domain=domain)
+        self.out_grid = Grid(shape=(size, size), domain=domain)
+        self.velocity_solve = vorticity_to_velocity(self.init_grid)
 
     def __len__(self):
         return self.B * self.T
@@ -92,24 +75,45 @@ class NavierStokesTrainingDataset(Dataset):
     def __getitem__(self, idx):
         b = idx // self.T
         t = idx % self.T
+        k = self.k
+
+        vorticity = self.vorticity[b, t:t+k+1:k].values
+        vorticity_hat = jnp.fft.rfftn(vorticity, axes=(1, 2))
+        x = downsample_vorticity_hat(vorticity_hat[0], self.velocity_solve,
+                                     self.init_grid, self.out_grid)
+        y = downsample_vorticity_hat(vorticity_hat[1], self.velocity_solve,
+                                     self.init_grid, self.out_grid)
+
         return {
-            'x': self.data[b, :, :, t:t+1],
-            'y': self.data[b, :, :, t+self.k:t+self.k+1],
+            'x': x,
+            'y': y,
         }
 
 
-class NavierStokesDataset(Dataset):
-    def __init__(self, data, k):
-        self.data = data
+class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
+    def __init__(self, path, size, k):
+        ds = xr.open_dataset(path)
+        self.vorticity = ds.vorticity
+
         self.k = k
         self.B = self.data.shape[0]
+        init_size = self.vorticity.shape[2]
+
+        domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
+        self.init_grid = Grid(shape=(init_size, init_size), domain=domain)
+        self.out_grid = Grid(shape=(size, size), domain=domain)
+        self.velocity_solve = vorticity_to_velocity(self.init_grid)
 
     def __len__(self):
         return self.B
 
     def __getitem__(self, b):
+        vorticity = self.vorticity[b, ::self.k].values
+        vorticity_hat = jnp.fft.rfftn(vorticity, axes=(1, 2))
+        data = downsample_vorticity_hat(vorticity_hat[0], self.velocity_solve,
+                                        self.init_grid, self.out_grid)
         return {
-            'data': self.data[b, :, :, ::self.k],
+            'data': data,
         }
 
 
