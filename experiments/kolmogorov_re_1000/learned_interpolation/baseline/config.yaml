@@ -1,2 +1,37 @@
 builder:
-  train_path: ${oc.env:DATA_ROOT}/re_1000/re_1000/kolmogorov_re_1000/initial_conditions/train.nc
+  _target_: fourierflow.builders.KolmogorovBuilder
+  loader_target: elegy.data.DataLoader
+  train_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train.nc
+  valid_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid.nc
+  test_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test.nc
+  train_k: 40
+  valid_k: 4
+  test_k: 4
+  size: 32
+  batch_size: 1
+  n_workers: 0
+routine:
+  _target_: fourierflow.routines.LearnedInterpolator
+  size: 32
+  dt: 0.001
+  physics_specs:
+    _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
+    density: 1.0
+    viscosity: 1e-3
+    forcing_module:
+      _target_: functools.partial
+      _args_: ["${get_method: jax_cfd.ml.forcings.kolmogorov_forcing}"]
+      scale: 1.0
+      wavenumber: 4
+      linear_coefficient: -0.1
+  convection_module:
+    _target_: functools.partial
+    _args_: ["${get_method: jax_cfd.ml.advections.self_advection}"]
+    advection_module:
+      _target_: functools.partial
+      _args_: ["${get_method: jax_cfd.ml.advections.modular_self_advection}"]
+      interpolation_module:
+        _target_: functools.partial
+        _args_: ["${get_method: jax_cfd.ml.interpolations.FusedLearnedInterpolation}"]
+        tags: ['u', 'c']
+  seed: 5123
