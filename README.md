@@ -122,9 +122,9 @@ fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/1024.yaml # 2 G
 fourierflow generate kolmogorov data/kolmogorov/re_1000/baseline/2048.yaml # 19 GPU hours
 
 # Generating training data for ML models.
-fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/train.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/valid.yaml
-fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/test.yaml
+fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/train.yaml # 19 GPU hours
+fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/valid.yaml # 2 GPU hours
+fourierflow generate kolmogorov data/kolmogorov/re_1000/trajectories/test.yaml # 19 GPU hours
 ```
 
 Training and test commands:
