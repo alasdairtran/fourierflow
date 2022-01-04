@@ -1,6 +1,6 @@
 # time_step: 0.014024967203525862
 sim_size: 32 # size of the domain during simulation
-out_size: 32 # size of the domain for saving to disk
+out_sizes: [32] # size of the domain for saving to disk
 n_trajectories: 32 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
@@ -9,7 +9,7 @@ seed: 83816 # random seed for the initial velocity field
 inner_steps: 1 # take a snapshot of the field once every these many ODE steps
 outer_steps: 2441 # the data saved on disk will have these many snapshots
 warmup_steps: 0 # equivalent to 40 time units
-init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test.nc
+init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_32.nc
 cfl_safety_factor: 0.5
 equation:
   target: jax_cfd.spectral.equations.NavierStokes2D

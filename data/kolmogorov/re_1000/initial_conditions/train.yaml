@@ -1,5 +1,5 @@
 sim_size: 2048 # size of the domain during simulation
-out_size: 2048 # size of the domain for saving to disk
+out_sizes: [2048, 1024, 512, 256, 128, 64, 32] # size of the domain for saving to disk
 n_trajectories: 32 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
