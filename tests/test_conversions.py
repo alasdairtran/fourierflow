@@ -1,7 +1,6 @@
 import jax.numpy as jnp
 import jax_cfd.base as cfd
 import xarray as xr
-from jax_cfd.data.xarray_utils import vorticity_2d
 from jax_cfd.spectral import utils as spectral_utils
 
 from fourierflow.utils import correlation, downsample_vorticity_hat
@@ -53,22 +52,28 @@ def test_repeated_downsampling():
     grid_256 = cfd.grids.Grid(shape=(256, 256), domain=domain)
     grid_128 = cfd.grids.Grid(shape=(128, 128), domain=domain)
     grid_64 = cfd.grids.Grid(shape=(64, 64), domain=domain)
-    velocity_solve = spectral_utils.vorticity_to_velocity(grid_2048)
+    grid_32 = cfd.grids.Grid(shape=(32, 32), domain=domain)
+    velocity_solve_2048 = spectral_utils.vorticity_to_velocity(grid_2048)
 
-    # Directly downsample 2048x2048 grid to 64x64 grid.
-    vorticity_direct = downsample_vorticity_hat(
-        vorticity_2048_hat, velocity_solve, grid_2048, grid_64, True)
+    # We suffer up to 8% correlation loss when doing repeated downsampling!
+    grids = [grid_1024, grid_512, grid_256, grid_128, grid_64, grid_32]
+    ref_rhos = [0.9999999, 0.999, 0.998, 0.99, 0.97, .927]
 
-    # Keep halving 2048x2048 grid until we get 64x64 grid.
+    # Keep halving 2048x2048 grid until we get a 32x32 grid.
     grid_prev = grid_2048
     vorticity_hat = vorticity_2048_hat
-    for grid in [grid_1024, grid_512, grid_256, grid_128, grid_64]:
+    for ref_rho, grid in zip(ref_rhos, grids):
         velocity_solve = spectral_utils.vorticity_to_velocity(grid_prev)
         vorticity = downsample_vorticity_hat(
             vorticity_hat, velocity_solve, grid_prev, grid, True)
+
+        # Directly downsample from 2048x2048 grid.
+        vorticity_direct = downsample_vorticity_hat(
+            vorticity_2048_hat, velocity_solve_2048, grid_2048, grid, True)
+
+        rho = correlation(vorticity_direct, vorticity)
+        assert rho > ref_rho
+
+        # Prepare inputs for next iteration
         vorticity_hat = jnp.fft.rfftn(vorticity.values)
         grid_prev = grid
-
-    # We suffer about 3% correlation loss when doing repeated downsampling.
-    rho = correlation(vorticity_direct, vorticity)
-    assert rho > 0.97

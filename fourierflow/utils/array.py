@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import xarray as xr
-from jax_cfd.base.grids import Array, GridArray
+from jax_cfd.base.grids import GridArray
 from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.data.xarray_utils import normalize
 
