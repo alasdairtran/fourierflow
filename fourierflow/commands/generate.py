@@ -9,7 +9,6 @@ import h5py
 import hydra
 import jax
 import jax.numpy as jnp
-import jax_cfd.base as cfd
 import numpy as np
 import pandas as pd
 import ptvsd
@@ -19,6 +18,8 @@ from dask.delayed import Delayed
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 from dask_cuda import LocalCUDACluster
+from jax_cfd.base.equations import stable_time_step
+from jax_cfd.base.grids import Grid
 from omegaconf import OmegaConf
 from typer import Argument, Option, Typer
 
@@ -54,14 +55,14 @@ def kolmogorov(config_path: Path,
 
     # Define the physical dimensions of the simulation.
     domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
-    sim_grid = cfd.grids.Grid(shape=(c.sim_size, c.sim_size), domain=domain)
+    sim_grid = Grid(shape=(c.sim_size, c.sim_size), domain=domain)
     out_grids = {}
     for size in c.out_sizes:
-        grid = cfd.grids.Grid(shape=(size, size), domain=domain)
+        grid = Grid(shape=(size, size), domain=domain)
         out_grids[size] = grid
 
     # Choose a time step.
-    dt = cfd.equations.stable_time_step(
+    dt = stable_time_step(
         c.max_velocity, c.cfl_safety_factor, c.equation.kwargs.viscosity, sim_grid)
 
     rng_key = jax.random.PRNGKey(c.seed)

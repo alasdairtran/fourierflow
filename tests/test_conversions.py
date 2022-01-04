@@ -1,6 +1,6 @@
 import jax.numpy as jnp
-import jax_cfd.base as cfd
 import xarray as xr
+from jax_cfd.base.grids import Grid
 from jax_cfd.spectral import utils as spectral_utils
 
 from fourierflow.utils import correlation, downsample_vorticity_hat
@@ -10,8 +10,8 @@ def test_convert_vorticity_to_velocity_and_back():
     path = './data/kolmogorov/re_1000/initial_conditions/test.nc'
     ds = xr.open_dataset(path, engine='h5netcdf')
 
-    grid = cfd.grids.Grid(shape=(2048, 2048),
-                          domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+    grid = Grid(shape=(2048, 2048),
+                domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
 
     velocity_solve = spectral_utils.vorticity_to_velocity(grid)
 
@@ -47,13 +47,13 @@ def test_repeated_downsampling():
     vorticity_2048_hat = jnp.fft.rfftn(vorticity_2048.values, axes=(0, 1))
 
     domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
-    grid_2048 = cfd.grids.Grid(shape=(2048, 2048), domain=domain)
-    grid_1024 = cfd.grids.Grid(shape=(1024, 1024), domain=domain)
-    grid_512 = cfd.grids.Grid(shape=(512, 512), domain=domain)
-    grid_256 = cfd.grids.Grid(shape=(256, 256), domain=domain)
-    grid_128 = cfd.grids.Grid(shape=(128, 128), domain=domain)
-    grid_64 = cfd.grids.Grid(shape=(64, 64), domain=domain)
-    grid_32 = cfd.grids.Grid(shape=(32, 32), domain=domain)
+    grid_2048 = Grid(shape=(2048, 2048), domain=domain)
+    grid_1024 = Grid(shape=(1024, 1024), domain=domain)
+    grid_512 = Grid(shape=(512, 512), domain=domain)
+    grid_256 = Grid(shape=(256, 256), domain=domain)
+    grid_128 = Grid(shape=(128, 128), domain=domain)
+    grid_64 = Grid(shape=(64, 64), domain=domain)
+    grid_32 = Grid(shape=(32, 32), domain=domain)
     velocity_solve_2048 = spectral_utils.vorticity_to_velocity(grid_2048)
 
     # We suffer up to 8% correlation loss when doing repeated downsampling!

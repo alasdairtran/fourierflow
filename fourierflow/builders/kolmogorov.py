@@ -4,12 +4,13 @@ from typing import Dict, List, Optional, cast
 import elegy as eg
 import jax
 import jax.numpy as jnp
-import jax_cfd.base as cfd
 import numpy as np
 import xarray as xr
 from elegy.data import Dataset as ElegyDataset
+from jax_cfd.base.finite_differences import curl_2d
 from jax_cfd.base.funcutils import repeated, trajectory
 from jax_cfd.base.grids import Array, Grid
+from jax_cfd.base.initial_conditions import filtered_velocity_field
 from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
 from jax_cfd.spectral.utils import vorticity_to_velocity
 from omegaconf import DictConfig, OmegaConf
@@ -132,23 +133,23 @@ def generate_kolmogorov(sim_size: int,
     """
     # Define the physical dimensions of the simulation.
     domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
-    sim_grid = cfd.grids.Grid(shape=(sim_size, sim_size), domain=domain)
+    sim_grid = Grid(shape=(sim_size, sim_size), domain=domain)
     velocity_solve = vorticity_to_velocity(sim_grid)
 
     out_grids = {}
     for out_size in out_sizes:
-        grid = cfd.grids.Grid(shape=(out_size, out_size), domain=domain)
+        grid = Grid(shape=(out_size, out_size), domain=domain)
         out_grids[out_size] = grid
 
     if vorticity0 is None:
         # Construct a random initial velocity. The `filtered_velocity_field`
         # function ensures that the initial velocity is divergence free and it
         # filters out high frequency fluctuations.
-        v0 = cfd.initial_conditions.filtered_velocity_field(
+        v0 = filtered_velocity_field(
             seed, sim_grid, max_velocity, peak_wavenumber)
         # Compute the fft of the vorticity. The spectral code assumes an fft'd
         # vorticity for an initial state.
-        vorticity0 = cfd.finite_differences.curl_2d(v0).data
+        vorticity0 = curl_2d(v0).data
 
     vorticity_hat0 = jnp.fft.rfftn(vorticity0, axes=(0, 1))
 

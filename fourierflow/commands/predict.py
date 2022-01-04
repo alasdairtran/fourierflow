@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List, Optional
 
 import hydra
-import jax_cfd.data.xarray_utils as xru
 import numpy as np
 import ptvsd
 import pytorch_lightning as pl
@@ -13,6 +12,7 @@ import scipy.io
 import torch
 import xarray
 from hydra.utils import instantiate
+from jax_cfd.data.xarray_utils import vorticity_2d
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
 from typer import Argument, Typer
@@ -84,7 +84,7 @@ def main(config_path: Optional[Path] = Argument(None),
     if 'kolmogorov' in config_dir:
         test_path = 'data/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc'
         test_ds = xarray.open_dataset(test_path)
-        test_ds['vorticity'] = xru.vorticity_2d(test_ds)
+        test_ds['vorticity'] = vorticity_2d(test_ds)
         test_w = test_ds['vorticity'].values
         test_w = test_w.transpose(0, 2, 3, 1)
         data = torch.from_numpy(test_w).cuda()[0:1]
