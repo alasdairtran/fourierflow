@@ -1,8 +1,7 @@
 import logging
 import os
-from collections import defaultdict
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import dask
 import dask.array as da
@@ -20,15 +19,12 @@ from dask.delayed import Delayed
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 from dask_cuda import LocalCUDACluster
-from jax_cfd.spectral.utils import vorticity_to_velocity
 from omegaconf import OmegaConf
-from tqdm import tqdm
 from typer import Argument, Option, Typer
 
 from fourierflow.builders import generate_kolmogorov
 from fourierflow.builders.synthetic import (Force, GaussianRF,
                                             solve_navier_stokes_2d)
-from fourierflow.utils import downsample_vorticity_hat
 
 logger = logging.getLogger(__name__)
 
@@ -75,20 +71,7 @@ def kolmogorov(config_path: Path,
     if init_path:
         init_ds = xr.open_dataset(c.init_path, engine='h5netcdf')
         vorticities0 = init_ds.vorticity.values
-
-        if vorticities0.shape[1] != c.sim_size:
-            vorticities_hat0 = jnp.fft.rfftn(vorticities0, axes=(1, 2))
-
-            init_grid = cfd.grids.Grid(shape=vorticities0.shape[1:3],
-                                       domain=domain)
-            velocity_solve = vorticity_to_velocity(init_grid)
-
-            logger.info('Downsampling initial vorticity field...')
-            vorticities0 = []
-            for vorticity_hat0 in tqdm(vorticities_hat0):
-                vorticity0 = downsample_vorticity_hat(
-                    vorticity_hat0, velocity_solve, init_grid, sim_grid)['vorticity']
-                vorticities0.append(vorticity0)
+        assert vorticities0.shape[1] == c.sim_size
 
     if c.outer_steps > 0:
         shapes = {size: (c.outer_steps, size, size) for size in c.out_sizes}
@@ -113,7 +96,7 @@ def kolmogorov(config_path: Path,
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
 
-    gvars = {size: {
+    gvars: Dict[int, Dict] = {size: {
         'vxs': [], 'vys': [], 'vorticities': []
     } for size in c.out_sizes}
     durations = []
