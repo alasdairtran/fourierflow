@@ -14,7 +14,8 @@ def correlation(x, y):
 def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid, out_xarray=False):
     # Convert the vorticity field to the velocity field.
     vxhat, vyhat = velocity_solve(vorticity_hat)
-    vx, vy = jnp.fft.irfftn(vxhat), jnp.fft.irfftn(vyhat)
+    vx = jnp.fft.irfftn(vxhat, axes=(0, 1))
+    vy = jnp.fft.irfftn(vyhat, axes=(0, 1))
     velocity = (GridArray(vx, offset=(1, 0.5), grid=in_grid),
                 GridArray(vy, offset=(0.5, 1), grid=in_grid))
 
