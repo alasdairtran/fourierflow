@@ -137,9 +137,9 @@ def generate_kolmogorov(sim_size: int,
     velocity_solve = vorticity_to_velocity(sim_grid)
 
     out_grids = {}
-    for out_size in out_sizes:
-        grid = Grid(shape=(out_size, out_size), domain=domain)
-        out_grids[out_size] = grid
+    for size in out_sizes:
+        grid = Grid(shape=(size, size), domain=domain)
+        out_grids[size] = grid
 
     if vorticity0 is None:
         # Construct a random initial velocity. The `filtered_velocity_field`
@@ -183,7 +183,7 @@ def generate_kolmogorov(sim_size: int,
             else:
                 out = downsample_vorticity_hat(
                     vorticity_hat0, velocity_solve, sim_grid, out_grid)
-                outs[size] = out
+            outs[size] = out
         return outs, elapsed
 
     if outer_steps > 0:
@@ -205,7 +205,7 @@ def generate_kolmogorov(sim_size: int,
 
         trajectory_fn = trajectory(step_fn, outer_steps, downsample)
         start = time.time()
-        _, traj = trajectory_fn(vorticity_hat0)
+        _, trajs = trajectory_fn(vorticity_hat0)
         elapsed = np.float32(time.time() - start)
 
-        return traj, elapsed
+        return trajs, elapsed
