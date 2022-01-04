@@ -14,6 +14,7 @@ from jax_cfd.base.grids import Grid, GridArray, GridVariable
 from jax_cfd.ml.advections import ConvectionModule
 from jax_cfd.ml.equations import modular_navier_stokes_model
 from jax_cfd.ml.physics_specifications import BasePhysicsSpecs
+from optax import l2_loss
 from treex import Inputs, LossAndLogs
 
 
@@ -49,9 +50,8 @@ class LearnedInterpolator(eg.Model):
         with init_context():
             model.module = model.module.init(key, inputs=inputs)
 
-        if model.optimizer is not None:
-            params = model.parameters()
-            model.optimizer = model.optimizer.init(params)
+        params = model.parameters()
+        model.optimizer = model.optimizer.init(params)
 
         losses, metrics = model._losses_and_metrics.value
         aux_losses = model.loss_logs()
@@ -96,45 +96,12 @@ class LearnedInterpolator(eg.Model):
         model: M = self
 
         preds, model = model.pred_step(inputs)
-        assert model.loss_and_logs is not None
+        vx_pred, vy_pred = preds[0].array.data, preds[1].array.data
+        vx_loss = l2_loss(vx_pred, inputs['vx'][0]).mean()
+        vy_loss = l2_loss(vy_pred, inputs['vy'][0]).mean()
+        loss = vx_loss + vy_loss
 
-        aux_losses = model.loss_logs()
-        aux_metrics = model.metric_logs()
-
-        extended_labels = {
-            "inputs": inputs,
-            "preds": preds,
-            "model": model,
-            "parameters": model.parameters(),
-            "batch_stats": model.batch_stats(),
-            "rngs": model.rngs(),
-            "model_states": model.model_states(),
-            "states": model.states(),
-            "metric_logs": model.metric_logs(),
-            "loss_logs": model.loss_logs(),
-            "logs": model.logs(),
-            **labels,
-        }
-
-        losses_kwargs = extended_labels
-        metrics_kwargs = extended_labels
-
-        losses_kwargs, metrics_kwargs = model.distributed_strategy.handle_lm_kwargs(
-            losses_kwargs, metrics_kwargs
-        )
-
-        loss, losses_logs, metrics_logs = model.loss_and_logs.batch_loss_epoch_logs(
-            **losses_kwargs,
-            metrics_kwargs=metrics_kwargs,
-            aux_losses=aux_losses,
-            aux_metrics=aux_metrics,
-        )
-
-        losses_logs, metrics_logs = model.distributed_strategy.handle_lm_logs(
-            losses_logs, metrics_logs
-        )
-
-        logs = {**losses_logs, **metrics_logs}
+        logs = {'loss': loss}
 
         return loss, logs, model
 
