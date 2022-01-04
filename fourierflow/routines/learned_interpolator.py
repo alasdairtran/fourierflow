@@ -44,12 +44,7 @@ class LearnedInterpolator(eg.Model):
         super().__init__(module=step_model, **kwargs)
         self.grid = grid
 
-    def __call__(self):
-        pass
-
-    def init_step(self: M,
-                  key: jnp.ndarray,
-                  inputs: Any) -> M:
+    def init_step(self: M, key: jnp.ndarray, inputs: Any) -> M:
         model: M = self
 
         with init_context():
@@ -74,9 +69,7 @@ class LearnedInterpolator(eg.Model):
 
         return model
 
-    def train_step(self: M,
-                   inputs: Any,
-                   labels: Mapping[str, Any]) -> TrainStepOutput[M]:
+    def train_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TrainStepOutput[M]:
         model: M = self
         grads: M
         logs: Logs
