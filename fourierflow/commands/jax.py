@@ -1,8 +1,12 @@
+import os
+from copy import deepcopy
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, cast
+from uuid import uuid4
 
 import hydra
 import ptvsd
+import wandb
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from typer import Argument, Typer
@@ -25,6 +29,13 @@ def main(config_path: Path,
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
+
+    wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
+    wandb.init(dir=config_dir,
+               mode=os.environ.get('WANDB_MODE', 'offline'),
+               config=deepcopy(cast(dict, OmegaConf.to_container(config))),
+               id=str(uuid4())[:8],
+               **wandb_opts)
 
     # Initialize the dataset and experiment modules.
     builder = instantiate(config.builder)

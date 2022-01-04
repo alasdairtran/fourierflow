@@ -1,3 +1,11 @@
+wandb:
+  project: kolmogorov_re_1000
+  group: learned_interpolation/baseline
+  tags:
+    - pde
+    - navier-stokes
+    - learned-interpolation
+  notes: ""
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   loader_target: elegy.data.DataLoader
