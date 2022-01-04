@@ -3,7 +3,6 @@ from typing import List, Optional
 
 import hydra
 import ptvsd
-import xarray as xr
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from typer import Argument, Typer
@@ -18,8 +17,8 @@ def main(config_path: Path,
     """Train a JAX experiment."""
     config_dir = config_path.parent
     config_name = config_path.stem
-    hydra.initialize(config_path=Path('../..') / config_dir)
-    config = hydra.compose(config_name, overrides=overrides)
+    hydra.initialize(config_path=str(Path('../..') / config_dir))
+    config = hydra.compose(config_name, overrides=overrides or [])
     OmegaConf.set_struct(config, False)
 
     # This debug mode is for those who use VS Code's internal debugger.

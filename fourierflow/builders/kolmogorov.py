@@ -55,18 +55,10 @@ class KolmogorovBuilder(Builder):
 
 class KolmogorovMarkovDataset(TorchDataset, ElegyDataset):
     def __init__(self, path, size, k):
-        ds = xr.open_dataset(path)
-        self.vorticity = ds.vorticity
+        self.ds = xr.open_dataset(path)
         self.k = k
-
-        self.B = self.vorticity.shape[0]
-        self.T = self.vorticity.shape[1] - self.k
-        init_size = self.vorticity.shape[2]
-
-        domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
-        self.init_grid = Grid(shape=(init_size, init_size), domain=domain)
-        self.out_grid = Grid(shape=(size, size), domain=domain)
-        self.velocity_solve = vorticity_to_velocity(self.init_grid)
+        self.B = len(self.ds.sample)
+        self.T = len(self.ds.time)- self.k
 
     def __len__(self):
         return self.B * self.T
@@ -76,41 +68,42 @@ class KolmogorovMarkovDataset(TorchDataset, ElegyDataset):
         t = idx % self.T
         k = self.k
 
-        vorticity = self.vorticity[b, t:t+k+1:k].values
-        vorticity_hat = jnp.fft.rfftn(vorticity, axes=(1, 2))
-        x = downsample_vorticity_hat(vorticity_hat[0], self.velocity_solve,
-                                     self.init_grid, self.out_grid)['vorticity']
-        y = downsample_vorticity_hat(vorticity_hat[1], self.velocity_solve,
-                                     self.init_grid, self.out_grid)['vorticity']
+        ds = self.ds.isel(sample=b, time=slice(t, t+k+1, k))
+        in_ds = ds.isel(time=0)
+        out_ds = ds.isel(time=1)
 
-        return {
-            'x': x,
-            'y': y,
+        inputs = {
+            'vx': in_ds.vx,
+            'vy': in_ds.vy,
+            'vorticity': in_ds.vorticity,
         }
+
+        outputs = {
+            'vx': out_ds.vx,
+            'vy': out_ds.vy,
+            'vorticity': out_ds.vorticity,
+        }
+
+        return {'inputs': inputs, 'outputs': outputs}
 
 
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
     def __init__(self, path, size, k):
-        ds = xr.open_dataset(path)
-        self.vorticity = ds.vorticity
-
+        self.ds = xr.open_dataset(path)
         self.k = k
-        self.B = self.data.shape[0]
-        init_size = self.vorticity.shape[2]
-
-        domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
-        self.init_grid = Grid(shape=(init_size, init_size), domain=domain)
-        self.out_grid = Grid(shape=(size, size), domain=domain)
-        self.velocity_solve = vorticity_to_velocity(self.init_grid)
+        self.B = len(self.ds.sample)
 
     def __len__(self):
         return self.B
 
     def __getitem__(self, b):
-        vorticity = self.vorticity[b, ::self.k].values
-        vorticity_hat = jnp.fft.rfftn(vorticity, axes=(1, 2))
-        data = downsample_vorticity_hat(vorticity_hat[0], self.velocity_solve,
-                                        self.init_grid, self.out_grid)['vorticity']
+        ds = self.ds.isel(sample=b, time=slice(None, None, self.k))
+        data = {
+            'vx': ds.vx,
+            'vy': ds.vy,
+            'vorticity': ds.vorticity,
+        }
+
         return {
             'data': data,
         }

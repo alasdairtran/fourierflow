@@ -1,12 +1,12 @@
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   loader_target: elegy.data.DataLoader
-  train_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train.nc
-  valid_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid.nc
-  test_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test.nc
-  train_k: 40
-  valid_k: 4
-  test_k: 4
+  train_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
+  valid_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
+  test_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
+  train_k: 1
+  valid_k: 1
+  test_k: 1
   size: 32
   batch_size: 1
   n_workers: 0
