@@ -1,7 +1,7 @@
 import os
 from copy import deepcopy
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import hydra
 import numpy as np
@@ -45,8 +45,8 @@ def main(config_path: Path,
     trial = int(wandb_id.split('-')[1])
     config.trial = trial
     config.wandb.name = f"{config.wandb.group}/{trial}"
-    wandb_opts = OmegaConf.to_container(config.wandb)
-    wandb_logger = WandbLogger(save_dir=config_dir,
+    wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
+    wandb_logger = WandbLogger(save_dir=str(config_dir),
                                mode=os.environ.get('WANDB_MODE', 'offline'),
                                config=deepcopy(OmegaConf.to_container(config)),
                                id=wandb_id,
