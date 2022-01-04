@@ -172,11 +172,11 @@ def generate_kolmogorov(sim_size: int,
     if outer_steps > 0:
         def downsample(vorticity_hat):
             if sim_size == out_size:
-                return jnp.fft.irfftn(vorticity_hat, axes=(0, 1))
+                return {'vorticity': jnp.fft.irfftn(vorticity_hat, axes=(0, 1))}
 
-            vorticity = downsample_vorticity_hat(
-                vorticity_hat, velocity_solve, sim_grid, out_grid)['vorticity']
-            return vorticity
+            out = downsample_vorticity_hat(
+                vorticity_hat, velocity_solve, sim_grid, out_grid)
+            return out
 
         trajectory_fn = trajectory(step_fn, outer_steps, downsample)
         start = time.time()

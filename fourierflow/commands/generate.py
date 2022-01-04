@@ -125,7 +125,7 @@ def kolmogorov(config_path: Path,
             outer_steps=c.outer_steps,
             warmup_steps=c.warmup_steps)
         trajectory, elapsed = out[0], out[1]
-        vorticity = da.from_delayed(trajectory, shape, np.float32)
+        vorticity = da.from_delayed(trajectory['vorticity'], shape, np.float32)
         vorticity_list.append(vorticity)
         duration_list.append(da.from_delayed(elapsed, (), np.float32))
 
