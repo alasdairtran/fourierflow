@@ -84,7 +84,7 @@ class KolmogorovMarkovDataset(TorchDataset, ElegyDataset):
             'vorticity': out_ds.vorticity,
         }
 
-        return {'inputs': inputs, 'outputs': outputs}
+        return inputs, outputs
 
 
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):

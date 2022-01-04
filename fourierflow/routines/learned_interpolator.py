@@ -27,23 +27,21 @@ class LearnedInterpolator(eg.Model):
         grid = Grid(shape=(size, size),
                     domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
 
-        def step_fwd(inputs, outputs):
-            keys = ['vx', 'vy']
-            input_vars = []
-            for key, offset in zip(keys, grid.cell_faces):
+        def step_fwd(vx, vy, vorticity):
+            inputs = []
+            for v, offset in zip([vx, vy], grid.cell_faces):
                 variable = GridVariable(
-                    array=GridArray(inputs[key][0], offset, grid),
+                    array=GridArray(v[0], offset, grid),
                     bc=periodic_boundary_conditions(grid.ndim))
-                input_vars.append(variable)
+                inputs.append(variable)
             model = modular_navier_stokes_model(
                 grid, dt, physics_specs,
                 convection_module=convection_module)
-            return model(input_vars)
+            return model(inputs)
 
         step_model = hk.transform_with_state(step_fwd)
 
         super().__init__(module=step_model, **kwargs)
-        self.grid = grid
 
     def init_step(self: M, key: jnp.ndarray, inputs: Any) -> M:
         model: M = self
@@ -140,7 +138,7 @@ class LearnedInterpolator(eg.Model):
 
         return loss, logs, model
 
-    def pred_step(self: M, inputs: Any,) -> PredStepOutput[M]:
+    def pred_step(self: M, inputs: Any) -> PredStepOutput[M]:
         model: M = self
         inputs_obj = Inputs.from_value(inputs)
 
