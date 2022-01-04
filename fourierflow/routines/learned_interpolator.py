@@ -8,6 +8,7 @@ from elegy.model.model import M
 from elegy.model.model_core import TrainStepOutput
 from elegy.types import Logs
 from jax_cfd.base.boundaries import periodic_boundary_conditions
+from jax_cfd.base.funcutils import init_context
 from jax_cfd.base.grids import Grid, GridArray, GridVariable
 from jax_cfd.ml.advections import ConvectionModule
 from jax_cfd.ml.equations import modular_navier_stokes_model
@@ -51,7 +52,7 @@ class LearnedInterpolator(eg.Model):
                   inputs: Any) -> M:
         model: M = self
 
-        if model.module is not None:
+        with init_context():
             model.module = model.module.init(key, inputs=inputs)
 
         if model.optimizer is not None:
@@ -80,7 +81,7 @@ class LearnedInterpolator(eg.Model):
         grads: M
         logs: Logs
 
-        assert model.module is not None
+        assert model.optimizer is not None
         params = model.parameters(self._is_trainable)
 
         grad_fn = jax.grad(self.loss_fn, has_aux=True)
@@ -88,8 +89,6 @@ class LearnedInterpolator(eg.Model):
 
         model, grads = model.distributed_strategy.handle_model_and_grads(
             model, grads)
-
-        assert model.optimizer is not None
 
         params = model.optimizer.update(grads, params)
         model = model.merge(params)
