@@ -109,8 +109,7 @@ def kolmogorov(config_path: Path,
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
-    vorticity_list = []
-    duration_list = []
+    vx_list, vy_list, vorticity_list, duration_list = [], [], [], []
     for i in range(c.n_trajectories):
         out = dask.delayed(generate_kolmogorov)(
             sim_size=c.sim_size,
@@ -125,10 +124,18 @@ def kolmogorov(config_path: Path,
             outer_steps=c.outer_steps,
             warmup_steps=c.warmup_steps)
         trajectory, elapsed = out[0], out[1]
+
+        vx = da.from_delayed(trajectory['vx'], shape, np.float32)
+        vy = da.from_delayed(trajectory['vy'], shape, np.float32)
         vorticity = da.from_delayed(trajectory['vorticity'], shape, np.float32)
+
+        vx_list.append(vx)
+        vy_list.append(vy)
         vorticity_list.append(vorticity)
         duration_list.append(da.from_delayed(elapsed, (), np.float32))
 
+    vx = da.stack(vx_list)
+    vy = da.stack(vy_list)
     vorticities = da.stack(vorticity_list)
     durations = da.stack(duration_list)
 
@@ -139,6 +146,8 @@ def kolmogorov(config_path: Path,
 
     ds = xr.Dataset(
         data_vars={
+            'vx': (dim_names, vx),
+            'vy': (dim_names, vy),
             'vorticity': (dim_names, vorticities),
             'elapsed': ('sample', durations),
         },
