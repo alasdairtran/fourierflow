@@ -78,9 +78,9 @@ class KolmogorovMarkovDataset(TorchDataset, ElegyDataset):
         vorticity = self.vorticity[b, t:t+k+1:k].values
         vorticity_hat = jnp.fft.rfftn(vorticity, axes=(1, 2))
         x = downsample_vorticity_hat(vorticity_hat[0], self.velocity_solve,
-                                     self.init_grid, self.out_grid)
+                                     self.init_grid, self.out_grid)['vorticity']
         y = downsample_vorticity_hat(vorticity_hat[1], self.velocity_solve,
-                                     self.init_grid, self.out_grid)
+                                     self.init_grid, self.out_grid)['vorticity']
 
         return {
             'x': x,
@@ -109,7 +109,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         vorticity = self.vorticity[b, ::self.k].values
         vorticity_hat = jnp.fft.rfftn(vorticity, axes=(1, 2))
         data = downsample_vorticity_hat(vorticity_hat[0], self.velocity_solve,
-                                        self.init_grid, self.out_grid)
+                                        self.init_grid, self.out_grid)['vorticity']
         return {
             'data': data,
         }
@@ -175,7 +175,7 @@ def generate_kolmogorov(sim_size: int,
                 return jnp.fft.irfftn(vorticity_hat, axes=(0, 1))
 
             vorticity = downsample_vorticity_hat(
-                vorticity_hat, velocity_solve, sim_grid, out_grid)
+                vorticity_hat, velocity_solve, sim_grid, out_grid)['vorticity']
             return vorticity
 
         trajectory_fn = trajectory(step_fn, outer_steps, downsample)

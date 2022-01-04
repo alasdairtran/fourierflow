@@ -84,7 +84,7 @@ def kolmogorov(config_path: Path,
             vorticities0 = []
             for vorticity_hat0 in tqdm(vorticities_hat0):
                 vorticity0 = downsample_vorticity_hat(
-                    vorticity_hat0, velocity_solve, init_grid, sim_grid)
+                    vorticity_hat0, velocity_solve, init_grid, sim_grid)['vorticity']
                 vorticities0.append(vorticity0)
 
     if c.outer_steps > 0:

@@ -33,8 +33,9 @@ def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid, o
     if out_xarray:
         coords = {'x': out_grid.axes()[0], 'y': out_grid.axes()[1]}
         vorticity = xr.DataArray(vorticity, coords=coords, dims=('x', 'y'))
+        return {'vx': vx, 'vy': vy, 'vorticity': vorticity}
 
-    return vorticity
+    return {'vx': vx.data, 'vy': vy.data, 'vorticity': vorticity}
 
 
 def calculate_time_until(vorticity_corr, threshold=0.95):

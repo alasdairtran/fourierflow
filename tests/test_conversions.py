@@ -65,11 +65,11 @@ def test_repeated_downsampling():
     for ref_rho, grid in zip(ref_rhos, grids):
         velocity_solve = spectral_utils.vorticity_to_velocity(grid_prev)
         vorticity = downsample_vorticity_hat(
-            vorticity_hat, velocity_solve, grid_prev, grid, True)
+            vorticity_hat, velocity_solve, grid_prev, grid, True)['vorticity']
 
         # Directly downsample from 2048x2048 grid.
         vorticity_direct = downsample_vorticity_hat(
-            vorticity_2048_hat, velocity_solve_2048, grid_2048, grid, True)
+            vorticity_2048_hat, velocity_solve_2048, grid_2048, grid, True)['vorticity']
 
         rho = correlation(vorticity_direct, vorticity)
         assert rho > ref_rho
