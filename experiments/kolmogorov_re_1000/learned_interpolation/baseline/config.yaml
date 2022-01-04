@@ -34,4 +34,9 @@ routine:
         _target_: functools.partial
         _args_: ["${get_method: jax_cfd.ml.interpolations.FusedLearnedInterpolation}"]
         tags: ['u', 'c']
+  optimizer:
+    _target_: optax.adam
+    learning_rate: 1e-3
+    b1: 0.9
+    b2: 0.99
   seed: 5123

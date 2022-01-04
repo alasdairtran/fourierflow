@@ -81,7 +81,6 @@ class LearnedInterpolator(eg.Model):
         grads: M
         logs: Logs
 
-        assert model.optimizer is not None
         params = model.parameters(self._is_trainable)
 
         grad_fn = jax.grad(self.loss_fn, has_aux=True)
