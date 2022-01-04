@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from pathlib import Path
 from typing import List, Optional
 
@@ -56,10 +57,12 @@ def kolmogorov(config_path: Path,
     OmegaConf.set_struct(c, False)
 
     # Define the physical dimensions of the simulation.
-    sim_grid = cfd.grids.Grid(shape=(c.sim_size, c.sim_size),
-                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
-    out_grid = cfd.grids.Grid(shape=(c.out_size, c.out_size),
-                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+    domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
+    sim_grid = cfd.grids.Grid(shape=(c.sim_size, c.sim_size), domain=domain)
+    out_grids = {}
+    for size in c.out_sizes:
+        grid = cfd.grids.Grid(shape=(size, size), domain=domain)
+        out_grids[size] = grid
 
     # Choose a time step.
     dt = cfd.equations.stable_time_step(
@@ -77,7 +80,7 @@ def kolmogorov(config_path: Path,
             vorticities_hat0 = jnp.fft.rfftn(vorticities0, axes=(1, 2))
 
             init_grid = cfd.grids.Grid(shape=vorticities0.shape[1:3],
-                                       domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+                                       domain=domain)
             velocity_solve = vorticity_to_velocity(init_grid)
 
             logger.info('Downsampling initial vorticity field...')
@@ -88,32 +91,37 @@ def kolmogorov(config_path: Path,
                 vorticities0.append(vorticity0)
 
     if c.outer_steps > 0:
-        shape = (c.outer_steps, c.out_size, c.out_size)
+        shapes = {size: (c.outer_steps, size, size) for size in c.out_sizes}
         dim_names = ('sample', 'time', 'x', 'y')
-        coords = {
+        coords = {size: {
             'sample': range(c.n_trajectories),
             'time': dt * c.inner_steps * np.arange(c.outer_steps),
-            'x': out_grid.axes()[0],
-            'y': out_grid.axes()[1],
-        }
+            'x': out_grids[size].axes()[0],
+            'y': out_grids[size].axes()[1],
+        } for size in c.out_sizes}
     else:
-        shape = (c.out_size, c.out_size)
+        shapes = {size: (size, size) for size in c.out_sizes}
         dim_names = ('sample', 'x', 'y')
-        coords = {
+        coords = {size: {
             'sample': range(c.n_trajectories),
-            'x': out_grid.axes()[0],
-            'y': out_grid.axes()[1],
-        }
+            'x': out_grids[size].axes()[0],
+            'y': out_grids[size].axes()[1],
+        } for size in c.out_sizes}
 
     # Appending to netCDF files is not supported yet, but we can use
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
-    vx_list, vy_list, vorticity_list, duration_list = [], [], [], []
+
+    gvars = {size: {
+        'vxs': [], 'vys': [], 'vorticities': []
+    } for size in c.out_sizes}
+    durations = []
+
     for i in range(c.n_trajectories):
-        out = dask.delayed(generate_kolmogorov)(
+        outs = dask.delayed(generate_kolmogorov)(
             sim_size=c.sim_size,
-            out_size=c.out_size,
+            out_sizes=c.out_sizes,
             dt=dt,
             equation=c.equation,
             peak_wavenumber=c.peak_wavenumber,
@@ -123,50 +131,60 @@ def kolmogorov(config_path: Path,
             inner_steps=c.inner_steps,
             outer_steps=c.outer_steps,
             warmup_steps=c.warmup_steps)
-        trajectory, elapsed = out[0], out[1]
+        trajs, elapsed = outs[0], outs[1]
 
-        vx = da.from_delayed(trajectory['vx'], shape, np.float32)
-        vy = da.from_delayed(trajectory['vy'], shape, np.float32)
-        vorticity = da.from_delayed(trajectory['vorticity'], shape, np.float32)
+        for size in c.out_sizes:
+            shape = shapes[size]
+            traj = trajs[size]
+            vx = da.from_delayed(traj['vx'], shape, np.float32)
+            vy = da.from_delayed(traj['vy'], shape, np.float32)
+            vorticity = da.from_delayed(traj['vorticity'], shape, np.float32)
+            gvars[size]['vxs'].append(vx)
+            gvars[size]['vys'].append(vy)
+            gvars[size]['vorticities'].append(vorticity)
 
-        vx_list.append(vx)
-        vy_list.append(vy)
-        vorticity_list.append(vorticity)
-        duration_list.append(da.from_delayed(elapsed, (), np.float32))
+        durations.append(da.from_delayed(elapsed, (), np.float32))
 
-    vx = da.stack(vx_list)
-    vy = da.stack(vy_list)
-    vorticities = da.stack(vorticity_list)
-    durations = da.stack(duration_list)
+    for size in c.out_sizes:
+        gvars[size]['vxs'] = da.stack(gvars[size]['vxs'])
+        gvars[size]['vys'] = da.stack(gvars[size]['vys'])
+        gvars[size]['vorticities'] = da.stack(gvars[size]['vorticities'])
+    durations = da.stack(durations)
 
     attrs = pd.json_normalize(OmegaConf.to_object(c), sep='.')
     attrs = attrs.to_dict(orient='records')[0]
     attrs = {k: (str(v) if isinstance(v, bool) else v)
              for k, v in attrs.items()}
 
-    ds = xr.Dataset(
-        data_vars={
-            'vx': (dim_names, vx),
-            'vy': (dim_names, vy),
-            'vorticity': (dim_names, vorticities),
-            'elapsed': ('sample', durations),
-        },
-        coords=coords,
-        attrs={
-            **attrs,
-            'dt': dt,
-            'domain_size': 2 * jnp.pi,
-        }
-    )
+    ds_dict = {}
+    for size in c.out_sizes:
+        ds_dict[size] = xr.Dataset(
+            data_vars={
+                'vx': (dim_names, gvars[size]['vxs']),
+                'vy': (dim_names, gvars[size]['vys']),
+                'vorticity': (dim_names, gvars[size]['vorticities']),
+                'elapsed': ('sample', durations),
+            },
+            coords=coords[size],
+            attrs={
+                **attrs,
+                'dt': dt,
+                'domain_size': 2 * jnp.pi,
+                'gpu': jax.devices()[0].device_kind,
+            }
+        )
 
-    path = config_dir / f'{stem}.nc'
+    tasks = []
+    for size, ds in ds_dict.items():
+        path = config_dir / f'{stem}_{size}.nc'
+        task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
+        tasks.append(task)
 
     if len(device_list) > 1:
-        ds.to_netcdf(path, engine='h5netcdf')
+        dask.compute(tasks)
     else:
-        task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
         with ProgressBar(dt=1):
-            task.compute(num_workers=1)
+            dask.compute(tasks, num_workers=1)
 
 
 @app.command()

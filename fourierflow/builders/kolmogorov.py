@@ -1,5 +1,5 @@
 import time
-from typing import Dict, Optional, cast
+from typing import Dict, List, Optional, cast
 
 import elegy as eg
 import jax
@@ -116,7 +116,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
 
 
 def generate_kolmogorov(sim_size: int,
-                        out_size: int,
+                        out_sizes: List[int],
                         dt: float,
                         equation: DictConfig,
                         seed: jax.random.KeyArray,
@@ -131,12 +131,14 @@ def generate_kolmogorov(sim_size: int,
     Adapted from https://github.com/google/jax-cfd/blob/main/notebooks/demo.ipynb
     """
     # Define the physical dimensions of the simulation.
-    sim_grid = cfd.grids.Grid(shape=(sim_size, sim_size),
-                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+    domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
+    sim_grid = cfd.grids.Grid(shape=(sim_size, sim_size), domain=domain)
     velocity_solve = vorticity_to_velocity(sim_grid)
 
-    out_grid = cfd.grids.Grid(shape=(out_size, out_size),
-                              domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+    out_grids = {}
+    for out_size in out_sizes:
+        grid = cfd.grids.Grid(shape=(out_size, out_size), domain=domain)
+        out_grids[out_size] = grid
 
     if vorticity0 is None:
         # Construct a random initial velocity. The `filtered_velocity_field`
@@ -168,28 +170,37 @@ def generate_kolmogorov(sim_size: int,
         vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
         elapsed = np.float32(time.time() - start)
 
-        vxhat, vyhat = velocity_solve(vorticity_hat0)
-        out = {
-            'vx': jnp.fft.irfftn(vxhat, axes=(0, 1)),
-            'vy': jnp.fft.irfftn(vyhat, axes=(0, 1)),
-            'vorticity': jnp.fft.irfftn(vorticity_hat0, axes=(0, 1)),
-        }
-        return out, elapsed
-
-    if outer_steps > 0:
-        def downsample(vorticity_hat):
-            if sim_size == out_size:
-                vxhat, vyhat = velocity_solve(vorticity_hat)
+        outs = {}
+        for size, out_grid in out_grids.items():
+            if size == sim_size:
+                vxhat, vyhat = velocity_solve(vorticity_hat0)
                 out = {
                     'vx': jnp.fft.irfftn(vxhat, axes=(0, 1)),
                     'vy': jnp.fft.irfftn(vyhat, axes=(0, 1)),
-                    'vorticity': jnp.fft.irfftn(vorticity_hat, axes=(0, 1)),
+                    'vorticity': jnp.fft.irfftn(vorticity_hat0, axes=(0, 1)),
                 }
-                return out
+            else:
+                out = downsample_vorticity_hat(
+                    vorticity_hat0, velocity_solve, sim_grid, out_grid)
+                outs[size] = out
+        return outs, elapsed
 
-            out = downsample_vorticity_hat(
-                vorticity_hat, velocity_solve, sim_grid, out_grid)
-            return out
+    if outer_steps > 0:
+        def downsample(vorticity_hat):
+            outs = {}
+            for size, out_grid in out_grids.items():
+                if size == sim_size:
+                    vxhat, vyhat = velocity_solve(vorticity_hat)
+                    out = {
+                        'vx': jnp.fft.irfftn(vxhat, axes=(0, 1)),
+                        'vy': jnp.fft.irfftn(vyhat, axes=(0, 1)),
+                        'vorticity': jnp.fft.irfftn(vorticity_hat, axes=(0, 1)),
+                    }
+                else:
+                    out = downsample_vorticity_hat(
+                        vorticity_hat, velocity_solve, sim_grid, out_grid)
+                outs[size] = out
+            return outs
 
         trajectory_fn = trajectory(step_fn, outer_steps, downsample)
         start = time.time()
