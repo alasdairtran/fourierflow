@@ -47,7 +47,7 @@ def main(config_path: Path,
     config.wandb.name = f"{config.wandb.group}/{trial}"
     wandb_opts = OmegaConf.to_container(config.wandb)
     wandb_logger = WandbLogger(save_dir=config_dir,
-                               mode=os.environ.get('WANDB_MODE', 'online'),
+                               mode=os.environ.get('WANDB_MODE', 'offline'),
                                config=deepcopy(OmegaConf.to_container(config)),
                                id=wandb_id,
                                **wandb_opts)
