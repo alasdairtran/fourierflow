@@ -3,7 +3,7 @@ import xarray as xr
 from jax_cfd.base.grids import Grid
 from jax_cfd.spectral import utils as spectral_utils
 
-from fourierflow.utils import correlation, downsample_vorticity_hat
+from fourierflow.utils import downsample_vorticity_hat, grid_correlation
 
 
 def test_convert_vorticity_to_velocity_and_back():
@@ -36,7 +36,7 @@ def test_convert_vorticity_to_velocity_and_back():
                                },
                                dims=('x', 'y'))
 
-    rho = correlation(vorticity_1, vorticity_2)
+    rho = grid_correlation(vorticity_1, vorticity_2)
     assert rho > 0.9999
 
 
@@ -72,7 +72,7 @@ def test_repeated_downsampling():
         vorticity_direct = downsample_vorticity_hat(
             vorticity_2048_hat, velocity_solve_2048, grid_2048, grid, True)['vorticity']
 
-        rho = correlation(vorticity_direct, vorticity)
+        rho = grid_correlation(vorticity_direct, vorticity)
         assert rho > ref_rho
 
         # Prepare inputs for next iteration

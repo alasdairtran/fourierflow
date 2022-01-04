@@ -9,7 +9,7 @@ import xarray as xr
 from matplotlib.lines import Line2D
 from typer import Typer
 
-from fourierflow.utils import calculate_time_until, correlation
+from fourierflow.utils import calculate_time_until, grid_correlation
 from fourierflow.viz.heatmap import MidpointNormalize
 
 pal = sns.color_palette()
@@ -17,7 +17,7 @@ app = Typer()
 
 
 @app.command()
-def corerlation():
+def correlation():
     sizes = [32, 64, 128, 256, 512, 1024, 2048]
     simulations = {}
     for size in sizes:
@@ -30,9 +30,10 @@ def corerlation():
     # Even the best model diverges from ground truth by time 10. Thus we
     # only look at the first 10 simulation steps to save computation time.
     w = combined.vorticity.sel(time=slice(10))
-    rho = correlation(w, w.sel(size=2048)).compute()
+    rho = grid_correlation(w, w.sel(size=2048)).compute()
 
     times = calculate_time_until(rho)
+    print(times)
     # array([0.448799, 1.248222, 2.440344, 3.744666, 5.048988, 6.40941 , 0.      ])
     # Compared to original paper:
     # array([1.711046, 2.973293, 4.15139 , 5.497787, 7.208833, 0.      ])

@@ -5,7 +5,7 @@ from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.data.xarray_utils import normalize
 
 
-def correlation(x, y):
+def grid_correlation(x, y):
     state_dims = ['x', 'y']
     p = normalize(x, state_dims) * normalize(y, state_dims)
     return p.sum(state_dims)
