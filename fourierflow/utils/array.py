@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+import xarray as xr
 from jax_cfd.base.grids import Array, GridArray
 from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.data.xarray_utils import normalize
@@ -10,7 +11,7 @@ def correlation(x, y):
     return p.sum(state_dims)
 
 
-def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid):
+def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid, out_xarray=False):
     # Convert the vorticity field to the velocity field.
     vxhat, vyhat = velocity_solve(vorticity_hat)
     vx, vy = jnp.fft.irfftn(vxhat), jnp.fft.irfftn(vyhat)
@@ -28,6 +29,10 @@ def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid):
     dv_dx = (jnp.roll(vy.data, shift=-1, axis=0) - vy.data) / dx
     du_dy = (jnp.roll(vx.data, shift=-1, axis=1) - vx.data) / dy
     vorticity = dv_dx - du_dy
+
+    if out_xarray:
+        coords = {'x': out_grid.axes()[0], 'y': out_grid.axes()[1]}
+        vorticity = xr.DataArray(vorticity, coords=coords, dims=('x', 'y'))
 
     return vorticity
 
