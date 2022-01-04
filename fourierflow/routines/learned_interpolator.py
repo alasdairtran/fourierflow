@@ -1,4 +1,4 @@
-from typing import Any, Mapping
+from typing import Any, Mapping, Tuple
 
 import elegy as eg
 import haiku as hk
@@ -87,6 +87,12 @@ class LearnedInterpolator(eg.Model):
         model = model.merge(params)
 
         return logs, model
+
+    @staticmethod
+    def loss_fn(params: M, model: M, inputs: Any, labels: Mapping[str, Any]) -> Tuple[jnp.ndarray, Tuple[Logs, M]]:
+        model = model.merge(params)
+        loss, logs, model = model.test_step(inputs, labels)
+        return loss, (logs, model)
 
     def test_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TestStepOutput[M]:
         model: M = self
