@@ -6,8 +6,8 @@ max_velocity: 7.0 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
 seed: 819242 # random seed for the initial velocity field
 inner_steps: 64 # take a snapshot of the field once every these many ODE steps
-outer_steps: 2441 # we only want to initial vorticity field
-warmup_steps: 0 # equivalent to 40 time units
+outer_steps: 2441 # the data saved on disk will have these many snapshots
+warmup_steps: 0 # we load initial conditions from init_path instead
 init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_2048.nc
 cfl_safety_factor: 0.5
 equation:
