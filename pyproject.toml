@@ -42,7 +42,8 @@ requests = "^2.26.0"
 rich = "^10.16.1"
 seaborn = "^0.11.2"
 termcolor = "^1.1.0"
-tensorflow-gpu = "^2.7.0"
+tensorflow = { version = "^2.7.0", markers = "sys_platform == 'darwin'" }
+tensorflow-gpu = { version = "^2.7.0", markers = "sys_platform == 'win32' or sys_platform == 'linux'" }
 tfrecord = "^1.14.1"
 torchdiffeq = "^0.2.2"
 torchtyping = "^0.1.4"
