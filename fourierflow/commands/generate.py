@@ -33,10 +33,12 @@ app = Typer()
 
 
 @app.command()
-def kolmogorov(config_path: Path,
-               devices: str = Option('0', help='Comma-separated list of GPUs'),
-               overrides: Optional[List[str]] = Argument(None),
-               debug: bool = Option(False, help='Enable debugging mode with ptvsd')):
+def kolmogorov(
+        config_path: Path,
+        devices: str = Option('0', help='Comma-separated list of GPUs'),
+        overrides: Optional[List[str]] = Argument(None),
+        refresh: float = Option(1, help='How often to refresh progress bar'),
+        debug: bool = Option(False, help='Enable debugging mode with ptvsd')):
     # This debug mode is for those who use VS Code's internal debugger.
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
@@ -167,7 +169,7 @@ def kolmogorov(config_path: Path,
     if len(device_list) > 1:
         dask.compute(tasks)
     else:
-        with ProgressBar(dt=1):
+        with ProgressBar(dt=refresh):
             dask.compute(tasks, num_workers=1)
 
 
