@@ -1,5 +1,5 @@
 # time_step: 0.0004382802251101832
-domain_size: 2 # the domain ranges from 0 to 2pi
+domain_size: 2 # the domain ranges from 0 to 2π
 sim_size: 1024 # size of the domain during simulation
 out_sizes: [32] # size of the domain for saving to disk
 n_trajectories: 32 # number of trajectories to generate
