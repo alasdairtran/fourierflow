@@ -54,7 +54,7 @@ def kolmogorov(config_path: Path,
     OmegaConf.set_struct(c, False)
 
     # Define the physical dimensions of the simulation.
-    domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
+    domain = ((0, c.domain_size * jnp.pi), (0, c.domain_size * jnp.pi))
     sim_grid = Grid(shape=(c.sim_size, c.sim_size), domain=domain)
     out_grids = {}
     for size in c.out_sizes:
@@ -153,7 +153,7 @@ def kolmogorov(config_path: Path,
             attrs={
                 **attrs,
                 'dt': dt,
-                'domain_size': 2 * jnp.pi,
+                'domain_size': c.domain_size * jnp.pi,
                 'gpu': jax.devices()[0].device_kind,
             }
         )
