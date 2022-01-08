@@ -10,7 +10,7 @@ python = "~3.9.9"
 # poetry add bokeh dask-cuda dm-haiku einops elegy entmax gdown gin-config \
 #   graphviz h5netcdf hydra-core hyperopt ipykernel jupyterlab \
 #   git+https://github.com/google/jax-cfd.git@ad078199168b4c35c5517161cfa5f7eebb8e74fe \
-#   matplotlib moviepy pandas plotly poethepoet ptvsd pydocstyle \
+#   matplotlib numpy pandas plotly poethepoet ptvsd pydocstyle \
 #   python-dotenv pytorch-lightning requests rich seaborn termcolor \
 #   tensorflow-gpu tfrecord torchdiffeq torchtyping typer wandb xarray
 bokeh = "^2.4.2"
@@ -29,13 +29,15 @@ ipykernel = "^6.6.0"
 jupyterlab = "^3.2.5"
 jax = "^0.2.26"
 jax-cfd = {git = "https://github.com/google/jax-cfd.git", rev = "ad078199168b4c35c5517161cfa5f7eebb8e74fe"}
+# Replace wheel URLs with versions once jaxlib is PEP 503 compliant:
+# https://github.com/google/jax/issues/5410
 jaxlib = [
     {url = "https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.1.75+cuda11.cudnn82-cp39-none-manylinux2010_x86_64.whl", markers = "sys_platform == 'linux'"},
     {url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.1.75-cp39-none-macosx_10_9_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'"},
     {url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.1.75-cp39-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
 ]
 matplotlib = "^3.5.1"
-moviepy = "^1.0.3"
+numpy = "^1.20.3"
 pandas = "^1.3.5"
 plotly = "^5.5.0"
 poethepoet = "^0.11.0"
@@ -50,20 +52,17 @@ termcolor = "^1.1.0"
 tensorflow = { version = "^2.7.0", markers = "sys_platform == 'darwin'" }
 tensorflow-gpu = { version = "^2.7.0", markers = "sys_platform == 'win32' or sys_platform == 'linux'" }
 tfrecord = "^1.14.1"
+# Note that we need to specify the exact version of pytorch, otherwise
+# torch-1.10.1+rocm will be installed instead :-/
+torch = [
+    {version = "1.10.1+cu113", source = "torch", markers = "sys_platform == 'linux' or sys_platform == 'win32'"},
+    {version = "1.10.1", source = "torch", markers = "sys_platform == 'darwin'"},
+]
 torchdiffeq = "^0.2.2"
 torchtyping = "^0.1.4"
 typer = "^0.4.0"
 wandb = "^0.12.9"
 xarray = "^0.20.2"
-# An attempt to automatically install PyTorch with CUDA support, but under
-# this approach, poetry install still hasn't finished resolving dependencies
-# even after 30 minutes!
-# torch = [
-#     {url = "https://download.pytorch.org/whl/cu113/torch-1.10.1%2Bcu113-cp39-cp39-linux_x86_64.whl", markers = "sys_platform == 'linux'"},
-#     {url = "https://download.pytorch.org/whl/cpu/torch-1.10.1-cp39-none-macosx_10_9_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'"},
-#     {url = "https://download.pytorch.org/whl/cpu/torch-1.10.1-cp39-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
-#     {url = "https://download.pytorch.org/whl/cu113/torch-1.10.1%2Bcu113-cp39-cp39-win_amd64.whl", markers = "sys_platform == 'win32'"},
-# ]
 
 [tool.poetry.dev-dependencies]
 # poetry add --dev autopep8 ipympl isort mypy pylint pytest types-requests
@@ -75,12 +74,15 @@ pylint = "^2.12.2"
 pytest = "^6.2.5"
 types-requests = "^2.26.3"
 
+# Remove once pytorch is PEP 503 compliant:
+# https://github.com/pytorch/pytorch/issues/25639#issuecomment-946224563
+[[tool.poetry.source]]
+name = "torch"
+url = "https://eternalphane.github.io/pytorch-pypi/"
+secondary = true
+
 [tool.poetry.scripts]
 fourierflow = 'fourierflow.commands.__main__:app'
-
-[tool.poe.tasks]
-# Remove when this is fixed: https://github.com/python-poetry/poetry/issues/2613
-install-torch-cuda11 = "python -m pip install -U torch==1.10.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html"
 
 [build-system]
 requires = ["poetry>=0.12"]
