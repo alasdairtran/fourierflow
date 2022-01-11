@@ -82,7 +82,7 @@ def kolmogorov(
         dim_names = ('sample', 'time', 'x', 'y')
         coords = {size: {
             'sample': range(c.n_trajectories),
-            'time': dt * c.inner_steps * np.arange(c.outer_steps),
+            'time': dt * c.inner_steps * np.arange(1, c.outer_steps + 1),
             'x': out_grids[size].axes()[0],
             'y': out_grids[size].axes()[1],
         } for size in c.out_sizes}
