@@ -63,9 +63,10 @@ def kolmogorov(
         grid = Grid(shape=(size, size), domain=domain)
         out_grids[size] = grid
 
-    # Choose a time step.
+    # Automatically determine the time step if not specified in config.
     dt = stable_time_step(
         c.max_velocity, c.cfl_safety_factor, c.equation.kwargs.viscosity, sim_grid)
+    dt = c.get('time_step', dt)
 
     rng_key = jax.random.PRNGKey(c.seed)
     keys = jax.random.split(rng_key, c.n_trajectories)
