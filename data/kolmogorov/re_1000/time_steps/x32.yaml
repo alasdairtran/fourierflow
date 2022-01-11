@@ -1,0 +1,21 @@
+time_step: 0.028049934
+domain_size: 2 # the domain ranges from 0 to 2π
+sim_size: 512 # size of the domain during simulation
+out_sizes: [32, 64] # size of the domain for saving to disk
+n_trajectories: 32 # number of trajectories to generate
+density: 1 # density of the fluid
+max_velocity: 7.0 # maximum velocity of the fluid
+peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
+seed: 83816 # random seed for the initial velocity field
+inner_steps: 32 # take a snapshot of the field once every these many ODE steps
+outer_steps: 80 # the data saved on disk will have these many snapshots
+warmup_steps: 0 # we load initial conditions from init_path instead
+init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_512.nc
+cfl_safety_factor: 0.5
+equation:
+  target: jax_cfd.spectral.equations.NavierStokes2D
+  kwargs:
+    viscosity: 1e-3
+    drag: 0.1
+    smooth: true # use anti-aliasing
+    forcing_fn: jax_cfd.spectral.forcings.kolmogorov_forcing_fn
