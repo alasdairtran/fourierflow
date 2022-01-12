@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import xarray as xr
+from jax_cfd.base.grids import Grid as CFDGrid
 from jax_cfd.base.grids import GridArray
 from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.data.xarray_utils import normalize
@@ -41,3 +42,13 @@ def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid, o
 
 def calculate_time_until(vorticity_corr, threshold=0.95):
     return (vorticity_corr.mean('sample') >= threshold).idxmin('time').rename('time_until')
+
+
+class Grid(CFDGrid):
+    """Fix error when dask supplies all params when reconstructing the grid."""
+
+    def __init__(self, shape, step=None, domain=None):
+        if domain is not None:
+            super().__init__(shape, domain=domain)
+        else:
+            super().__init__(shape, step=step)

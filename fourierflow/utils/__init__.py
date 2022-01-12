@@ -1,4 +1,4 @@
-from .array import (calculate_time_until, downsample_vorticity_hat,
+from .array import (Grid, calculate_time_until, downsample_vorticity_hat,
                     grid_correlation)
 from .exceptions import ExistingExperimentFound
 from .helpers import cache_fn, default, exists
