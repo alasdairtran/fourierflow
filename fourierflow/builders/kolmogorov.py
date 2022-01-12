@@ -109,7 +109,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         }
 
 
-def generate_kolmogorov(sim_size: int,
+def generate_kolmogorov(sim_grid: Grid,
                         out_sizes: List[int],
                         dt: float,
                         equation: DictConfig,
@@ -126,7 +126,6 @@ def generate_kolmogorov(sim_size: int,
     """
     # Define the physical dimensions of the simulation.
     domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
-    sim_grid = Grid(shape=(sim_size, sim_size), domain=domain)
     velocity_solve = vorticity_to_velocity(sim_grid)
 
     out_grids = {}
@@ -166,7 +165,7 @@ def generate_kolmogorov(sim_size: int,
 
         outs = {}
         for size, out_grid in out_grids.items():
-            if size == sim_size:
+            if size == sim_grid.shape[0]:
                 vxhat, vyhat = velocity_solve(vorticity_hat0)
                 out = {
                     'vx': jnp.fft.irfftn(vxhat, axes=(0, 1)),
@@ -183,7 +182,7 @@ def generate_kolmogorov(sim_size: int,
         def downsample(vorticity_hat):
             outs = {}
             for size, out_grid in out_grids.items():
-                if size == sim_size:
+                if size == sim_grid.shape[0]:
                     vxhat, vyhat = velocity_solve(vorticity_hat)
                     out = {
                         'vx': jnp.fft.irfftn(vxhat, axes=(0, 1)),

@@ -1,6 +1,11 @@
 # time_step: 0.0002191401125550916
-domain_size: 2 # the domain ranges from 0 to 2π
-sim_size: 2048 # size of the domain during simulation
+domain:
+  - [0, '${eval:2 * ${import:numpy.pi}}']
+  - [0, '${eval:2 * ${import:numpy.pi}}']
+sim_grid:
+  _target_: fourierflow.utils.Grid
+  shape: [2048, 2048]
+  domain: ${domain} # size of the domain during simulation
 out_sizes: [32, 64, 128, 256, 512, 1024, 2048] # size of the domain for saving to disk
 n_trajectories: 4 # number of trajectories to generate
 density: 1 # density of the fluid

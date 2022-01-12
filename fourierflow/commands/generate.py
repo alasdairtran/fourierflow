@@ -18,6 +18,7 @@ from dask.delayed import Delayed
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 from dask_cuda import LocalCUDACluster
+from hydra.utils import instantiate
 from jax_cfd.base.equations import stable_time_step
 from jax_cfd.base.grids import Grid
 from omegaconf import OmegaConf
@@ -56,16 +57,15 @@ def kolmogorov(
     OmegaConf.set_struct(c, False)
 
     # Define the physical dimensions of the simulation.
-    domain = ((0, c.domain_size * jnp.pi), (0, c.domain_size * jnp.pi))
-    sim_grid = Grid(shape=(c.sim_size, c.sim_size), domain=domain)
+    sim_grid = instantiate(c.sim_grid)
     out_grids = {}
     for size in c.out_sizes:
-        grid = Grid(shape=(size, size), domain=domain)
+        grid = Grid(shape=(size, size), domain=sim_grid.domain)
         out_grids[size] = grid
 
     # Automatically determine the time step if not specified in config.
-    dt = stable_time_step(
-        c.max_velocity, c.cfl_safety_factor, c.equation.kwargs.viscosity, sim_grid)
+    dt = stable_time_step(c.max_velocity, c.cfl_safety_factor,
+                          c.equation.kwargs.viscosity, sim_grid)
     dt = c.get('time_step', dt)
 
     rng_key = jax.random.PRNGKey(c.seed)
@@ -75,7 +75,7 @@ def kolmogorov(
     if init_path:
         init_ds = xr.open_dataset(c.init_path, engine='h5netcdf')
         vorticities0 = init_ds.vorticity.values
-        assert vorticities0.shape[1] == c.sim_size
+        assert vorticities0.shape[1] == sim_grid.shape[0]
 
     if c.outer_steps > 0:
         shapes = {size: (c.outer_steps, size, size) for size in c.out_sizes}
@@ -107,7 +107,7 @@ def kolmogorov(
 
     for i in range(c.n_trajectories):
         outs = dask.delayed(generate_kolmogorov)(
-            sim_size=c.sim_size,
+            sim_grid=sim_grid,
             out_sizes=c.out_sizes,
             dt=dt,
             equation=c.equation,
@@ -156,7 +156,6 @@ def kolmogorov(
             attrs={
                 **attrs,
                 'dt': dt,
-                'domain_size': c.domain_size * jnp.pi,
                 'gpu': jax.devices()[0].device_kind,
             }
         )
