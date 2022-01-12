@@ -58,7 +58,7 @@ class KolmogorovMarkovDataset(TorchDataset, ElegyDataset):
         self.ds = xr.open_dataset(path)
         self.k = k
         self.B = len(self.ds.sample)
-        self.T = len(self.ds.time)- self.k
+        self.T = len(self.ds.time) - self.k
 
     def __len__(self):
         return self.B * self.T
