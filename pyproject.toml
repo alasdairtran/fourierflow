@@ -9,7 +9,7 @@ repository = "https://github.com/alasdairtran/fourierflow"
 python = "~3.9.9"
 # poetry add bokeh dask-cuda dm-haiku einops elegy entmax gdown gin-config \
 #   graphviz h5netcdf hydra-core hyperopt ipykernel jupyterlab \
-#   git+https://github.com/google/jax-cfd.git@ad078199168b4c35c5517161cfa5f7eebb8e74fe \
+#   git+https://github.com/google/jax-cfd.git@c28e55eb8f4afcc21a8ab77b7b30b661ad6bba76 \
 #   matplotlib numpy pandas plotly poethepoet ptvsd pydocstyle \
 #   python-dotenv pytorch-lightning requests rich seaborn termcolor \
 #   tensorflow-gpu tfrecord torchdiffeq torchtyping typer wandb xarray
@@ -28,7 +28,7 @@ hyperopt = "^0.2.7"
 ipykernel = "^6.6.0"
 jupyterlab = "^3.2.5"
 jax = "^0.2.26"
-jax-cfd = {git = "https://github.com/google/jax-cfd.git", rev = "ad078199168b4c35c5517161cfa5f7eebb8e74fe"}
+jax-cfd = {git = "https://github.com/google/jax-cfd.git", rev = "c28e55eb8f4afcc21a8ab77b7b30b661ad6bba76"}
 # Replace wheel URLs with versions once jaxlib is PEP 503 compliant:
 # https://github.com/google/jax/issues/5410
 jaxlib = [
