@@ -8,8 +8,12 @@
     "**/node_modules/**": true,
     "**/.git": true,
     "**/.venv*": true,
-    "experiments": true,
-    "data": true,
+    "**/wandb/**": true,
+    "**/*.nc": true,
+    "**/*.mat": true,
+    "**/*.h5": true,
+    "**/*.pkl": true,
+    "**/*.pickle": true,
   },
   "search.exclude": {
     "**/.git/objects/**": true,
@@ -17,7 +21,12 @@
     "**/node_modules/**": true,
     "**/.git": true,
     "**/.venv*": true,
-    "data": true,
+    "**/wandb/**": true,
+    "**/*.nc": true,
+    "**/*.mat": true,
+    "**/*.h5": true,
+    "**/*.pkl": true,
+    "**/*.pickle": true,
   }
 
 }
