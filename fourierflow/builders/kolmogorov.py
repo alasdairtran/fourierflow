@@ -129,12 +129,11 @@ def generate_kolmogorov(sim_grid: Grid,
     Adapted from https://github.com/google/jax-cfd/blob/main/notebooks/demo.ipynb
     """
     # Define the physical dimensions of the simulation.
-    domain = ((0, 2 * jnp.pi), (0, 2 * jnp.pi))
     velocity_solve = vorticity_to_velocity(sim_grid)
 
     out_grids = {}
     for size in out_sizes:
-        grid = Grid(shape=(size, size), domain=domain)
+        grid = Grid(shape=(size, size), domain=sim_grid.domain)
         out_grids[size] = grid
 
     downsample = partial(downsample_fn, sim_grid, out_grids, velocity_solve)
@@ -145,19 +144,23 @@ def generate_kolmogorov(sim_grid: Grid,
         # filters out high frequency fluctuations.
         v0 = filtered_velocity_field(
             seed, sim_grid, max_velocity, peak_wavenumber)
-        # Compute the fft of the vorticity. The spectral code assumes an fft'd
-        # vorticity for an initial state.
-        vorticity0 = curl_2d(v0).data
+        if method == 'pseudo_spectral':
+            # Compute the fft of the vorticity. The spectral code assumes an fft'd
+            # vorticity for an initial state.
+            vorticity0 = curl_2d(v0).data
     else:
         u, bcs = [], []
         for key in ['vx', 'vy']:
             u.append(initial_field[key].data)
             bcs.append(periodic_boundary_conditions(sim_grid.ndim))
         v0 = wrap_velocities(u, sim_grid, bcs)
-        vorticity0 = initial_field.vorticity.values
+        if method == 'pseudo_spectral':
+            vorticity0 = initial_field.vorticity.values
 
-    vorticity_hat0 = jnp.fft.rfftn(vorticity0, axes=(0, 1))
-    state = v0 if method == 'projection' else vorticity_hat0
+    if method == 'pseudo_spectral':
+        state = jnp.fft.rfftn(vorticity0, axes=(0, 1))
+    else:
+        state = v0
 
     step_fn = instantiate(step_fn)
     outer_step_fn = repeated(step_fn, inner_steps)
