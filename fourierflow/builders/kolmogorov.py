@@ -1,4 +1,5 @@
 import time
+from functools import partial
 from typing import Callable, List, Optional
 
 import elegy as eg
@@ -8,13 +9,14 @@ import numpy as np
 import xarray as xr
 from elegy.data import Dataset as ElegyDataset
 from hydra.utils import instantiate
+from jax_cfd.base.boundaries import periodic_boundary_conditions
 from jax_cfd.base.finite_differences import curl_2d
 from jax_cfd.base.funcutils import repeated, trajectory
-from jax_cfd.base.grids import Array, Grid
-from jax_cfd.base.initial_conditions import filtered_velocity_field
-from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
+from jax_cfd.base.grids import Grid
+from jax_cfd.base.initial_conditions import (filtered_velocity_field,
+                                             wrap_velocities)
+from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.spectral.utils import vorticity_to_velocity
-from omegaconf import DictConfig
 from torch.utils.data import Dataset as TorchDataset
 
 from fourierflow.utils import downsample_vorticity_hat, import_string
@@ -112,7 +114,9 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
 
 def generate_kolmogorov(sim_grid: Grid,
                         out_sizes: List[int],
+                        method: str,
                         step_fn: Callable,
+                        downsample_fn: Callable,
                         seed: jax.random.KeyArray,
                         initial_field: Optional[xr.Dataset] = None,
                         peak_wavenumber: float = 4.0,
@@ -133,6 +137,8 @@ def generate_kolmogorov(sim_grid: Grid,
         grid = Grid(shape=(size, size), domain=domain)
         out_grids[size] = grid
 
+    downsample = partial(downsample_fn, sim_grid, out_grids, velocity_solve)
+
     if initial_field is None:
         # Construct a random initial velocity. The `filtered_velocity_field`
         # function ensures that the initial velocity is divergence free and it
@@ -143,9 +149,15 @@ def generate_kolmogorov(sim_grid: Grid,
         # vorticity for an initial state.
         vorticity0 = curl_2d(v0).data
     else:
+        u, bcs = [], []
+        for key in ['vx', 'vy']:
+            u.append(initial_field[key].data)
+            bcs.append(periodic_boundary_conditions(sim_grid.ndim))
+        v0 = wrap_velocities(u, sim_grid, bcs)
         vorticity0 = initial_field.vorticity.values
 
     vorticity_hat0 = jnp.fft.rfftn(vorticity0, axes=(0, 1))
+    init = v0 if method == 'projection' else vorticity_hat0
 
     step_fn = instantiate(step_fn)
     outer_step_fn = repeated(step_fn, inner_steps)
@@ -176,25 +188,47 @@ def generate_kolmogorov(sim_grid: Grid,
         return outs, elapsed
 
     if outer_steps > 0:
-        def downsample(vorticity_hat):
-            outs = {}
-            for size, out_grid in out_grids.items():
-                if size == sim_grid.shape[0]:
-                    vxhat, vyhat = velocity_solve(vorticity_hat)
-                    out = {
-                        'vx': jnp.fft.irfftn(vxhat, axes=(0, 1)),
-                        'vy': jnp.fft.irfftn(vyhat, axes=(0, 1)),
-                        'vorticity': jnp.fft.irfftn(vorticity_hat, axes=(0, 1)),
-                    }
-                else:
-                    out = downsample_vorticity_hat(
-                        vorticity_hat, velocity_solve, sim_grid, out_grid)
-                outs[size] = out
-            return outs
-
-        trajectory_fn = trajectory(outer_step_fn, outer_steps, downsample)
         start = time.time()
-        _, trajs = trajectory_fn(vorticity_hat0)
+        trajectory_fn = trajectory(outer_step_fn, outer_steps, downsample)
+        _, trajs = trajectory_fn(init)
         elapsed = np.float32(time.time() - start)
 
         return trajs, elapsed
+
+
+def downsample_vorticity(sim_grid, out_grids, velocity_solve, vorticity_hat):
+    outs = {}
+    for size, out_grid in out_grids.items():
+        if size == sim_grid.shape[0]:
+            vxhat, vyhat = velocity_solve(vorticity_hat)
+            out = {
+                'vx': jnp.fft.irfftn(vxhat, axes=(0, 1)),
+                'vy': jnp.fft.irfftn(vyhat, axes=(0, 1)),
+                'vorticity': jnp.fft.irfftn(vorticity_hat, axes=(0, 1)),
+            }
+        else:
+            out = downsample_vorticity_hat(
+                vorticity_hat, velocity_solve, sim_grid, out_grid)
+        outs[size] = out
+    return outs
+
+
+def downsample_velocity(sim_grid, out_grids, velocity_solve, u):
+    outs = {}
+    for size, out_grid in out_grids.items():
+        if size == sim_grid.shape[0]:
+            out = {
+                'vx': u[0].data,
+                'vy': u[1].data,
+                'vorticity': curl_2d(u).data,
+            }
+        else:
+            vx, vy = downsample_staggered_velocity(
+                sim_grid, out_grid, u)
+            out = {
+                'vx': vx.data,
+                'vy': vy.data,
+                'vorticity': curl_2d((vx, vy)).data,
+            }
+        outs[size] = out
+    return outs

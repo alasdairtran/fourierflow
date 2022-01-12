@@ -108,7 +108,9 @@ def kolmogorov(
         outs = dask.delayed(generate_kolmogorov)(
             sim_grid=sim_grid,
             out_sizes=c.out_sizes,
+            method=c.method,
             step_fn=c.step_fn,
+            downsample_fn=c.downsample_fn,
             peak_wavenumber=c.peak_wavenumber,
             max_velocity=c.max_velocity,
             seed=keys[i],

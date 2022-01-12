@@ -6,6 +6,7 @@ sim_grid:
   shape: [512, 512]
   domain: ${domain} # size of the domain during simulation
 time_step: 0.0035062418008814655
+method: pseudo_spectral
 step_fn:
   _target_: jax_cfd.spectral.time_stepping.crank_nicolson_rk4
   equation:
@@ -16,6 +17,7 @@ step_fn:
     smooth: true # use anti-aliasing
     forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}
   time_step: ${time_step}
+downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_vorticity}
 out_sizes: [32, 64] # size of the domain for saving to disk
 n_trajectories: 32 # number of trajectories to generate
 density: 1 # density of the fluid
