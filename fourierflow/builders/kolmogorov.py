@@ -23,6 +23,8 @@ from fourierflow.utils import downsample_vorticity_hat, import_string
 
 from .base import Builder
 
+KEYS = ['vx', 'vy', 'vz']
+
 
 class KolmogorovBuilder(Builder):
     name = 'kolmogorov'
@@ -150,8 +152,8 @@ def generate_kolmogorov(sim_grid: Grid,
             vorticity0 = curl_2d(v0).data
     else:
         u, bcs = [], []
-        for key in ['vx', 'vy']:
-            u.append(initial_field[key].data)
+        for i in range(sim_grid.ndim):
+            u.append(initial_field[KEYS[i]].data)
             bcs.append(periodic_boundary_conditions(sim_grid.ndim))
         v0 = wrap_velocities(u, sim_grid, bcs)
         if method == 'pseudo_spectral':
@@ -205,19 +207,18 @@ def downsample_vorticity(sim_grid, out_grids, velocity_solve, vorticity_hat):
 def downsample_velocity(sim_grid, out_grids, velocity_solve, u):
     outs = {}
     for size, out_grid in out_grids.items():
+        out = {}
         if size == sim_grid.shape[0]:
-            out = {
-                'vx': u[0].data,
-                'vy': u[1].data,
-                'vorticity': curl_2d(u).data,
-            }
+            for i in range(sim_grid.ndim):
+                out[KEYS[i]] = u[i].data
+            if sim_grid.ndim == 2:
+                out['vorticity'] = curl_2d(u).data
         else:
-            vx, vy = downsample_staggered_velocity(
+            u_new = downsample_staggered_velocity(
                 sim_grid, out_grid, u)
-            out = {
-                'vx': vx.data,
-                'vy': vy.data,
-                'vorticity': curl_2d((vx, vy)).data,
-            }
+            for i in range(sim_grid.ndim):
+                out[KEYS[i]] = u_new[i].data
+            if sim_grid.ndim == 2:
+                out['vorticity'] = curl_2d(u_new).data
         outs[size] = out
     return outs

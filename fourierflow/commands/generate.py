@@ -59,8 +59,13 @@ def kolmogorov(
     sim_grid = instantiate(c.sim_grid)
     out_grids = {}
     for size in c.out_sizes:
-        grid = Grid(shape=(size, size), domain=sim_grid.domain)
+        grid = Grid(shape=[size] * sim_grid.ndim, domain=sim_grid.domain)
         out_grids[size] = grid
+
+    if sim_grid.ndim == 2:
+        spatial_dims = ['x', 'y']
+    elif sim_grid.ndim == 3:
+        spatial_dims = ['x', 'y', 'z']
 
     # Automatically determine the time step if not specified in config.
     if isinstance(c.time_step, float):
@@ -77,31 +82,41 @@ def kolmogorov(
         assert len(initial_ds.x) == sim_grid.shape[0]
 
     if c.outer_steps > 0:
-        shapes = {size: (c.outer_steps, size, size) for size in c.out_sizes}
-        dim_names = ('sample', 'time', 'x', 'y')
-        coords = {size: {
-            'sample': range(c.n_trajectories),
-            'time': dt * c.inner_steps * np.arange(1, c.outer_steps + 1),
-            'x': out_grids[size].axes()[0],
-            'y': out_grids[size].axes()[1],
-        } for size in c.out_sizes}
-    else:
-        shapes = {size: (size, size) for size in c.out_sizes}
-        dim_names = ('sample', 'x', 'y')
-        coords = {size: {
-            'sample': range(c.n_trajectories),
-            'x': out_grids[size].axes()[0],
-            'y': out_grids[size].axes()[1],
-        } for size in c.out_sizes}
+        shapes = {size: [c.outer_steps] + [size] * sim_grid.ndim
+                  for size in c.out_sizes}
+        dim_names = ['sample', 'time'] + spatial_dims
+        coords = {}
+        for size in c.out_sizes:
+            coords[size] = {
+                'sample': range(c.n_trajectories),
+                'time': dt * c.inner_steps * np.arange(1, c.outer_steps + 1),
+            }
+            for i, dim in enumerate(spatial_dims):
+                coords[size][dim] = out_grids[size].axes()[i]
 
+    else:
+        shapes = {size: [size] * sim_grid.ndim for size in c.out_sizes}
+        dim_names = ['sample'] + spatial_dims
+        coords = {}
+        for size in c.out_sizes:
+            coords[size] = {
+                'sample': range(c.n_trajectories),
+            }
+            for i, dim in enumerate(spatial_dims):
+                coords[size][dim] = out_grids[size].axes()[i]
     # Appending to netCDF files is not supported yet, but we can use
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
 
-    gvars: Dict[int, Dict] = {size: {
-        'vxs': [], 'vys': [], 'vorticities': []
-    } for size in c.out_sizes}
+    if sim_grid.ndim == 2:
+        gvars: Dict[int, Dict] = {size: {
+            'vx': [], 'vy': [], 'vorticity': [],
+        } for size in c.out_sizes}
+    elif sim_grid.ndim == 3:
+        gvars = {size: {
+            'vx': [], 'vy': [], 'vz': [],
+        } for size in c.out_sizes}
     durations = []
 
     for i in range(c.n_trajectories):
@@ -124,18 +139,28 @@ def kolmogorov(
             shape = shapes[size]
             traj = trajs[size]
             vx = da.from_delayed(traj['vx'], shape, np.float32)
+            gvars[size]['vx'].append(vx)
+
             vy = da.from_delayed(traj['vy'], shape, np.float32)
-            vorticity = da.from_delayed(traj['vorticity'], shape, np.float32)
-            gvars[size]['vxs'].append(vx)
-            gvars[size]['vys'].append(vy)
-            gvars[size]['vorticities'].append(vorticity)
+            gvars[size]['vy'].append(vy)
+
+            if sim_grid.ndim == 2:
+                vorticity = da.from_delayed(
+                    traj['vorticity'], shape, np.float32)
+                gvars[size]['vorticity'].append(vorticity)
+            elif sim_grid.ndim == 3:
+                vz = da.from_delayed(traj['vz'], shape, np.float32)
+                gvars[size]['vz'].append(vz)
 
         durations.append(da.from_delayed(elapsed, (), np.float32))
 
     for size in c.out_sizes:
-        gvars[size]['vxs'] = da.stack(gvars[size]['vxs'])
-        gvars[size]['vys'] = da.stack(gvars[size]['vys'])
-        gvars[size]['vorticities'] = da.stack(gvars[size]['vorticities'])
+        gvars[size]['vx'] = da.stack(gvars[size]['vx'])
+        gvars[size]['vy'] = da.stack(gvars[size]['vy'])
+        if sim_grid.ndim == 2:
+            gvars[size]['vorticity'] = da.stack(gvars[size]['vorticity'])
+        elif sim_grid.ndim == 3:
+            gvars[size]['vz'] = da.stack(gvars[size]['vz'])
     durations = da.stack(durations)
 
     def normalize(x):
@@ -145,6 +170,8 @@ def kolmogorov(
             return f'{x.__module__}.{x.__name__}'
         elif isinstance(x, list):
             return [normalize(elem) for elem in x]
+        elif isinstance(x, dict):
+            return str({key: normalize(value) for key, value in x.items()})
         else:
             return x
 
@@ -155,13 +182,12 @@ def kolmogorov(
 
     ds_dict = {}
     for size in c.out_sizes:
+        data_vars = {'elapsed': ('sample', durations)}
+        for k, v in gvars[size].items():
+            data_vars[k] = (dim_names, v)
+
         ds_dict[size] = xr.Dataset(
-            data_vars={
-                'vx': (dim_names, gvars[size]['vxs']),
-                'vy': (dim_names, gvars[size]['vys']),
-                'vorticity': (dim_names, gvars[size]['vorticities']),
-                'elapsed': ('sample', durations),
-            },
+            data_vars=data_vars,
             coords=coords[size],
             attrs={
                 **attrs,
