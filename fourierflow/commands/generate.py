@@ -72,9 +72,8 @@ def kolmogorov(
 
     init_path = c.get('init_path', None)
     if init_path:
-        init_ds = xr.open_dataset(c.init_path, engine='h5netcdf')
-        vorticities0 = init_ds.vorticity.values
-        assert vorticities0.shape[1] == sim_grid.shape[0]
+        initial_ds = xr.open_dataset(c.init_path, engine='h5netcdf')
+        assert len(initial_ds.x) == sim_grid.shape[0]
 
     if c.outer_steps > 0:
         shapes = {size: (c.outer_steps, size, size) for size in c.out_sizes}
@@ -113,7 +112,7 @@ def kolmogorov(
             peak_wavenumber=c.peak_wavenumber,
             max_velocity=c.max_velocity,
             seed=keys[i],
-            vorticity0=vorticities0[i] if init_path else None,
+            initial_field=initial_ds.isel(sample=i) if init_path else None,
             inner_steps=c.inner_steps,
             outer_steps=c.outer_steps,
             warmup_steps=c.warmup_steps)

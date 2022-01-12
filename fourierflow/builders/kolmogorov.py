@@ -115,7 +115,7 @@ def generate_kolmogorov(sim_grid: Grid,
                         dt: float,
                         equation: DictConfig,
                         seed: jax.random.KeyArray,
-                        vorticity0: Optional[Array] = None,
+                        initial_field: Optional[Array] = None,
                         peak_wavenumber: float = 4.0,
                         max_velocity: float = 7.0,
                         inner_steps: int = 25,
@@ -134,7 +134,7 @@ def generate_kolmogorov(sim_grid: Grid,
         grid = Grid(shape=(size, size), domain=domain)
         out_grids[size] = grid
 
-    if vorticity0 is None:
+    if initial_field is None:
         # Construct a random initial velocity. The `filtered_velocity_field`
         # function ensures that the initial velocity is divergence free and it
         # filters out high frequency fluctuations.
@@ -143,6 +143,8 @@ def generate_kolmogorov(sim_grid: Grid,
         # Compute the fft of the vorticity. The spectral code assumes an fft'd
         # vorticity for an initial state.
         vorticity0 = curl_2d(v0).data
+    else:
+        vorticity0 = initial_field.vorticity.values
 
     vorticity_hat0 = jnp.fft.rfftn(vorticity0, axes=(0, 1))
 
