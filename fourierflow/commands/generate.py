@@ -136,13 +136,20 @@ def kolmogorov(
         gvars[size]['vorticities'] = da.stack(gvars[size]['vorticities'])
     durations = da.stack(durations)
 
+    def normalize(x):
+        if isinstance(x, bool):
+            return str(x)
+        elif isinstance(x, Callable):
+            return f'{x.__module__}.{x.__name__}'
+        elif isinstance(x, list):
+            return [normalize(elem) for elem in x]
+        else:
+            return x
+
     attrs = pd.json_normalize(OmegaConf.to_object(c), sep='.')
     attrs = attrs.to_dict(orient='records')[0]
     for k, v in attrs.items():
-        if isinstance(v, bool):
-            attrs[k] = str(v)
-        elif isinstance(v, Callable):
-            attrs[k] = f'{v.__module__}.{v.__name__}'
+        attrs[k] = normalize(v)
 
     ds_dict = {}
     for size in c.out_sizes:
