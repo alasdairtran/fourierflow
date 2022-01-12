@@ -131,11 +131,12 @@ def generate_kolmogorov(sim_grid: Grid,
     Adapted from https://github.com/google/jax-cfd/blob/main/notebooks/demo.ipynb
     """
     # Define the physical dimensions of the simulation.
-    velocity_solve = vorticity_to_velocity(sim_grid)
+    velocity_solve = vorticity_to_velocity(
+        sim_grid) if sim_grid.ndim == 2 else None
 
     out_grids = {}
     for size in out_sizes:
-        grid = Grid(shape=(size, size), domain=sim_grid.domain)
+        grid = Grid(shape=[size] * sim_grid.ndim, domain=sim_grid.domain)
         out_grids[size] = grid
 
     downsample = partial(downsample_fn, sim_grid, out_grids, velocity_solve)
