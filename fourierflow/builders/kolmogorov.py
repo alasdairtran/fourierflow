@@ -157,7 +157,7 @@ def generate_kolmogorov(sim_grid: Grid,
         vorticity0 = initial_field.vorticity.values
 
     vorticity_hat0 = jnp.fft.rfftn(vorticity0, axes=(0, 1))
-    init = v0 if method == 'projection' else vorticity_hat0
+    state = v0 if method == 'projection' else vorticity_hat0
 
     step_fn = instantiate(step_fn)
     outer_step_fn = repeated(step_fn, inner_steps)
@@ -169,30 +169,16 @@ def generate_kolmogorov(sim_grid: Grid,
             return None
         trajectory_fn = trajectory(outer_step_fn, warmup_steps, ignore)
         start = time.time()
-        vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
+        state, _ = trajectory_fn(state)
         elapsed = np.float32(time.time() - start)
-
-        outs = {}
-        for size, out_grid in out_grids.items():
-            if size == sim_grid.shape[0]:
-                vxhat, vyhat = velocity_solve(vorticity_hat0)
-                out = {
-                    'vx': jnp.fft.irfftn(vxhat, axes=(0, 1)),
-                    'vy': jnp.fft.irfftn(vyhat, axes=(0, 1)),
-                    'vorticity': jnp.fft.irfftn(vorticity_hat0, axes=(0, 1)),
-                }
-            else:
-                out = downsample_vorticity_hat(
-                    vorticity_hat0, velocity_solve, sim_grid, out_grid)
-            outs[size] = out
+        outs = downsample(state)
         return outs, elapsed
 
     if outer_steps > 0:
         start = time.time()
         trajectory_fn = trajectory(outer_step_fn, outer_steps, downsample)
-        _, trajs = trajectory_fn(init)
+        _, trajs = trajectory_fn(state)
         elapsed = np.float32(time.time() - start)
-
         return trajs, elapsed
 
 
