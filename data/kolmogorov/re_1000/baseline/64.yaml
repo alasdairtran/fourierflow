@@ -6,6 +6,22 @@ sim_grid:
   _target_: fourierflow.utils.Grid
   shape: [64, 64]
   domain: ${domain} # size of the domain during simulation
+time_step:
+  _target_: jax_cfd.base.equations.stable_time_step
+  max_velocity: 7.0 # maximum velocity of the fluid
+  max_courant_number: 0.5
+  viscosity: 1e-3
+  grid: ${sim_grid}
+step_fn:
+  _target_: jax_cfd.spectral.time_stepping.crank_nicolson_rk4
+  equation:
+    _target_: jax_cfd.spectral.equations.NavierStokes2D
+    grid: ${sim_grid}
+    viscosity: 1e-3
+    drag: 0.1
+    smooth: true # use anti-aliasing
+    forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}
+  time_step: ${time_step}
 out_sizes: [32, 64] # size of the domain for saving to disk
 n_trajectories: 32 # number of trajectories to generate
 density: 1 # density of the fluid
@@ -16,11 +32,3 @@ inner_steps: 2 # take a snapshot of the field once every these many ODE steps
 outer_steps: 2441 # the data saved on disk will have these many snapshots
 warmup_steps: 0 # we load initial conditions from init_path instead
 init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
-cfl_safety_factor: 0.5
-equation:
-  _target_: jax_cfd.spectral.equations.NavierStokes2D
-  grid: ${sim_grid}
-  viscosity: 1e-3
-  drag: 0.1
-  smooth: true # use anti-aliasing
-  forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}

@@ -63,9 +63,10 @@ def kolmogorov(
         out_grids[size] = grid
 
     # Automatically determine the time step if not specified in config.
-    dt = stable_time_step(c.max_velocity, c.cfl_safety_factor,
-                          c.equation.viscosity, sim_grid)
-    dt = c.get('time_step', dt)
+    if isinstance(c.time_step, float):
+        dt = c.time_step
+    else:
+        dt = instantiate(c.time_step)
 
     rng_key = jax.random.PRNGKey(c.seed)
     keys = jax.random.split(rng_key, c.n_trajectories)
@@ -107,8 +108,7 @@ def kolmogorov(
         outs = dask.delayed(generate_kolmogorov)(
             sim_grid=sim_grid,
             out_sizes=c.out_sizes,
-            dt=dt,
-            equation=c.equation,
+            step_fn=c.step_fn,
             peak_wavenumber=c.peak_wavenumber,
             max_velocity=c.max_velocity,
             seed=keys[i],

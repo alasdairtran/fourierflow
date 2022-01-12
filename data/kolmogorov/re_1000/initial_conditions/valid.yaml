@@ -6,6 +6,22 @@ sim_grid:
   _target_: fourierflow.utils.Grid
   shape: [2048, 2048]
   domain: ${domain} # size of the domain during simulation
+time_step:
+  _target_: jax_cfd.base.equations.stable_time_step
+  max_velocity: 7.0 # maximum velocity of the fluid
+  max_courant_number: 0.5
+  viscosity: 1e-3
+  grid: ${sim_grid}
+step_fn:
+  _target_: jax_cfd.spectral.time_stepping.crank_nicolson_rk4
+  equation:
+    _target_: jax_cfd.spectral.equations.NavierStokes2D
+    grid: ${sim_grid}
+    viscosity: 1e-3
+    drag: 0.1
+    smooth: true # use anti-aliasing
+    forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}
+  time_step: ${time_step}
 out_sizes: [32, 64, 128, 256, 512, 1024, 2048] # size of the domain for saving to disk
 n_trajectories: 4 # number of trajectories to generate
 density: 1 # density of the fluid
@@ -15,11 +31,3 @@ seed: 819242 # random seed for the initial velocity field
 inner_steps: 64 # take a snapshot of the field once every these many ODE steps
 outer_steps: 0 # we only want to initial vorticity field
 warmup_steps: 2852 # equivalent to 40 time units
-cfl_safety_factor: 0.5
-equation:
-  _target_: jax_cfd.spectral.equations.NavierStokes2D
-  grid: ${sim_grid}
-  viscosity: 1e-3
-  drag: 0.1
-  smooth: true # use anti-aliasing
-  forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}

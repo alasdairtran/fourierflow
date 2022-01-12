@@ -1,5 +1,5 @@
 import time
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import elegy as eg
 import jax
@@ -112,8 +112,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
 
 def generate_kolmogorov(sim_grid: Grid,
                         out_sizes: List[int],
-                        dt: float,
-                        equation: DictConfig,
+                        step_fn: Callable,
                         seed: jax.random.KeyArray,
                         initial_field: Optional[xr.Dataset] = None,
                         peak_wavenumber: float = 4.0,
@@ -148,16 +147,15 @@ def generate_kolmogorov(sim_grid: Grid,
 
     vorticity_hat0 = jnp.fft.rfftn(vorticity0, axes=(0, 1))
 
-    eqn = instantiate(equation)
-    cnrk4 = crank_nicolson_rk4(eqn, dt)
-    step_fn = repeated(cnrk4, inner_steps)
+    step_fn = instantiate(step_fn)
+    outer_step_fn = repeated(step_fn, inner_steps)
 
     # During warming up, we ignore intermediate results and just return
     # the final field
     if warmup_steps > 0:
         def ignore(_):
             return None
-        trajectory_fn = trajectory(step_fn, warmup_steps, ignore)
+        trajectory_fn = trajectory(outer_step_fn, warmup_steps, ignore)
         start = time.time()
         vorticity_hat0, _ = trajectory_fn(vorticity_hat0)
         elapsed = np.float32(time.time() - start)
@@ -194,7 +192,7 @@ def generate_kolmogorov(sim_grid: Grid,
                 outs[size] = out
             return outs
 
-        trajectory_fn = trajectory(step_fn, outer_steps, downsample)
+        trajectory_fn = trajectory(outer_step_fn, outer_steps, downsample)
         start = time.time()
         _, trajs = trajectory_fn(vorticity_hat0)
         elapsed = np.float32(time.time() - start)
