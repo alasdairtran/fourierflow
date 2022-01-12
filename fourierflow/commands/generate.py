@@ -1,14 +1,13 @@
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import dask
 import dask.array as da
 import h5py
 import hydra
 import jax
-import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 import ptvsd
@@ -65,7 +64,7 @@ def kolmogorov(
 
     # Automatically determine the time step if not specified in config.
     dt = stable_time_step(c.max_velocity, c.cfl_safety_factor,
-                          c.equation.kwargs.viscosity, sim_grid)
+                          c.equation.viscosity, sim_grid)
     dt = c.get('time_step', dt)
 
     rng_key = jax.random.PRNGKey(c.seed)
@@ -140,8 +139,11 @@ def kolmogorov(
 
     attrs = pd.json_normalize(OmegaConf.to_object(c), sep='.')
     attrs = attrs.to_dict(orient='records')[0]
-    attrs = {k: (str(v) if isinstance(v, bool) else v)
-             for k, v in attrs.items()}
+    for k, v in attrs.items():
+        if isinstance(v, bool):
+            attrs[k] = str(v)
+        elif isinstance(v, Callable):
+            attrs[k] = f'{v.__module__}.{v.__name__}'
 
     ds_dict = {}
     for size in c.out_sizes:

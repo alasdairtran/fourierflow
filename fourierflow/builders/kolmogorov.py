@@ -1,5 +1,5 @@
 import time
-from typing import Dict, List, Optional, cast
+from typing import List, Optional
 
 import elegy as eg
 import jax
@@ -7,13 +7,14 @@ import jax.numpy as jnp
 import numpy as np
 import xarray as xr
 from elegy.data import Dataset as ElegyDataset
+from hydra.utils import instantiate
 from jax_cfd.base.finite_differences import curl_2d
 from jax_cfd.base.funcutils import repeated, trajectory
 from jax_cfd.base.grids import Array, Grid
 from jax_cfd.base.initial_conditions import filtered_velocity_field
 from jax_cfd.spectral.time_stepping import crank_nicolson_rk4
 from jax_cfd.spectral.utils import vorticity_to_velocity
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from torch.utils.data import Dataset as TorchDataset
 
 from fourierflow.utils import downsample_vorticity_hat, import_string
@@ -145,11 +146,7 @@ def generate_kolmogorov(sim_grid: Grid,
 
     vorticity_hat0 = jnp.fft.rfftn(vorticity0, axes=(0, 1))
 
-    Equation = import_string(equation.target)
-    kwargs = cast(Dict, OmegaConf.to_object(equation.kwargs))
-    if 'forcing_fn' in kwargs:
-        kwargs['forcing_fn'] = import_string(kwargs['forcing_fn'])
-    eqn = Equation(grid=sim_grid, **kwargs)
+    eqn = instantiate(equation)
     cnrk4 = crank_nicolson_rk4(eqn, dt)
     step_fn = repeated(cnrk4, inner_steps)
 

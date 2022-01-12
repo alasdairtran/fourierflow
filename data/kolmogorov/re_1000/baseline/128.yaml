@@ -18,9 +18,9 @@ warmup_steps: 0 # we load initial conditions from init_path instead
 init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_128.nc
 cfl_safety_factor: 0.5
 equation:
-  target: jax_cfd.spectral.equations.NavierStokes2D
-  kwargs:
-    viscosity: 1e-3
-    drag: 0.1
-    smooth: true # use anti-aliasing
-    forcing_fn: jax_cfd.spectral.forcings.kolmogorov_forcing_fn
+  _target_: jax_cfd.spectral.equations.NavierStokes2D
+  grid: ${sim_grid}
+  viscosity: 1e-3
+  drag: 0.1
+  smooth: true # use anti-aliasing
+  forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}
