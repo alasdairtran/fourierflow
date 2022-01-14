@@ -1,11 +1,11 @@
-# time_step: 0.0035062418008814655
+# time_step: 0.0008765604502203664
 domain:
   - [0, '${eval:2 * ${import:numpy.pi}}']
   - [0, '${eval:2 * ${import:numpy.pi}}']
   - [0, '${eval:2 * ${import:numpy.pi}}']
 sim_grid:
   _target_: fourierflow.utils.Grid
-  shape: [256, 256, 256]
+  shape: [512, 512, 512]
   domain: ${domain} # size of the domain during simulation
 time_step:
   _target_: jax_cfd.base.equations.stable_time_step
@@ -27,12 +27,12 @@ step_fn:
     constant_wavenumber: 4
     linear_coefficient: -0.1
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_velocity}
-out_sizes: [32, 64, 128, 256] # size of the domain for saving to disk
+out_sizes: [32, 64, 128, 256, 512] # size of the domain for saving to disk
 n_trajectories: 32 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
 seed: 39213 # random seed for the initial velocity field
-inner_steps: 16 # take a snapshot of the field once every these many ODE steps
+inner_steps: 64 # take a snapshot of the field once every these many ODE steps
 outer_steps: 0 # the data saved on disk will have these many snapshots
-warmup_steps: 100 # we load initial conditions from init_path instead
+warmup_steps: 200
