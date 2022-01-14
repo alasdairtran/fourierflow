@@ -23,7 +23,7 @@ step_fn:
   time_step: ${time_step}
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_vorticity}
 out_sizes: [32, 64, 128, 256] # size of the domain for saving to disk
-n_trajectories: 16 # number of trajectories to generate
+n_trajectories: 4 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
