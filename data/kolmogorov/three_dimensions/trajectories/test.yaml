@@ -25,7 +25,7 @@ step_fn:
     grid: ${sim_grid}
     constant_magnitude: 1
     constant_wavenumber: 4
-    linear_coefficient: 0.1
+    linear_coefficient: -0.1
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_velocity}
 out_sizes: [32, 64, 128] # size of the domain for saving to disk
 n_trajectories: 4 # number of trajectories to generate
