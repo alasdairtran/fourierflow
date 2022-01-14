@@ -45,6 +45,7 @@ wandb
 /notebooks
 /results
 *.tar.gz
+*_bak
 
 # per-machine project settings
 .env
