@@ -4,7 +4,7 @@ domain:
   - [0, '${eval:4 * ${import:numpy.pi}}']
 sim_grid:
   _target_: fourierflow.utils.Grid
-  shape: [4096, 4096]
+  shape: [4096, 4096] # double the length scale
   domain: ${domain} # size of the domain during simulation
 time_step:
   _target_: jax_cfd.base.equations.stable_time_step
@@ -18,10 +18,14 @@ step_fn:
   equation:
     _target_: jax_cfd.spectral.equations.NavierStokes2D
     grid: ${sim_grid}
-    viscosity: 1e-3 # 0.0003 or 0.0005
+    viscosity: 0.0005 # half the visocity
     drag: 0.1
     smooth: true # use anti-aliasing
-    forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}
+    forcing_fn: # half the forcing strength scale
+      _target_: functools.partial
+      _args_: ["${get_method:fourierflow.utils.kolmogorov_forcing_fn}"]
+      scale: -2
+      k: 2
   time_step: ${time_step}
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_vorticity}
 out_sizes: [32, 64, 128, 256] # size of the domain for saving to disk
