@@ -34,6 +34,7 @@ class Grid2DMarkovExperiment(Routine):
                  shuffle_grid: bool = False,
                  use_velocity: bool = False,
                  learn_difference: bool = False,
+                 step_size: float = 1/64,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -58,6 +59,7 @@ class Grid2DMarkovExperiment(Routine):
         self.shuffle_grid = shuffle_grid
         self.use_velocity = use_velocity
         self.learn_difference = learn_difference
+        self.step_size = step_size
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
@@ -338,12 +340,13 @@ class Grid2DMarkovExperiment(Routine):
         diverged_idx = has_diverged.nonzero()
         diverged_t = diverged_idx[0, 0] if len(
             diverged_idx) > 0 else len(has_diverged)
+        time_until = diverged_t * self.step_size
 
         loss /= self.n_steps
         loss_full = self.l2_loss(preds.reshape(
             B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, preds, pred_layer_list, step_losses, diverged_t
+        return loss, loss_full, preds, pred_layer_list, step_losses, time_until
 
     def training_step(self, batch, batch_idx):
         # Accumulate normalization stats in the first epoch
@@ -376,11 +379,11 @@ class Grid2DMarkovExperiment(Routine):
             return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list, _, diverged_t = self._valid_step(
+        loss, loss_full, preds, pred_list, _, time_until = self._valid_step(
             batch)
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
-        self.log('valid_diverge_t', float(diverged_t), prog_bar=True)
+        self.log('valid_time_until', time_until, prog_bar=True)
 
         if batch_idx == 0:
             data = batch['data']
@@ -396,10 +399,10 @@ class Grid2DMarkovExperiment(Routine):
                         expt, layer[0], f'layer {i} t=19')
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _, step_losses, diverged_t = self._valid_step(
+        loss, loss_full, _, _, step_losses, time_until = self._valid_step(
             batch)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
-        self.log('test_diverge_t', float(diverged_t), prog_bar=True)
+        self.log('test_time_until', time_until, prog_bar=True)
         for i in range(len(step_losses)):
             self.log(f'test_loss_{i}', step_losses[i])
