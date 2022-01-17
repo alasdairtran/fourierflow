@@ -13,9 +13,9 @@ builder:
   train_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_64.nc
   valid_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_64.nc
   test_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_64.nc
-  train_k: 40
-  valid_k: 40
-  test_k: 40
+  train_k: 20
+  valid_k: 20
+  test_k: 20
   batch_size: 32
   num_workers: 4
   pin_memory: true
@@ -33,7 +33,7 @@ routine:
     gain: 0.1
     dropout: 0.0
     in_dropout: 0.0
-  n_steps: 50
+  n_steps: 100
   max_accumulations: 1000
   noise_std: 0.01
   optimizer:

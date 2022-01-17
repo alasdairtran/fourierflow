@@ -1,6 +1,6 @@
 wandb:
   project: kolmogorov_re_1000
-  group: ffno/layers/24_layers
+  group: ffno/step_sizes/20
   tags:
     - pde
     - navier-stokes
