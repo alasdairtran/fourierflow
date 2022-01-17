@@ -18,25 +18,79 @@ app = Typer()
 
 @app.command()
 def correlation():
-    sizes = [32, 64, 128, 256, 512, 1024, 2048]
+    fig = plt.figure(figsize=(8, 3))
+
+    ax = plt.subplot(1, 2, 1)
+    lines_1 = plot_correlation_vs_time_of_different_grid_sizes(ax)
+
+    ax = plt.subplot(1, 2, 2)
+    # lines_2 = plot_varying_step_size(ax)
+
+    lines = [lines_1[0]]
+
+    labels = ['Direct numerical simulation (DNS)']
+
+    lgd = fig.legend(handles=lines,
+                     labels=labels,
+                     loc="center",
+                     borderaxespad=0.1,
+                     bbox_to_anchor=[1.2, 0.55])
+
+    fig.tight_layout()
+    fig.savefig('figures/correlation.pdf',
+                bbox_extra_artists=(lgd,),
+                bbox_inches='tight')
+
+
+def plot_correlation_vs_time_of_different_grid_sizes(ax):
+    sizes = [32, 64, 128, 256, 512, 1024]
     simulations = {}
     for size in sizes:
-        path = f'data/kolmogorov/re_1000/baseline/{size}.nc'
+        path = f'../data/kolmogorov/re_1000/baselines/{size}_32.nc'
         simulations[size] = xr.open_dataset(path)
+    path = '../data/kolmogorov/re_1000/trajectories/test_32.nc'
+    simulations[2048] = xr.open_dataset(path)
 
     combined = xr.concat(simulations.values(), dim='size')
-    combined.coords['size'] = sizes
+    combined.coords['size'] = sizes + [2048]
 
     # Even the best model diverges from ground truth by time 10. Thus we
     # only look at the first 10 simulation steps to save computation time.
     w = combined.vorticity.sel(time=slice(10))
     rho = grid_correlation(w, w.sel(size=2048)).compute()
 
-    times = calculate_time_until(rho)
-    print(times)
+    times_until = calculate_time_until(rho.isel(sample=slice(0, 4)))
+    duration = combined.elapsed.mean(dim='sample') / combined.time.max()
+    line = ax.errorbar(times_until[:-1], duration[:-1], marker='x')
+    ax.set_yscale('log')
+    ax.set_xlabel('Time until correlation < 95%')
+    ax.set_ylabel('Runtime per time unit (s)')
+    ax.set_ylim(5e-2, 1e1)
     # array([0.448799, 1.248222, 2.440344, 3.744666, 5.048988, 6.40941 , 0.      ])
     # Compared to original paper:
     # array([1.711046, 2.973293, 4.15139 , 5.497787, 7.208833, 0.      ])
+
+    grids = [32, 64, 128, 256, 512, 1024, 2048]
+    for i, txt in enumerate(grids):
+        xy = (times_until[i], duration[i])
+        xytext = (xy[0] - 0.3, xy[1] * 1.1)
+        ax.annotate(txt, xy, xytext)
+
+    return line
+
+
+def plot_varying_step_size(ax):
+    sizes = [2, 4, 6, 8, 16, 32, 64, 128, 256, 512, 1024]
+    simulations = {}
+    for size in sizes:
+        path = f'../data/kolmogorov/re_1000/time_steps/x{size}_32.nc'
+        simulations[size] = xr.open_dataset(path)
+
+    path = '../data/kolmogorov/re_1000/trajectories/512_32.nc'
+    simulations[2048] = xr.open_dataset(path)
+
+    path = '../data/kolmogorov/re_1000/baseline/.nc'
+    simulations[2048] = xr.open_dataset(path)
 
 
 @app.command()
