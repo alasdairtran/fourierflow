@@ -34,6 +34,7 @@ routine:
     dropout: 0.0
     in_dropout: 0.0
   n_steps: 50
+  step_size: 0.5609986881410345 # 0.0002191401125550916 * 64 * 40
   max_accumulations: 1000
   noise_std: 0.01
   optimizer:
@@ -46,7 +47,7 @@ routine:
       _target_: functools.partial
       _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
       num_warmup_steps: 500
-      num_training_steps: 48400
+      num_training_steps: 24010 # 2401 per epoch
       num_cycles: 0.5
     name: learning_rate
 trainer:
