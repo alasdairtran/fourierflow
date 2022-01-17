@@ -30,13 +30,16 @@ class KolmogorovBuilder(Builder):
     name = 'kolmogorov'
 
     def __init__(self, train_path: str, valid_path: str, test_path: str,
-                 train_k: int, valid_k: int, test_k: int, size: int,
+                 train_k: int, valid_k: int, test_k: int,
+                 KolmogorovDataset,
                  loader_target: str = 'torch.utils.data.DataLoader', **kwargs):
         super().__init__()
         self.kwargs = kwargs
-        self.train_dataset = KolmogorovMarkovDataset(train_path, size, train_k)
-        self.valid_dataset = KolmogorovMarkovDataset(valid_path, size, valid_k)
-        self.test_dataset = KolmogorovMarkovDataset(test_path, size, test_k)
+        self.train_dataset = KolmogorovDataset(train_path, train_k)
+        self.valid_dataset = KolmogorovTrajectoryDataset(
+            valid_path, valid_k)
+        self.test_dataset = KolmogorovTrajectoryDataset(
+            test_path, test_k)
         self.DataLoader = import_string(loader_target)
 
     def train_dataloader(self) -> eg.data.DataLoader:
@@ -58,8 +61,8 @@ class KolmogorovBuilder(Builder):
         return loader
 
 
-class KolmogorovMarkovDataset(TorchDataset, ElegyDataset):
-    def __init__(self, path, size, k):
+class KolmogorovElegyDataset(TorchDataset, ElegyDataset):
+    def __init__(self, path, k):
         self.ds = xr.open_dataset(path)
         self.k = k
         self.B = len(self.ds.sample)
@@ -92,8 +95,33 @@ class KolmogorovMarkovDataset(TorchDataset, ElegyDataset):
         return inputs, outputs
 
 
+class KolmogorovTorchDataset(TorchDataset, ElegyDataset):
+    def __init__(self, path, k):
+        self.ds = xr.open_dataset(path)
+        self.k = k
+        self.B = len(self.ds.sample)
+        self.T = len(self.ds.time) - self.k
+
+    def __len__(self):
+        return self.B * self.T
+
+    def __getitem__(self, idx):
+        b = idx // self.T
+        t = idx % self.T
+        k = self.k
+
+        ds = self.ds.isel(sample=b, time=slice(t, t+k+1, k))
+        in_ds = ds.isel(time=slice(0, 1)).transpose('x', 'y', 'time')
+        out_ds = ds.isel(time=slice(1, 2)).transpose('x', 'y', 'time')
+
+        return {
+            'x': in_ds.vorticity.data,
+            'y': out_ds.vorticity.data,
+        }
+
+
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
-    def __init__(self, path, size, k):
+    def __init__(self, path, k):
         self.ds = xr.open_dataset(path)
         self.k = k
         self.B = len(self.ds.sample)
@@ -102,15 +130,16 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         return self.B
 
     def __getitem__(self, b):
-        ds = self.ds.isel(sample=b, time=slice(None, None, self.k))
-        data = {
-            'vx': ds.vx,
-            'vy': ds.vy,
-            'vorticity': ds.vorticity,
-        }
+        ds = self.ds.isel(sample=b, time=slice(None, None, self.k)).transpose(
+            'x', 'y', 'time')
+        # data = {
+        #     'vx': ds.vx,
+        #     'vy': ds.vy,
+        #     'vorticity': ds.vorticity,
+        # }
 
         return {
-            'data': data,
+            'data': ds.vorticity.data,
         }
 
 
