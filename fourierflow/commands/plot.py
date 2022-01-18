@@ -29,7 +29,7 @@ def correlation():
     lines = lines_1
 
     labels = ['Adams-Bashforth numerical simulator',
-              'F-FNO (our full']
+              'F-FNO (our full model)']
 
     lgd = fig.legend(handles=lines,
                      labels=labels,
