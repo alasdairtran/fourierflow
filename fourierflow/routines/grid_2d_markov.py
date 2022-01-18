@@ -411,5 +411,9 @@ class Grid2DMarkovExperiment(Routine):
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
         self.log('test_time_until', time_until, prog_bar=True)
-        for i in range(self.n_test_steps_logged or len(step_losses)):
+        if self.n_test_steps_logged is None:
+            length = len(step_losses)
+        else:
+            length = self.n_test_steps_logged
+        for i in range(length):
             self.log(f'test_loss_{i}', step_losses[i])
