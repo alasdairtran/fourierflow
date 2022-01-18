@@ -157,9 +157,9 @@ class Grid2DRolloutExperiment(Routine):
         if batch_idx == 0:
             xx, yy = batch
             expt = self.logger.experiment
-            log_navier_stokes_heatmap(expt, xx[0, :, :, -1], 'gt t=9')
-            log_navier_stokes_heatmap(expt, yy[0, :, :, -1], 'gt t=19')
-            log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19')
+            log_navier_stokes_heatmap(expt, xx[0, :, :, -1], 'gt t=9', 1)
+            log_navier_stokes_heatmap(expt, yy[0, :, :, -1], 'gt t=19', 1)
+            log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19', 1)
 
     def test_step(self, batch, batch_idx):
         loss, loss_full, _, step_losses = self._learning_step(batch)

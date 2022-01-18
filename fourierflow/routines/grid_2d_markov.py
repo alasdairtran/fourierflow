@@ -1,4 +1,5 @@
 import math
+from re import S
 from typing import Optional
 
 import numpy as np
@@ -36,6 +37,7 @@ class Grid2DMarkovExperiment(Routine):
                  learn_difference: bool = False,
                  step_size: float = 1/64,
                  n_test_steps_logged: Optional[int] = None,
+                 heatmap_scale: int = 1,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -62,6 +64,7 @@ class Grid2DMarkovExperiment(Routine):
         self.learn_difference = learn_difference
         self.step_size = step_size
         self.n_test_steps_logged = n_test_steps_logged
+        self.heatmap_scale = heatmap_scale
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
@@ -391,15 +394,16 @@ class Grid2DMarkovExperiment(Routine):
         if batch_idx == 0:
             data = batch['data']
             expt = self.logger.experiment
-            log_navier_stokes_heatmap(expt, data[0, :, :, 9], 'gt t=9')
-            log_navier_stokes_heatmap(expt, data[0, :, :, 19], 'gt t=19')
-            log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19')
+            s = self.heatmap_scale
+            log_navier_stokes_heatmap(expt, data[0, :, :, 9], 'gt t=9', s)
+            log_navier_stokes_heatmap(expt, data[0, :, :, 19], 'gt t=19', s)
+            log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19', s)
 
             if pred_list:
                 layers = pred_list[-1]
                 for i, layer in enumerate(layers):
                     log_navier_stokes_heatmap(
-                        expt, layer[0], f'layer {i} t=19')
+                        expt, layer[0], f'layer {i} t=19', s * 3)
 
     def test_step(self, batch, batch_idx):
         loss, loss_full, _, _, step_losses, time_until = self._valid_step(

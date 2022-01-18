@@ -26,13 +26,13 @@ class MidpointNormalize(mpl.colors.Normalize):
         return np.ma.masked_array(np.interp(value, x, y))
 
 
-def log_navier_stokes_heatmap(expt, tensor, name):
+def log_navier_stokes_heatmap(expt, tensor, name, scale):
     fig = plt.figure(figsize=(6, 6))
     ax = fig.add_subplot(1, 1, 1)
     vals = tensor.cpu().numpy()
     vmax = vals.max()
-    vmin = -1 if 'layer' in name else -3
-    vmax = 1 if 'layer' in name else 3
+    vmin = -scale
+    vmax = scale
     norm = MidpointNormalize(vmin=vmin, vmax=vmax, midpoint=0)
     cmap = plt.get_cmap('RdBu')
     im = ax.imshow(vals, interpolation='bilinear', norm=norm, cmap=cmap)
