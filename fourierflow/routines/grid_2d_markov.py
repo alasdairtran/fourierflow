@@ -35,6 +35,7 @@ class Grid2DMarkovExperiment(Routine):
                  use_velocity: bool = False,
                  learn_difference: bool = False,
                  step_size: float = 1/64,
+                 n_test_steps_logged: Optional[int] = None,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -60,6 +61,7 @@ class Grid2DMarkovExperiment(Routine):
         self.use_velocity = use_velocity
         self.learn_difference = learn_difference
         self.step_size = step_size
+        self.n_test_steps_logged = n_test_steps_logged
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
@@ -405,5 +407,5 @@ class Grid2DMarkovExperiment(Routine):
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
         self.log('test_time_until', time_until, prog_bar=True)
-        for i in range(len(step_losses)):
+        for i in range(self.n_test_steps_logged or len(step_losses)):
             self.log(f'test_loss_{i}', step_losses[i])
