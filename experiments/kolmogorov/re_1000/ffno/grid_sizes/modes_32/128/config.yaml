@@ -1,6 +1,6 @@
 wandb:
   project: kolmogorov_re_1000
-  group: ffno/grid_sizes/modes_32/256
+  group: ffno/grid_sizes/modes_32/128
   tags:
     - pde
     - navier-stokes
