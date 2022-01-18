@@ -15,6 +15,7 @@ from hydra.utils import instantiate
 from jax_cfd.data.xarray_utils import vorticity_2d
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
+from tqdm import tqdm
 from typer import Argument, Typer
 
 from fourierflow.builders.synthetic.ns_2d import solve_navier_stokes_2d
@@ -23,7 +24,8 @@ app = Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(config_path: Optional[Path] = Argument(None),
+def main(data_path: Path,
+         config_path: Optional[Path] = Argument(None),
          overrides: Optional[List[str]] = Argument(None),
          trial: Optional[int] = None,
          map_location: Optional[str] = None,
@@ -81,23 +83,28 @@ def main(config_path: Optional[Path] = Argument(None),
     routine = instantiate(config.routine)
     routine.load_lightning_model_state(str(checkpoint_path), map_location)
 
-    if 'kolmogorov' in config_dir:
-        test_path = 'data/jax-cfd/public_eval_datasets/kolmogorov_re_1000/eval_2048x2048_64x64.nc'
-        test_ds = xarray.open_dataset(test_path)
-        test_ds['vorticity'] = vorticity_2d(test_ds)
-        test_w = test_ds['vorticity'].values
-        test_w = test_w.transpose(0, 2, 3, 1)
-        data = torch.from_numpy(test_w).cuda()[0:1]
+    if 'kolmogorov' in str(data_path):
+        test_ds = xarray.open_dataset(data_path)
+        test_w = test_ds['vorticity'].transpose(
+            'sample', 'x', 'y', 'time').values
+        data = torch.from_numpy(test_w).cuda()
+        routine = routine.cuda()
+        with torch.no_grad():
+            start = time.time()
+            for datum in tqdm(data):
+                routine(datum[None])
+            elasped = (time.time() - start) / len(data)
+            elasped = elasped / (routine.step_size * routine.n_steps)
+
     else:
-        data_path = 'data/fourier/NavierStokes_V1e-5_N1200_T20.mat'
         data = scipy.io.loadmat(data_path)['u'].astype(np.float32)[:512]
         data = torch.from_numpy(data).cuda()
+        routine = routine.cuda()
+        start = time.time()
+        with torch.no_grad():
+            routine(data)
+        elasped = time.time() - start
 
-    routine = routine.cuda()
-    start = time.time()
-    with torch.no_grad():
-        routine(data)
-    elasped = time.time() - start
     wandb_logger.experiment.log({'inference_time': elasped})
 
 
