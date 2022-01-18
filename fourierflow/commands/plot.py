@@ -127,6 +127,34 @@ def plot_varying_step_size(ax):
     line = ax.errorbar(step_sizes, untils, color=pal[3], marker='o')
     lines.append(line)
 
+    # Line for numerical solver
+    sims = {}
+    sizes = [2, 4, 8, 16, 32]
+    for size in sizes:
+        path = f'../data/kolmogorov/re_1000/time_steps/smaller_x{size}_64.nc'
+        sims[size] = xr.open_dataset(path, engine='h5netcdf')
+    gt_path = '../data/kolmogorov/re_1000/trajectories/test_64.nc'
+    sims[100] = xr.open_dataset(gt_path, engine='h5netcdf')  # key is arbitrary
+
+    combined = xr.concat(sims.values(), dim='size')
+    combined.coords['size'] = sizes + [100]
+
+    # Even the best model diverges from ground truth by time 10. Thus we
+    # only look at the first 10 simulation steps to save computation time.
+    w = combined.vorticity.sel(time=slice(10))
+    rho = grid_correlation(w, w.sel(size=100)).compute()
+    untils = calculate_time_until(rho.isel(sample=slice(0, 4)))[:-1]
+    step_sizes = [
+        0.0035062418008814655,
+        0.0017531209004407328,
+        0.0008765604502203664,
+        0.0004382802251101832,
+        0.0002191401125550916
+    ]
+    line = ax.errorbar(step_sizes, untils, color=pal[4], marker='x')
+    lines.append(line)
+    ax.set_xscale('log')
+
     ax.set_xlabel('Step size')
     ax.set_ylabel('Time until correlation < 95%')
 
