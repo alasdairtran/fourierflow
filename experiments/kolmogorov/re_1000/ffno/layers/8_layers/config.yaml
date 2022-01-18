@@ -33,7 +33,6 @@ routine:
     gain: 0.1
     dropout: 0.0
     in_dropout: 0.0
-  n_steps: 100
   step_size: 0.28049934407051724 # 0.0002191401125550916 * 64 * 20
   max_accumulations: 1000
   noise_std: 0.01

@@ -16,7 +16,7 @@ from .base import Routine
 class Grid2DMarkovExperiment(Routine):
     def __init__(self,
                  conv: nn.Module,
-                 n_steps: int,
+                 n_steps: Optional[int] = None,
                  k_max: int = 32,
                  num_freq_bands: int = 8,
                  freq_base: int = 2,
@@ -234,7 +234,8 @@ class Grid2DMarkovExperiment(Routine):
             inputs = torch.cat([inputs, all_pos_feats], dim=-1)
             # inputs.shape == [batch_size, *dim_sizes, total_steps, 3]
 
-        inputs = inputs[..., -self.n_steps-1:-1, :]
+        n_steps = self.n_steps or T - 1
+        inputs = inputs[..., -n_steps-1:-1, :]
         # inputs.shape == [batch_size, *dim_sizes, n_steps, 3]
 
         xx = inputs
@@ -244,7 +245,7 @@ class Grid2DMarkovExperiment(Routine):
                 force = repeat(batch['f'], 'b m n -> b m n t 1',
                                t=xx.shape[-2])
             elif len(batch['f'].shape) == 4:
-                f = batch['f'][..., -self.n_steps:]
+                f = batch['f'][..., -n_steps:]
                 force = repeat(f, 'b m n t -> b m n t 1')
 
             xx = torch.cat([xx, force], dim=-1)
@@ -254,14 +255,14 @@ class Grid2DMarkovExperiment(Routine):
                         m=X, n=Y, t=xx.shape[-2])
             xx = torch.cat([xx, mu], dim=-1)
 
-        yy = data[:, ..., -self.n_steps:]
+        yy = data[:, ..., -n_steps:]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
         loss = 0
         step_losses = []
         # We predict one future one step at a time
         pred_layer_list = []
-        for t in range(self.n_steps):
+        for t in range(n_steps):
             if t == 0:
                 x = xx[..., t, :]
                 prev_im = x[..., 0:1]
@@ -342,7 +343,7 @@ class Grid2DMarkovExperiment(Routine):
             diverged_idx) > 0 else len(has_diverged)
         time_until = diverged_t * self.step_size
 
-        loss /= self.n_steps
+        loss /= n_steps
         loss_full = self.l2_loss(preds.reshape(
             B, -1), yy.reshape(B, -1))
 
