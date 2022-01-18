@@ -24,11 +24,12 @@ def correlation():
     lines_1 = plot_correlation_vs_time_of_different_grid_sizes(ax)
 
     ax = plt.subplot(1, 2, 2)
-    # lines_2 = plot_varying_step_size(ax)
+    lines_2 = plot_varying_step_size(ax)
 
     lines = lines_1
 
-    labels = ['Adams-Bashforth numerical simulator', 'F-FNO (our full model)']
+    labels = ['Adams-Bashforth numerical simulator',
+              'F-FNO (our full']
 
     lgd = fig.legend(handles=lines,
                      labels=labels,
@@ -64,26 +65,26 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     times_until = calculate_time_until(rho.isel(sample=slice(0, 4)))
     duration = combined.elapsed.mean(dim='sample') / combined.time.max()
     lines.append(ax.errorbar(
-        times_until[:-1], duration[:-1], color=pal[4], marker='x'))
-    ax.set_yscale('log')
-    ax.set_xlabel('Time until correlation < 95%')
-    ax.set_ylabel('Runtime per time unit (s)')
-    ax.set_ylim(5e-2, 1e1)
+        duration[:-1], times_until[:-1], color=pal[4], marker='x'))
+    ax.set_xlabel('Runtime per time unit (s)')
+    ax.set_ylabel('Time until correlation < 95%')
+    ax.set_xlim(5e-2, 1e1)
+    ax.set_xscale('log')
     # array([0.448799, 1.248222, 2.440344, 3.744666, 5.048988, 6.40941 , 0.      ])
     # Compared to original paper:
     # array([1.711046, 2.973293, 4.15139 , 5.497787, 7.208833, 0.      ])
 
     grids = [32, 64, 128, 256, 512, 1024, 2048]
     for i, s in enumerate(grids):
-        xy = (times_until[i], duration[i])
-        xytext = (xy[0] - 0.3, xy[1] * 1.1)
+        xy = (duration[i], times_until[i])
+        xytext = (xy[0] * 1.1, xy[1] - 0.3)
         ax.annotate(f'{s}', xy, xytext)
 
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
     runs = api.runs(f'alasdairtran/{dataset}', {
         'config.wandb.group': 'ffno/step_sizes/20',
-        'state': 'finished'
+        'state': 'finished',
     })
     assert len(runs) == 1
     times = [run.summary['inference_time'] for run in runs]
@@ -92,29 +93,44 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     untils = [run.summary['test_time_until'] for run in runs]
     untils = [np.array(untils).mean()]
 
-    lines.append(ax.errorbar(untils, times, color=pal[3], marker='o'))
+    lines.append(ax.errorbar(times, untils, color=pal[3], marker='o'))
 
     grids = [64]
     for i, s in enumerate(grids):
-        xy = (untils[i], times[i])
-        xytext = (xy[0] - 0.3, xy[1] * 1.1)
+        xy = (times[i], untils[i])
+        xytext = (xy[0] * 1.1, xy[1] - 0.3)
         ax.annotate(f'{s}', xy, xytext)
 
     return lines
 
 
 def plot_varying_step_size(ax):
-    sizes = [2, 4, 6, 8, 16, 32, 64, 128, 256, 512, 1024]
-    simulations = {}
+    api = wandb.Api()
+    dataset = 'kolmogorov_re_1000'
+    sizes = [10, 20, 40]
+    step_sizes = [
+        0.14024967203525862,
+        0.28049934407051724,
+        0.5609986881410345,
+    ]
+    untils = []
     for size in sizes:
-        path = f'../data/kolmogorov/re_1000/time_steps/x{size}_32.nc'
-        simulations[size] = xr.open_dataset(path)
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': f'ffno/step_sizes/{size}',
+            'state': 'finished'
+        })
+        assert len(runs) == 1
+        until = [run.summary['test_time_until'] for run in runs]
+        untils.append(np.array(until).mean())
 
-    path = '../data/kolmogorov/re_1000/trajectories/512_32.nc'
-    simulations[2048] = xr.open_dataset(path)
+    lines = []
+    line = ax.errorbar(step_sizes, untils, color=pal[3], marker='o')
+    lines.append(line)
 
-    path = '../data/kolmogorov/re_1000/baseline/.nc'
-    simulations[2048] = xr.open_dataset(path)
+    ax.set_xlabel('Step size')
+    ax.set_ylabel('Time until correlation < 95%')
+
+    return lines
 
 
 @app.command()
