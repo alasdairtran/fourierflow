@@ -26,9 +26,9 @@ def correlation():
     ax = plt.subplot(1, 2, 2)
     # lines_2 = plot_varying_step_size(ax)
 
-    lines = [lines_1[0]]
+    lines = lines_1
 
-    labels = ['Direct numerical simulation (DNS)']
+    labels = ['Adams-Bashforth numerical simulator', 'F-FNO (our full model)']
 
     lgd = fig.legend(handles=lines,
                      labels=labels,
@@ -59,9 +59,12 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     w = combined.vorticity.sel(time=slice(10))
     rho = grid_correlation(w, w.sel(size=2048)).compute()
 
+    lines = []
+
     times_until = calculate_time_until(rho.isel(sample=slice(0, 4)))
     duration = combined.elapsed.mean(dim='sample') / combined.time.max()
-    line = ax.errorbar(times_until[:-1], duration[:-1], marker='x')
+    lines.append(ax.errorbar(
+        times_until[:-1], duration[:-1], color=pal[4], marker='x'))
     ax.set_yscale('log')
     ax.set_xlabel('Time until correlation < 95%')
     ax.set_ylabel('Runtime per time unit (s)')
@@ -71,12 +74,33 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     # array([1.711046, 2.973293, 4.15139 , 5.497787, 7.208833, 0.      ])
 
     grids = [32, 64, 128, 256, 512, 1024, 2048]
-    for i, txt in enumerate(grids):
+    for i, s in enumerate(grids):
         xy = (times_until[i], duration[i])
         xytext = (xy[0] - 0.3, xy[1] * 1.1)
-        ax.annotate(txt, xy, xytext)
+        ax.annotate(f'{s}', xy, xytext)
 
-    return line
+    api = wandb.Api()
+    dataset = 'kolmogorov_re_1000'
+    runs = api.runs(f'alasdairtran/{dataset}', {
+        'config.wandb.group': 'ffno/step_sizes/20',
+        'state': 'finished'
+    })
+    assert len(runs) == 1
+    times = [run.summary['inference_time'] for run in runs]
+    times = [np.array(times).mean()]
+
+    untils = [run.summary['test_time_until'] for run in runs]
+    untils = [np.array(untils).mean()]
+
+    lines.append(ax.errorbar(untils, times, color=pal[3], marker='o'))
+
+    grids = [64]
+    for i, s in enumerate(grids):
+        xy = (untils[i], times[i])
+        xytext = (xy[0] - 0.3, xy[1] * 1.1)
+        ax.annotate(f'{s}', xy, xytext)
+
+    return lines
 
 
 def plot_varying_step_size(ax):
