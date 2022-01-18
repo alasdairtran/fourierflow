@@ -50,13 +50,13 @@ routine:
       _target_: functools.partial
       _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
       num_warmup_steps: 500
-      num_training_steps: 96840 # 9684 batches per epoch
+      num_training_steps: 48420 # 9684 batches per epoch
       num_cycles: 0.5
     name: learning_rate
 trainer:
   gpus: 1
   precision: 32
-  max_epochs: 11 # 1 accumulation epoch + 10 training epochs
+  max_epochs: 6 # 1 accumulation epoch + 5 training epochs
   stochastic_weight_avg: false
   log_every_n_steps: 100
   # Debugging parameters
