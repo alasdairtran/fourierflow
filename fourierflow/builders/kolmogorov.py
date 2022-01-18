@@ -30,6 +30,7 @@ class KolmogorovBuilder(Builder):
     name = 'kolmogorov'
 
     def __init__(self, train_path: str, valid_path: str, test_path: str,
+                 valid_init_path: str, test_init_path: str,
                  train_k: int, valid_k: int, test_k: int,
                  KolmogorovDataset,
                  loader_target: str = 'torch.utils.data.DataLoader', **kwargs):
@@ -37,9 +38,9 @@ class KolmogorovBuilder(Builder):
         self.kwargs = kwargs
         self.train_dataset = KolmogorovDataset(train_path, train_k)
         self.valid_dataset = KolmogorovTrajectoryDataset(
-            valid_path, valid_k)
+            valid_init_path, valid_path, valid_k)
         self.test_dataset = KolmogorovTrajectoryDataset(
-            test_path, test_k)
+            test_init_path, test_path, test_k)
         self.DataLoader = import_string(loader_target)
 
     def train_dataloader(self) -> eg.data.DataLoader:
@@ -121,8 +122,12 @@ class KolmogorovTorchDataset(TorchDataset, ElegyDataset):
 
 
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
-    def __init__(self, path, k):
-        self.ds = xr.open_dataset(path)
+    def __init__(self, init_path, path, k):
+        ds = xr.open_dataset(path)
+        init_ds = xr.open_dataset(init_path)
+        init_ds = init_ds.expand_dims(dim={'time': [0.0]})
+        ds = xr.concat([init_ds, ds], dim='time')
+        self.ds = ds.transpose('sample', 'x', 'y', 'time')
         self.k = k
         self.B = len(self.ds.sample)
 
@@ -130,8 +135,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         return self.B
 
     def __getitem__(self, b):
-        ds = self.ds.isel(sample=b, time=slice(None, None, self.k)).transpose(
-            'x', 'y', 'time')
+        ds = self.ds.isel(sample=b, time=slice(None, None, self.k))
         # data = {
         #     'vx': ds.vx,
         #     'vy': ds.vy,

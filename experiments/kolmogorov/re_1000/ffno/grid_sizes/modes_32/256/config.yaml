@@ -12,7 +12,9 @@ builder:
   KolmogorovDataset: "${get_method: fourierflow.builders.KolmogorovTorchDataset}"
   train_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_256.nc
   valid_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_256.nc
+  valid_init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_256.nc
   test_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_256.nc
+  test_init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_256.nc
   train_k: 20
   valid_k: 20
   test_k: 20
