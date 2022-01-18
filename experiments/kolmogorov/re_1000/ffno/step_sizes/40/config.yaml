@@ -38,6 +38,7 @@ routine:
   step_size: 0.5609986881410345 # 0.0002191401125550916 * 64 * 40
   n_test_steps_logged: 0
   max_accumulations: 2421
+  heatmap_scale: 10
   noise_std: 0.01
   optimizer:
     _target_: functools.partial
