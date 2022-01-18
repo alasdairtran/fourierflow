@@ -36,7 +36,7 @@ routine:
     dropout: 0.0
     in_dropout: 0.0
   step_size: 0.28049934407051724 # 0.0002191401125550916 * 64 * 20
-  max_accumulations: 1000
+  max_accumulations: 2421
   noise_std: 0.01
   optimizer:
     _target_: functools.partial
