@@ -27,7 +27,7 @@ routine:
     _target_: fourierflow.modules.FNOFactorized2DBlock
     modes: 16
     width: 64
-    n_layers: 24
+    n_layers: 16
     input_dim: 3
     share_weight: true
     factor: 4
