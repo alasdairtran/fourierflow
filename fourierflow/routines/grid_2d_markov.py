@@ -2,6 +2,7 @@ import math
 from re import S
 from typing import Optional
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import torch
@@ -359,11 +360,13 @@ class Grid2DMarkovExperiment(Routine):
         # We reduce all grid sizes to 32x32 before computing correlation
         reduced_time_until = time_until
         if 'corr_data' in batch:
-            corr_yy = batch['corr_data'][:, :, -n_steps:]
+            corr_yy = batch['corr_data'][:, ..., -n_steps:]
 
             corr_size = corr_yy.shape[1]
             if X != corr_size:
-                preds_2 = downsample_vorticity(preds_2, corr_size, self.domain)
+                jax.config.update('jax_platform_name', 'cpu')
+                preds_2 = downsample_vorticity(preds, corr_size, self.domain)
+                preds_2 = preds_2.to(preds.device)
                 pred_2_norm = torch.norm(preds_2, dim=[1, 2], keepdim=True)
                 corr_yy_norm = torch.norm(corr_yy, dim=[1, 2], keepdim=True)
                 p_2 = (preds_2 / pred_2_norm) * (corr_yy / corr_yy_norm)
