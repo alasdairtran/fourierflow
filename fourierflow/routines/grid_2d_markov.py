@@ -2,6 +2,7 @@ import math
 from re import S
 from typing import Optional
 
+import jax.numpy as jnp
 import numpy as np
 import torch
 import torch.nn as nn
@@ -9,6 +10,7 @@ from einops import rearrange, repeat
 
 from fourierflow.modules import Normalizer, fourier_encode
 from fourierflow.modules.loss import LpLoss
+from fourierflow.utils import downsample_vorticity
 from fourierflow.viz import log_navier_stokes_heatmap
 
 from .base import Routine
@@ -37,6 +39,7 @@ class Grid2DMarkovExperiment(Routine):
                  learn_difference: bool = False,
                  step_size: float = 1/64,
                  n_test_steps_logged: Optional[int] = None,
+                 domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)),
                  heatmap_scale: int = 1,
                  **kwargs):
         super().__init__(**kwargs)
@@ -65,6 +68,7 @@ class Grid2DMarkovExperiment(Routine):
         self.step_size = step_size
         self.n_test_steps_logged = n_test_steps_logged
         self.heatmap_scale = heatmap_scale
+        self.domain = domain
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
@@ -336,6 +340,10 @@ class Grid2DMarkovExperiment(Routine):
         # preds.shape == [batch_size, *dim_sizes, n_steps]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
+        loss /= n_steps
+        loss_full = self.l2_loss(preds.reshape(
+            B, -1), yy.reshape(B, -1))
+
         pred_norm = torch.norm(preds, dim=[1, 2], keepdim=True)
         yy_norm = torch.norm(yy, dim=[1, 2], keepdim=True)
         p = (preds / pred_norm) * (yy / yy_norm)
@@ -348,11 +356,26 @@ class Grid2DMarkovExperiment(Routine):
             diverged_idx) > 0 else len(has_diverged)
         time_until = diverged_t * self.step_size
 
-        loss /= n_steps
-        loss_full = self.l2_loss(preds.reshape(
-            B, -1), yy.reshape(B, -1))
+        # We reduce all grid sizes to 32x32 before computing correlation
+        reduced_time_until = time_until
+        if 'corr_data' in batch:
+            corr_yy = batch['corr_data'][:, :, -n_steps:]
 
-        return loss, loss_full, preds, pred_layer_list, step_losses, time_until
+            corr_size = corr_yy.shape[1]
+            if X != corr_size:
+                preds_2 = downsample_vorticity(preds_2, corr_size, self.domain)
+                pred_2_norm = torch.norm(preds_2, dim=[1, 2], keepdim=True)
+                corr_yy_norm = torch.norm(corr_yy, dim=[1, 2], keepdim=True)
+                p_2 = (preds_2 / pred_2_norm) * (corr_yy / corr_yy_norm)
+                p_2 = p_2.sum(dim=[1, 2]).mean(dim=0)
+
+                has_diverged = p_2 < 0.95
+                diverged_idx = has_diverged.nonzero()
+                diverged_t = diverged_idx[0, 0] if len(
+                    diverged_idx) > 0 else len(has_diverged)
+                reduced_time_until = diverged_t * self.step_size
+
+        return loss, loss_full, preds, pred_layer_list, step_losses, time_until, reduced_time_until
 
     def training_step(self, batch, batch_idx):
         # Accumulate normalization stats in the first epoch
@@ -385,11 +408,12 @@ class Grid2DMarkovExperiment(Routine):
             return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list, _, time_until = self._valid_step(
+        loss, loss_full, preds, pred_list, _, time_until, reduced_time_until = self._valid_step(
             batch)
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
         self.log('valid_time_until', time_until, prog_bar=True)
+        self.log('reduced_time_until', reduced_time_until)
 
         if batch_idx == 0:
             data = batch['data']
@@ -406,11 +430,12 @@ class Grid2DMarkovExperiment(Routine):
                         expt, layer[0], f'layer {i} t=19', s * 3)
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _, step_losses, time_until = self._valid_step(
+        loss, loss_full, _, _, step_losses, time_until, reduced_time_until = self._valid_step(
             batch)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
         self.log('test_time_until', time_until, prog_bar=True)
+        self.log('reduced_time_until', reduced_time_until)
         if self.n_test_steps_logged is None:
             length = len(step_losses)
         else:
