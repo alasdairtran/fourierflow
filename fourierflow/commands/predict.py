@@ -10,7 +10,7 @@ import ptvsd
 import pytorch_lightning as pl
 import scipy.io
 import torch
-import xarray
+import xarray as xr
 from hydra.utils import instantiate
 from jax_cfd.data.xarray_utils import vorticity_2d
 from omegaconf import OmegaConf
@@ -84,9 +84,17 @@ def main(data_path: Path,
     routine.load_lightning_model_state(str(checkpoint_path), map_location)
 
     if 'kolmogorov' in str(data_path):
-        test_ds = xarray.open_dataset(data_path)
-        test_w = test_ds['vorticity'].transpose(
-            'sample', 'x', 'y', 'time').values
+        k = config.builder.test_k
+
+        test_ds = xr.open_dataset(data_path)
+
+        init_path = data_path.parent.parent / 'initial_conditions' / data_path.name
+        init_ds = xr.open_dataset(init_path)
+        init_ds = init_ds.expand_dims(dim={'time': [0.0]})
+        ds = xr.concat([init_ds, test_ds], dim='time')
+
+        test_w = ds['vorticity'].isel(time=slice(None, None, k))
+        test_w = test_w.transpose('sample', 'x', 'y', 'time').values
         data = torch.from_numpy(test_w).cuda()
         T = data.shape[-1]
         n_steps = routine.n_steps or (T - 1)
