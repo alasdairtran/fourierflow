@@ -93,8 +93,7 @@ def main(data_path: Path,
         routine = routine.cuda()
         with torch.no_grad():
             start = time.time()
-            for datum in tqdm(data):
-                routine(datum[None])
+            routine(data)
             elasped = (time.time() - start) / len(data)
             elasped = elasped / (routine.step_size * n_steps)
 
