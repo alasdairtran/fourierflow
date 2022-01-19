@@ -29,19 +29,13 @@ KEYS = ['vx', 'vy', 'vz']
 class KolmogorovBuilder(Builder):
     name = 'kolmogorov'
 
-    def __init__(self, train_path: str, valid_path: str, test_path: str,
-                 valid_init_path: str, test_init_path: str,
-                 valid_corr_path: str, test_corr_path: str,
-                 train_k: int, valid_k: int, test_k: int,
-                 KolmogorovDataset,
+    def __init__(self, train_dataset, valid_dataset, test_dataset,
                  loader_target: str = 'torch.utils.data.DataLoader', **kwargs):
         super().__init__()
         self.kwargs = kwargs
-        self.train_dataset = KolmogorovDataset(train_path, train_k)
-        self.valid_dataset = KolmogorovTrajectoryDataset(
-            valid_init_path, valid_path, valid_corr_path, valid_k)
-        self.test_dataset = KolmogorovTrajectoryDataset(
-            test_init_path, test_path, test_corr_path, test_k)
+        self.train_dataset = train_dataset
+        self.valid_dataset = valid_dataset
+        self.test_dataset = test_dataset
         self.DataLoader = import_string(loader_target)
 
     def train_dataloader(self) -> eg.data.DataLoader:
