@@ -416,7 +416,7 @@ class Grid2DMarkovExperiment(Routine):
             return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, step_losses, preds, pred_layer_list = self._valid_step(batch)
+        loss, step_losses, preds, pred_list = self._valid_step(batch)
         loss, loss_full, time_until, reduced_time_until = self.compute_losses(
             batch, loss, preds)
 
