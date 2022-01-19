@@ -1,0 +1,78 @@
+wandb:
+  project: kolmogorov_re_1000
+  group: ffno/grid_sizes/modes_16/double_batch/128
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+  log_model: all
+builder:
+  _target_: fourierflow.builders.KolmogorovBuilder
+  KolmogorovDataset: "${get_method: fourierflow.builders.KolmogorovTorchDataset}"
+  train_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_128.nc
+  valid_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_128.nc
+  valid_init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_128.nc
+  test_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_128.nc
+  test_init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_128.nc
+  train_k: 20
+  valid_k: 20
+  test_k: 20
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+routine:
+  _target_: fourierflow.routines.Grid2DMarkovExperiment
+  conv:
+    _target_: fourierflow.modules.FNOFactorized2DBlock
+    modes: 16
+    width: 256
+    n_layers: 16
+    input_dim: 3
+    share_weight: true
+    factor: 4
+    ff_weight_norm: true
+    gain: 0.1
+    dropout: 0.0
+    in_dropout: 0.0
+  step_size: 0.28049934407051724 # 0.0002191401125550916 * 64 * 20
+  n_test_steps_logged: 0
+  max_accumulations: 9684
+  heatmap_scale: 10
+  noise_std: 0.01
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.AdamW}"]
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
+      num_warmup_steps: 500
+      num_training_steps: 96840 # 9684 batches per epoch
+      num_cycles: 0.5
+    name: learning_rate
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 11 # 1 accumulation epoch + 10 training epochs
+  stochastic_weight_avg: false
+  log_every_n_steps: 100
+  # Debugging parameters
+  track_grad_norm: -1 # 2
+  fast_dev_run: false # 2
+  limit_train_batches: 1.0
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+    save_top_k: 1
+    save_last: false # not needed when save_top_k == 1
+    monitor: null # valid_loss
+    mode: min
+    every_n_train_steps: null
+    every_n_epochs: 1
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4
