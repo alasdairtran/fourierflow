@@ -31,6 +31,7 @@ class KolmogorovBuilder(Builder):
 
     def __init__(self, train_path: str, valid_path: str, test_path: str,
                  valid_init_path: str, test_init_path: str,
+                 valid_corr_path: str, test_corr_path: str,
                  train_k: int, valid_k: int, test_k: int,
                  KolmogorovDataset,
                  loader_target: str = 'torch.utils.data.DataLoader', **kwargs):
@@ -38,9 +39,9 @@ class KolmogorovBuilder(Builder):
         self.kwargs = kwargs
         self.train_dataset = KolmogorovDataset(train_path, train_k)
         self.valid_dataset = KolmogorovTrajectoryDataset(
-            valid_init_path, valid_path, valid_k)
+            valid_init_path, valid_path, valid_corr_path, valid_k)
         self.test_dataset = KolmogorovTrajectoryDataset(
-            test_init_path, test_path, test_k)
+            test_init_path, test_path, test_corr_path, test_k)
         self.DataLoader = import_string(loader_target)
 
     def train_dataloader(self) -> eg.data.DataLoader:
@@ -122,12 +123,16 @@ class KolmogorovTorchDataset(TorchDataset, ElegyDataset):
 
 
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
-    def __init__(self, init_path, path, k):
+    def __init__(self, init_path, path, corr_path, k):
         ds = xr.open_dataset(path)
         init_ds = xr.open_dataset(init_path)
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
         ds = xr.concat([init_ds, ds], dim='time')
         self.ds = ds.transpose('sample', 'x', 'y', 'time')
+
+        corr_ds = xr.open_dataset(corr_path)
+        self.corr_ds = corr_ds.transpose('sample', 'x', 'y', 'time')
+
         self.k = k
         self.B = len(self.ds.sample)
 
@@ -136,6 +141,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
 
     def __getitem__(self, b):
         ds = self.ds.isel(sample=b, time=slice(None, None, self.k))
+        corr_ds = self.corr_ds.isel(sample=b, time=slice(None, None, self.k))
         # data = {
         #     'vx': ds.vx,
         #     'vy': ds.vy,
@@ -144,6 +150,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
 
         return {
             'data': ds.vorticity.data,
+            'corr_data': corr_ds.vorticity.data,
         }
 
 
