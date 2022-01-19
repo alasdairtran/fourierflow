@@ -12,12 +12,15 @@ from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
 from typer import Argument, Typer
 
+from fourierflow.utils import delete_old_results, get_experiment_id
+
 app = Typer()
 
 
 @app.callback(invoke_without_command=True)
 def main(config_path: Path,
          overrides: Optional[List[str]] = Argument(None),
+         force: bool = False,
          trial: int = 0,
          map_location: Optional[str] = None,
          debug: bool = False,
@@ -37,12 +40,17 @@ def main(config_path: Path,
         config.builder.num_workers = 0
 
     # We use Weights & Biases to track our experiments.
-    chkpt_dir = Path(config_dir) / 'checkpoints'
-    paths = list(chkpt_dir.glob(f'trial-{trial}-*/epoch*.ckpt'))
-    assert len(paths) == 1
-    checkpoint_path = paths[0]
-    wandb_id = Path(checkpoint_path).parent.name
-    trial = int(wandb_id.split('-')[1])
+    checkpoint_path = config.get('checkpoint_path', None)
+    if not checkpoint_path:
+        chkpt_dir = Path(config_dir) / 'checkpoints'
+        paths = list(chkpt_dir.glob(f'trial-{trial}-*/epoch*.ckpt'))
+        assert len(paths) == 1
+        checkpoint_path = paths[0]
+        wandb_id = Path(checkpoint_path).parent.name
+        trial = int(wandb_id.split('-')[1])
+    else:
+        delete_old_results(config_dir, force, trial, resume=False)
+        wandb_id = get_experiment_id(None, trial, config_dir, resume=False)
     config.trial = trial
     config.wandb.name = f"{config.wandb.group}/{trial}"
     wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
