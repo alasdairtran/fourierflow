@@ -83,21 +83,27 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
 
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
-    runs = api.runs(f'alasdairtran/{dataset}', {
-        'config.wandb.group': 'ffno/step_sizes/20',
-        'state': 'finished',
-    })
-    assert len(runs) == 1
-    times = [run.summary['inference_time'] for run in runs]
-    times = [np.array(times).mean()]
 
-    untils = [run.summary['test_time_until'] for run in runs]
-    untils = [np.array(untils).mean()]
+    groups = ['ffno/step_sizes/20', 'ffno/grid_sizes/modes_32/128']
+    times = []
+    untils = []
+
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'state': 'finished',
+        })
+        assert len(runs) == 1
+        time = [run.summary['inference_time'] for run in runs]
+        times.append(np.array(time).mean())
+
+        until = [run.summary['test_time_until'] for run in runs]
+        untils.append(np.array(until).mean())
 
     lines.append(ax.errorbar(times, untils, color=pal[3], marker='o'))
     print(times)
 
-    grids = [64]
+    grids = [64, 128]
     for i, s in enumerate(grids):
         xy = (times[i], untils[i])
         xytext = (xy[0] * 1.1, xy[1] - 0.3)
