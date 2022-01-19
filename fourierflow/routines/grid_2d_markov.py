@@ -339,6 +339,13 @@ class Grid2DMarkovExperiment(Routine):
         # preds.shape == [batch_size, *dim_sizes, n_steps]
         # yy.shape == [batch_size, *dim_sizes, n_steps]
 
+        return loss, step_losses, preds, pred_layer_list
+
+    def compute_losses(self, batch, loss, preds):
+        data = batch['data']
+        B, *dim_sizes, T = data.shape
+        n_steps = self.n_steps or T - 1
+        yy = data[:, ..., -n_steps:]
         loss /= n_steps
         loss_full = self.l2_loss(preds.reshape(
             B, -1), yy.reshape(B, -1))
@@ -361,7 +368,7 @@ class Grid2DMarkovExperiment(Routine):
             corr_yy = batch['corr_data'][:, ..., -n_steps:]
 
             corr_size = corr_yy.shape[1]
-            if X != corr_size:
+            if dim_sizes[0] != corr_size:
                 jax.config.update('jax_platform_name', 'cpu')
                 preds_2 = downsample_vorticity(preds, corr_size, self.domain)
                 preds_2 = preds_2.to(preds.device)
@@ -376,7 +383,7 @@ class Grid2DMarkovExperiment(Routine):
                     diverged_idx) > 0 else len(has_diverged)
                 reduced_time_until = diverged_t * self.step_size
 
-        return loss, loss_full, preds, pred_layer_list, step_losses, time_until, reduced_time_until
+        return loss, loss_full, time_until, reduced_time_until
 
     def training_step(self, batch, batch_idx):
         # Accumulate normalization stats in the first epoch
@@ -409,8 +416,10 @@ class Grid2DMarkovExperiment(Routine):
             return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, pred_list, _, time_until, reduced_time_until = self._valid_step(
-            batch)
+        loss, step_losses, preds, pred_layer_list = self._valid_step(batch)
+        loss, loss_full, time_until, reduced_time_until = self.compute_losses(
+            batch, loss, preds)
+
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
         self.log('valid_time_until', time_until, prog_bar=True)
@@ -431,8 +440,9 @@ class Grid2DMarkovExperiment(Routine):
                         expt, layer[0], f'layer {i} t=19', s * 3)
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, _, step_losses, time_until, reduced_time_until = self._valid_step(
-            batch)
+        loss, step_losses, preds, pred_layer_list = self._valid_step(batch)
+        loss, loss_full, time_until, reduced_time_until = self.compute_losses(
+            batch, loss, preds)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
         self.log('test_time_until', time_until, prog_bar=True)
