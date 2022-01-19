@@ -66,9 +66,10 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     duration = combined.elapsed.mean(dim='sample') / combined.time.max()
     lines.append(ax.errorbar(
         duration[:-1], times_until[:-1], color=pal[4], marker='x'))
+    print(duration)
     ax.set_xlabel('Runtime per time unit (s)')
     ax.set_ylabel('Time until correlation < 95%')
-    ax.set_xlim(5e-2, 1e1)
+    ax.set_xlim(1e-2, 1e1)
     ax.set_xscale('log')
     # array([0.448799, 1.248222, 2.440344, 3.744666, 5.048988, 6.40941 , 0.      ])
     # Compared to original paper:
@@ -83,7 +84,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
     runs = api.runs(f'alasdairtran/{dataset}', {
-        'config.wandb.group': 'ffno/step_sizes/10',
+        'config.wandb.group': 'ffno/step_sizes/20',
         'state': 'finished',
     })
     assert len(runs) == 1
@@ -94,6 +95,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     untils = [np.array(untils).mean()]
 
     lines.append(ax.errorbar(times, untils, color=pal[3], marker='o'))
+    print(times)
 
     grids = [64]
     for i, s in enumerate(grids):
