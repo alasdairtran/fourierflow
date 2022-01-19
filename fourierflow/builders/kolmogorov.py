@@ -117,7 +117,7 @@ class KolmogorovTorchDataset(TorchDataset, ElegyDataset):
 
 
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
-    def __init__(self, init_path, path, corr_path, k):
+    def __init__(self, init_path, path, corr_path, k, end=None):
         ds = xr.open_dataset(path)
         init_ds = xr.open_dataset(init_path)
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
@@ -129,13 +129,15 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
 
         self.k = k
         self.B = len(self.ds.sample)
+        self.end = end
 
     def __len__(self):
         return self.B
 
     def __getitem__(self, b):
-        ds = self.ds.isel(sample=b, time=slice(None, None, self.k))
-        corr_ds = self.corr_ds.isel(sample=b, time=slice(None, None, self.k))
+        time_slice = slice(None, self.end, self.k)
+        ds = self.ds.isel(sample=b, time=time_slice)
+        corr_ds = self.corr_ds.isel(sample=b, time=time_slice)
         # data = {
         #     'vx': ds.vx,
         #     'vy': ds.vy,
