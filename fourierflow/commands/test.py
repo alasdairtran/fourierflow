@@ -34,7 +34,7 @@ def main(config_path: Path,
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
         # ptvsd doesn't play well with multiple processes.
-        config.builder.n_workers = 0
+        config.builder.num_workers = 0
 
     # We use Weights & Biases to track our experiments.
     chkpt_dir = Path(config_dir) / 'checkpoints'
