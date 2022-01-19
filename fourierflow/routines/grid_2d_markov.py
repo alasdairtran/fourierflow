@@ -414,7 +414,7 @@ class Grid2DMarkovExperiment(Routine):
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
         self.log('valid_time_until', time_until, prog_bar=True)
-        self.log('reduced_time_until', reduced_time_until)
+        self.log('valid_reduced_time_until', reduced_time_until)
 
         if batch_idx == 0:
             data = batch['data']
@@ -436,7 +436,7 @@ class Grid2DMarkovExperiment(Routine):
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
         self.log('test_time_until', time_until, prog_bar=True)
-        self.log('reduced_time_until', reduced_time_until)
+        self.log('test_reduced_time_until', reduced_time_until)
         if self.n_test_steps_logged is None:
             length = len(step_losses)
         else:
