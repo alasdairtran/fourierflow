@@ -1,15 +1,46 @@
 import jax.numpy as jnp
+import torch
 import xarray as xr
 from jax_cfd.base.grids import Grid as CFDGrid
 from jax_cfd.base.grids import GridArray
 from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.data.xarray_utils import normalize
+from jax_cfd.spectral.utils import vorticity_to_velocity
 
 
 def grid_correlation(x, y):
     state_dims = ['x', 'y']
     p = normalize(x, state_dims) * normalize(y, state_dims)
     return p.sum(state_dims)
+
+
+def downsample_vorticity(vorticity, out_size=32, domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi))):
+    B, X, Y, T = vorticity.shape
+
+    is_torch_tensor = False
+    if torch.is_tensor(vorticity):
+        is_torch_tensor = True
+        vorticity = vorticity.cpu().numpy()
+
+    in_grid = Grid(shape=[X, Y], domain=domain)
+    out_grid = Grid(shape=[out_size, out_size], domain=domain)
+    velocity_solve = vorticity_to_velocity(in_grid)
+    vorticity_hat = jnp.fft.rfftn(vorticity, axes=(1, 2))
+    all_vorticities = []
+    for b in range(B):
+        vorticities = []
+        for t in range(T):
+            out = downsample_vorticity_hat(
+                vorticity_hat[b, ..., t], velocity_solve, in_grid, out_grid)
+            vorticities.append(out['vorticity'])
+        vorticities = jnp.stack(vorticities, axis=-1)
+        all_vorticities.append(vorticities)
+    all_vorticities = jnp.stack(all_vorticities, axis=0)
+
+    if is_torch_tensor:
+        all_vorticities = torch.from_numpy(all_vorticities)
+
+    return all_vorticities
 
 
 def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid, out_xarray=False):
