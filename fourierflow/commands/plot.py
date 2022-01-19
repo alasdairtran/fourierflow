@@ -107,11 +107,15 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
 def plot_varying_step_size(ax):
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
-    sizes = [10, 20, 40]
+    sizes = [1, 2, 5, 10, 20, 40, 80]
     step_sizes = [
+        0.014024967203525862,
+        0.028049934407051724,
+        0.07012483601762931,
         0.14024967203525862,
         0.28049934407051724,
         0.5609986881410345,
+        1.121997376282069,
     ]
     untils = []
     for size in sizes:
