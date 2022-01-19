@@ -8,16 +8,20 @@ wandb:
   notes: ""
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
+  KolmogorovDataset: "${get_method: fourierflow.builders.KolmogorovElegyDataset}"
   loader_target: elegy.data.DataLoader
-  train_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
+  train_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_32.nc
+  valid_init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_32.nc
   valid_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
-  test_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
+  valid_corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
+  test_init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_32.nc
+  test_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32.nc
+  test_corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32.nc
   train_k: 1
   valid_k: 1
   test_k: 1
-  size: 32
   batch_size: 1
-  n_workers: 0
+  # num_workers: 0
 routine:
   _target_: fourierflow.routines.LearnedInterpolator
   size: 32
