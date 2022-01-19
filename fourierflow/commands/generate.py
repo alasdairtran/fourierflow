@@ -18,7 +18,6 @@ from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 from dask_cuda import LocalCUDACluster
 from hydra.utils import instantiate
-from jax_cfd.base.equations import stable_time_step
 from jax_cfd.base.grids import Grid
 from omegaconf import OmegaConf
 from typer import Argument, Option, Typer

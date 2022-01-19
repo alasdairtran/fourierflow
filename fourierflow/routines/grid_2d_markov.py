@@ -1,13 +1,11 @@
 import math
-from re import S
 from typing import Optional
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import torch
-import torch.nn as nn
 from einops import rearrange, repeat
+from torch import nn
 
 from fourierflow.modules import Normalizer, fourier_encode
 from fourierflow.modules.loss import LpLoss
