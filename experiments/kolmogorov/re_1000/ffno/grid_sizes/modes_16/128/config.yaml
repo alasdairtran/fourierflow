@@ -42,6 +42,9 @@ routine:
   max_accumulations: 19368
   heatmap_scale: 10
   noise_std: 0.01
+  domain:
+    - [0, '${eval:2 * ${import:numpy.pi}}']
+    - [0, '${eval:2 * ${import:numpy.pi}}']
   optimizer:
     _target_: functools.partial
     _args_: ["${get_method: torch.optim.AdamW}"]
