@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+import numpy as np
 import torch
 import xarray as xr
 from jax_cfd.base.grids import Grid as CFDGrid
@@ -38,7 +39,7 @@ def downsample_vorticity(vorticity, out_size=32, domain=((0, 2 * jnp.pi), (0, 2 
     all_vorticities = jnp.stack(all_vorticities, axis=0)
 
     if is_torch_tensor:
-        all_vorticities = torch.from_numpy(all_vorticities)
+        all_vorticities = torch.from_numpy(np.asarray(all_vorticities))
 
     return all_vorticities
 
