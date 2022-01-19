@@ -1,5 +1,4 @@
 import os
-import shutil
 from copy import deepcopy
 from glob import glob
 from pathlib import Path
@@ -16,30 +15,9 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins import DDPPlugin
 from typer import Argument, Typer
 
-from fourierflow.utils import ExistingExperimentFound, get_experiment_id
+from fourierflow.utils import delete_old_results, get_experiment_id
 
 app = Typer()
-
-
-def delete_old_results(results_dir, force, trial, resume):
-    """Delete existing checkpoints and wandb logs if --force is enabled."""
-    wandb_dir = Path(results_dir) / 'wandb'
-    wandb_matches = list(wandb_dir.glob(f'*-trial-{trial}-*'))
-
-    chkpt_dir = Path(results_dir) / 'checkpoints'
-    chkpt_matches = list(chkpt_dir.glob(f'trial-{trial}-*'))
-
-    if force and wandb_matches:
-        [shutil.rmtree(p) for p in wandb_matches]
-
-    if force and chkpt_matches:
-        [shutil.rmtree(p) for p in chkpt_matches]
-
-    if not force and not resume and wandb_matches:
-        raise ExistingExperimentFound(f'Directory already exists: {wandb_dir}')
-
-    if not force and not resume and chkpt_matches:
-        raise ExistingExperimentFound(f'Directory already exists: {chkpt_dir}')
 
 
 def upload_code_to_wandb(config_path, wandb_logger):

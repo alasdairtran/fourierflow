@@ -1,8 +1,11 @@
 import os
+import shutil
 import sys
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
+
+from .exceptions import ExistingExperimentFound
 
 
 def get_save_dir(config_path):
@@ -47,3 +50,24 @@ def import_string(dotted_path):
         msg = 'Module "%s" does not define a "%s" attribute/class' % (
             module_path, class_name)
         raise ImportError.with_traceback(ImportError(msg), sys.exc_info()[2])
+
+
+def delete_old_results(results_dir, force, trial, resume):
+    """Delete existing checkpoints and wandb logs if --force is enabled."""
+    wandb_dir = Path(results_dir) / 'wandb'
+    wandb_matches = list(wandb_dir.glob(f'*-trial-{trial}-*'))
+
+    chkpt_dir = Path(results_dir) / 'checkpoints'
+    chkpt_matches = list(chkpt_dir.glob(f'trial-{trial}-*'))
+
+    if force and wandb_matches:
+        [shutil.rmtree(p) for p in wandb_matches]
+
+    if force and chkpt_matches:
+        [shutil.rmtree(p) for p in chkpt_matches]
+
+    if not force and not resume and wandb_matches:
+        raise ExistingExperimentFound(f'Directory already exists: {wandb_dir}')
+
+    if not force and not resume and chkpt_matches:
+        raise ExistingExperimentFound(f'Directory already exists: {chkpt_dir}')
