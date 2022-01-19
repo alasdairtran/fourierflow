@@ -1,6 +1,6 @@
 wandb:
   project: kolmogorov_re_1000
-  group: ffno/grid_sizes/modes_16/half_steps_big_batch/128
+  group: ffno/grid_sizes/modes_32/half_steps_big_batch/128
   tags:
     - pde
     - navier-stokes
@@ -27,7 +27,7 @@ routine:
   _target_: fourierflow.routines.Grid2DMarkovExperiment
   conv:
     _target_: fourierflow.modules.FNOFactorized2DBlock
-    modes: 16
+    modes: 32
     width: 256
     n_layers: 16
     input_dim: 3
