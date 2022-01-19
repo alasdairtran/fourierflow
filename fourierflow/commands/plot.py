@@ -83,7 +83,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
     runs = api.runs(f'alasdairtran/{dataset}', {
-        'config.wandb.group': 'ffno/step_sizes/20',
+        'config.wandb.group': 'ffno/step_sizes/10',
         'state': 'finished',
     })
     assert len(runs) == 1
