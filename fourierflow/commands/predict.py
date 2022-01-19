@@ -88,13 +88,15 @@ def main(data_path: Path,
         test_w = test_ds['vorticity'].transpose(
             'sample', 'x', 'y', 'time').values
         data = torch.from_numpy(test_w).cuda()
+        T = data.shape[-1]
+        n_steps = routine.n_steps or (T - 1)
         routine = routine.cuda()
         with torch.no_grad():
             start = time.time()
             for datum in tqdm(data):
                 routine(datum[None])
             elasped = (time.time() - start) / len(data)
-            elasped = elasped / (routine.step_size * routine.n_steps)
+            elasped = elasped / (routine.step_size * n_steps)
 
     else:
         data = scipy.io.loadmat(data_path)['u'].astype(np.float32)[:512]
