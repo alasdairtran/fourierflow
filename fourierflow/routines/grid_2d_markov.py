@@ -1,11 +1,15 @@
 import math
+from pathlib import Path
 from typing import Optional
 
 import jax
 import jax.numpy as jnp
 import torch
 import wandb
+import xarray as xr
 from einops import rearrange, repeat
+from jax_cfd.base.grids import Grid
+from jax_cfd.spectral.utils import vorticity_to_velocity
 from torch import nn
 
 from fourierflow.modules import Normalizer, fourier_encode
@@ -41,6 +45,7 @@ class Grid2DMarkovExperiment(Routine):
                  n_test_steps_logged: Optional[int] = None,
                  domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)),
                  heatmap_scale: int = 1,
+                 pred_path: Optional[Path] = None,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -69,6 +74,7 @@ class Grid2DMarkovExperiment(Routine):
         self.n_test_steps_logged = n_test_steps_logged
         self.heatmap_scale = heatmap_scale
         self.domain = domain
+        self.pred_path = pred_path
         if self.shuffle_grid:
             self.x_idx = torch.randperm(64)
             self.x_inv = torch.argsort(self.x_idx)
@@ -428,7 +434,7 @@ class Grid2DMarkovExperiment(Routine):
         self.log('valid_time_until', time_until, prog_bar=True)
         self.log('valid_reduced_time_until', reduced_time_until)
 
-        if batch_idx == 0:
+        if batch_idx == 0 and self.logger:
             data = batch['data']
             expt = self.logger.experiment
             s = self.heatmap_scale
@@ -451,13 +457,54 @@ class Grid2DMarkovExperiment(Routine):
         self.log('test_time_until', time_until, prog_bar=True)
         self.log('test_reduced_time_until', reduced_time_until)
 
-        corr_rows = list(zip(times.cpu().numpy(), p.cpu().numpy()))
-        self.logger.experiment.log({
-            'test_correlations': wandb.Table(['time', 'corr'], corr_rows)})
+        if self.logger:
+            corr_rows = list(zip(times.cpu().numpy(), p.cpu().numpy()))
+            self.logger.experiment.log({
+                'test_correlations': wandb.Table(['time', 'corr'], corr_rows)})
 
-        loss_rows = list(zip(times.cpu().numpy(), step_losses))
-        self.logger.experiment.log({
-            'test_losses': wandb.Table(['time', 'loss'], loss_rows)})
+            loss_rows = list(zip(times.cpu().numpy(), step_losses))
+            self.logger.experiment.log({
+                'test_losses': wandb.Table(['time', 'loss'], loss_rows)})
+
+        if self.pred_path:
+            vorticities = preds.cpu().numpy()
+            B, X, Y, T = vorticities.shape
+            vorticities_hat = jnp.fft.rfftn(vorticities, axes=(1, 2))
+
+            grid = Grid(shape=[X, Y], domain=self.domain)
+            velocity_solve = vorticity_to_velocity(grid)
+
+            vxhats, vyhats = [], []
+            for b in range(B):
+                vxhatb, vyhatb = [], []
+                for t in range(T):
+                    vxhat, vyhat = velocity_solve(vorticities_hat[b, ..., t])
+                    vxhatb.append(vxhat)
+                    vyhatb.append(vyhat)
+                vxhats.append(jnp.stack(vxhatb, axis=-1))
+                vyhats.append(jnp.stack(vxhatb, axis=-1))
+
+            vxhats = jnp.stack(vxhats, axis=0)
+            vyhats = jnp.stack(vyhats, axis=0)
+
+            vx = jnp.fft.irfftn(vxhats, axes=(1, 2))
+            vy = jnp.fft.irfftn(vyhats, axes=(1, 2))
+
+            dim_names = ('sample', 'x', 'y', 'time')
+            data_vars = {
+                'vorticity': (dim_names, vorticities),
+                'vx': (dim_names, vx),
+                'vy': (dim_names, vy),
+            }
+            ds = xr.Dataset(
+                data_vars=data_vars,
+                coords={
+                    'sample': range(B),
+                    'time': times.cpu().numpy(),
+                    'x': grid.axes()[0],
+                    'y': grid.axes()[1],
+                })
+            ds.to_netcdf(self.pred_path, engine='h5netcdf')
 
         # if self.n_test_steps_logged is None:
         #     length = len(step_losses)
