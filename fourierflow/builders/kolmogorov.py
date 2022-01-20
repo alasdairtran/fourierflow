@@ -145,6 +145,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         # }
 
         return {
+            'times': ds.time.data,
             'data': ds.vorticity.data,
             'corr_data': corr_ds.vorticity.data,
         }
