@@ -4,6 +4,7 @@ from typing import Optional
 import jax
 import jax.numpy as jnp
 import torch
+import wandb
 from einops import rearrange, repeat
 from torch import nn
 
@@ -346,6 +347,7 @@ class Grid2DMarkovExperiment(Routine):
         B, *dim_sizes, T = data.shape
         n_steps = self.n_steps or T - 1
         yy = data[:, ..., -n_steps:]
+        times = batch['times'][0, -n_steps:]
         loss /= n_steps
         loss_full = self.l2_loss(preds.reshape(
             B, -1), yy.reshape(B, -1))
@@ -364,6 +366,7 @@ class Grid2DMarkovExperiment(Routine):
 
         # We reduce all grid sizes to 32x32 before computing correlation
         reduced_time_until = time_until
+        p_2 = p
         if 'corr_data' in batch:
             corr_yy = batch['corr_data'][:, ..., -n_steps:]
 
@@ -383,7 +386,7 @@ class Grid2DMarkovExperiment(Routine):
                     diverged_idx) > 0 else len(has_diverged)
                 reduced_time_until = diverged_t * self.step_size
 
-        return loss, loss_full, time_until, reduced_time_until
+        return loss, loss_full, time_until, reduced_time_until, p_2, times
 
     def training_step(self, batch, batch_idx):
         # Accumulate normalization stats in the first epoch
@@ -417,7 +420,7 @@ class Grid2DMarkovExperiment(Routine):
 
     def validation_step(self, batch, batch_idx):
         loss, step_losses, preds, pred_list = self._valid_step(batch)
-        loss, loss_full, time_until, reduced_time_until = self.compute_losses(
+        loss, loss_full, time_until, reduced_time_until, p, times = self.compute_losses(
             batch, loss, preds)
 
         self.log('valid_loss_avg', loss)
@@ -441,12 +444,16 @@ class Grid2DMarkovExperiment(Routine):
 
     def test_step(self, batch, batch_idx):
         loss, step_losses, preds, pred_layer_list = self._valid_step(batch)
-        loss, loss_full, time_until, reduced_time_until = self.compute_losses(
+        loss, loss_full, time_until, reduced_time_until, p, times = self.compute_losses(
             batch, loss, preds)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
         self.log('test_time_until', time_until, prog_bar=True)
         self.log('test_reduced_time_until', reduced_time_until)
+
+        data = list(zip(times.cpu().numpy(), p.cpu().numpy()))
+        self.logger.experiment.log({
+            'test_correlation': wandb.Table(['time', 'corr'], data)})
         if self.n_test_steps_logged is None:
             length = len(step_losses)
         else:
