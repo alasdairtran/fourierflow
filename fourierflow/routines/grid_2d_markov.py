@@ -453,7 +453,7 @@ class Grid2DMarkovExperiment(Routine):
 
         corr_rows = list(zip(times.cpu().numpy(), p.cpu().numpy()))
         self.logger.experiment.log({
-            'test_correlation': wandb.Table(['time', 'corr'], corr_rows)})
+            'test_correlations': wandb.Table(['time', 'corr'], corr_rows)})
 
         loss_rows = list(zip(times.cpu().numpy(), step_losses))
         self.logger.experiment.log({
