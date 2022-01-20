@@ -26,6 +26,7 @@ builder:
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_128.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32.nc
     k: 20
+    end: 800
   batch_size: 32
   num_workers: 4
   pin_memory: true
