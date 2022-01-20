@@ -451,12 +451,17 @@ class Grid2DMarkovExperiment(Routine):
         self.log('test_time_until', time_until, prog_bar=True)
         self.log('test_reduced_time_until', reduced_time_until)
 
-        data = list(zip(times.cpu().numpy(), p.cpu().numpy()))
+        corr_rows = list(zip(times.cpu().numpy(), p.cpu().numpy()))
         self.logger.experiment.log({
-            'test_correlation': wandb.Table(['time', 'corr'], data)})
-        if self.n_test_steps_logged is None:
-            length = len(step_losses)
-        else:
-            length = self.n_test_steps_logged
-        for i in range(length):
-            self.log(f'test_loss_{i}', step_losses[i])
+            'test_correlation': wandb.Table(['time', 'corr'], corr_rows)})
+
+        loss_rows = list(zip(times.cpu().numpy(), step_losses))
+        self.logger.experiment.log({
+            'test_losses': wandb.Table(['time', 'loss'], loss_rows)})
+
+        # if self.n_test_steps_logged is None:
+        #     length = len(step_losses)
+        # else:
+        #     length = self.n_test_steps_logged
+        # for i in range(length):
+        #     self.log(f'test_loss_{i}', step_losses[i])
