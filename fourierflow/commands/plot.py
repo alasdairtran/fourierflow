@@ -17,6 +17,32 @@ app = Typer()
 
 
 @app.command()
+def resolution():
+    fig = plt.figure(figsize=(8, 3))
+
+    ax = plt.subplot(1, 2, 1)
+    lines_1 = plot_correlation_over_time(ax)
+
+    ax = plt.subplot(1, 2, 2)
+    # lines_2 = plot_test_losses_over_time(ax)
+
+    # lines = lines_1
+
+    # labels = ['Adams-Bashforth numerical simulator',
+    #           'F-FNO (our full model)']
+
+    # lgd = fig.legend(handles=lines,
+    #                  labels=labels,
+    #                  loc="center",
+    #                  borderaxespad=0.1,
+    #                  bbox_to_anchor=[1.2, 0.55])
+
+    fig.tight_layout()
+    fig.savefig('figures/superresolution.pdf',
+                # bbox_extra_artists=(lgd,),
+                bbox_inches='tight')
+
+@app.command()
 def correlation():
     fig = plt.figure(figsize=(8, 3))
 
@@ -41,6 +67,75 @@ def correlation():
     fig.savefig('figures/correlation.pdf',
                 bbox_extra_artists=(lgd,),
                 bbox_inches='tight')
+
+
+def plot_correlation_over_time(ax):
+    groups = [
+        'ffno/superresolution/32',
+        'ffno/superresolution/64',
+        'ffno/superresolution/128',
+        'ffno/superresolution/256',
+    ]
+    api = wandb.Api()
+    dataset = 'kolmogorov_re_1000'
+
+    corrs = []
+    times = []
+    lines = []
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'state': 'finished',
+        })
+        assert len(runs) == 1
+
+        name = f'{dataset}/run-{runs[0].id}-test_correlations:latest'
+        artifact = api.artifact(name)
+        table = artifact.get('test_correlations')
+        time = table.get_column('time')
+        corr = table.get_column('corr')
+        corrs.append(np.array(corr))
+        times.append(np.array(time))
+
+        line, = ax.plot(time, corr)
+        lines.append(line)
+
+    labels = ['32x32', '64x64', '128x128', '256x256']
+    ax.legend(lines, labels)
+    ax.set_xlabel('Simulation time')
+    ax.set_ylabel('Vorticity correlation')
+
+
+def plot_test_losses_over_time(ax):
+    groups = [
+        'ffno/superresolution/32',
+        'ffno/superresolution/64',
+        'ffno/superresolution/128',
+        'ffno/superresolution/256',
+    ]
+    api = wandb.Api()
+    dataset = 'kolmogorov_re_1000'
+
+    corrs = []
+    times = []
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'state': 'finished',
+        })
+        assert len(runs) == 1
+
+        name = f'{dataset}/run-{runs[0].id}-test_losses:latest'
+        artifact = api.artifact(name)
+        table = artifact.get('test_losses')
+        time = table.get_column('time')
+        loss = table.get_column('loss')
+        corrs.append(np.array(loss))
+        times.append(np.array(time))
+
+        ax.plot(time, loss)
+        ax.set_xlabel('Simulation time')
+        ax.set_ylabel('Normalized MSE (%)')
 
 
 def plot_correlation_vs_time_of_different_grid_sizes(ax):
