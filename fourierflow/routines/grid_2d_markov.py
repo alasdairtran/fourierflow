@@ -1,3 +1,4 @@
+from fourierflow.utils import downsample_vorticity_hat
 import math
 from pathlib import Path
 from typing import Optional
@@ -471,38 +472,49 @@ class Grid2DMarkovExperiment(Routine):
             B, X, Y, T = vorticities.shape
             vorticities_hat = jnp.fft.rfftn(vorticities, axes=(1, 2))
 
-            grid = Grid(shape=[X, Y], domain=self.domain)
-            velocity_solve = vorticity_to_velocity(grid)
+            sim_grid = Grid(shape=[X, Y], domain=self.domain)
+            out_grid = Grid(shape=[64, 64], domain=self.domain)
+            velocity_solve = vorticity_to_velocity(sim_grid)
 
-            vxhats, vyhats = [], []
+            vxs, vys, ws = [], [], []
             for b in range(B):
-                vxhatb, vyhatb = [], []
+                vxb, vyb, wb = [], [], []
                 for t in range(T):
-                    vxhat, vyhat = velocity_solve(vorticities_hat[b, ..., t])
-                    vxhatb.append(vxhat)
-                    vyhatb.append(vyhat)
-                vxhats.append(jnp.stack(vxhatb, axis=-1))
-                vyhats.append(jnp.stack(vxhatb, axis=-1))
+                    vorticity_hat = vorticities_hat[b, ..., t]
 
-            vxhats = jnp.stack(vxhats, axis=0)
-            vyhats = jnp.stack(vyhats, axis=0)
+                    if X > 64:
+                        out = downsample_vorticity_hat(
+                            vorticity_hat, velocity_solve, sim_grid, out_grid)
+                        vxb.append(out['vx'])
+                        vyb.append(out['vy'])
+                        wb.append(out['vorticity'])
+                    else:
+                        vxhat, vyhat = velocity_solve(vorticity_hat)
+                        vxb.append(jnp.fft.irfftn(vxhat, axes=(0, 1)))
+                        vyb.append(jnp.fft.irfftn(vyhat, axes=(0, 1)))
+                        wb.append(vorticities[b, ..., t])
 
-            vx = jnp.fft.irfftn(vxhats, axes=(1, 2))
-            vy = jnp.fft.irfftn(vyhats, axes=(1, 2))
+                vxs.append(jnp.stack(vxb, axis=-1))
+                vys.append(jnp.stack(vyb, axis=-1))
+                ws.append(jnp.stack(wb, axis=-1))
+
+            vxs = jnp.stack(vxs, axis=0)
+            vys = jnp.stack(vys, axis=0)
+            ws = jnp.stack(ws, axis=0)
 
             dim_names = ('sample', 'x', 'y', 'time')
             data_vars = {
-                'vorticity': (dim_names, vorticities),
-                'vx': (dim_names, vx),
-                'vy': (dim_names, vy),
+                'vorticity': (dim_names, ws),
+                'vx': (dim_names, vxs),
+                'vy': (dim_names, vys),
             }
             ds = xr.Dataset(
                 data_vars=data_vars,
                 coords={
                     'sample': range(B),
                     'time': times.cpu().numpy(),
-                    'x': grid.axes()[0],
-                    'y': grid.axes()[1],
+                    'x': out_grid.axes()[0],
+                    'y': out_grid.axes()[1],
                 })
             ds.to_netcdf(self.pred_path, engine='h5netcdf')
 
