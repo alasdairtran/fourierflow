@@ -11,12 +11,16 @@ from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from typer import Argument, Typer
 
+from fourierflow.utils import delete_old_results
+
 app = Typer()
 
 
 @app.callback(invoke_without_command=True)
 def main(config_path: Path,
          overrides: Optional[List[str]] = Argument(None),
+         force: bool = False,
+         trial: int = 0,
          debug: bool = False):
     """Train a JAX experiment."""
     config_dir = config_path.parent
@@ -29,6 +33,9 @@ def main(config_path: Path,
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
+
+    # Set up directories to save experimental outputs.
+    delete_old_results(config_dir, force, trial, resume=False)
 
     wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
     wandb.init(dir=config_dir,
