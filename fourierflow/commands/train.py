@@ -37,7 +37,8 @@ def main(config_path: Path,
          resume: bool = False,
          checkpoint_id: Optional[str] = None,
          trial: int = 0,
-         debug: bool = False):
+         debug: bool = False,
+         no_logging: bool = False):
     """Train a Pytorch Lightning experiment."""
     config_dir = config_path.parent
     config_name = config_path.stem
@@ -93,7 +94,15 @@ def main(config_path: Path,
     callbacks = [instantiate(p) for p in config.get('callbacks', [])]
     multi_gpus = config.trainer.get('gpus', 0) > 1
     plugins = DDPPlugin(find_unused_parameters=False) if multi_gpus else None
-    trainer = pl.Trainer(logger=wandb_logger,
+    if no_logging:
+        logger = False
+        enable_checkpointing = False
+        callbacks = []
+    else:
+        logger = wandb_logger
+        enable_checkpointing = True
+    trainer = pl.Trainer(logger=logger,
+                         enable_checkpointing=enable_checkpointing,
                          callbacks=callbacks,
                          plugins=plugins,
                          weights_save_path=config_dir,

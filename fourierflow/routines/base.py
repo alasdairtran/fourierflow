@@ -17,7 +17,8 @@ class Routine(LightningModule):
 
     def on_train_start(self):
         n = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        self.logger.experiment.summary["n_params"] = n
+        if self.logger:
+            self.logger.experiment.summary["n_params"] = n
 
     def configure_optimizers(self):
         parameters = [p for p in self.parameters() if p.requires_grad]
