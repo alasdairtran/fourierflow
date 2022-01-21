@@ -6,6 +6,7 @@ import scipy.io
 import seaborn as sns
 import wandb
 import xarray as xr
+from jax_cfd.data.evaluation import compute_summary_dataset
 from matplotlib.lines import Line2D
 from typer import Typer
 
@@ -24,7 +25,7 @@ def resolution():
     lines_1 = plot_correlation_over_time(ax)
 
     ax = plt.subplot(1, 2, 2)
-    # lines_2 = plot_test_losses_over_time(ax)
+    lines_2 = plot_energy_spectrum(ax)
 
     # lines = lines_1
 
@@ -104,6 +105,58 @@ def plot_correlation_over_time(ax):
     ax.legend(lines, labels)
     ax.set_xlabel('Simulation time')
     ax.set_ylabel('Vorticity correlation')
+
+
+def plot_energy_spectrum(ax):
+    sizes = [64, 128, 256, 512, 1024]
+    models = {}
+    path = f'../experiments/kolmogorov/re_1000/ffno/predictions/64/preds.nc'
+    models['ffno_64'] = xr.open_dataset(path)
+
+    path = f'../experiments/kolmogorov/re_1000/ffno/predictions/128/preds.nc'
+    models['ffno_128'] = xr.open_dataset(path)
+
+    for size in sizes:
+        path = f'../data/kolmogorov/re_1000/baselines/{size}_64.nc'
+        models[f'baseline_{size}'] = xr.open_dataset(
+            path).isel(time=slice(19, None, 20))
+
+    path = f'../data/kolmogorov/re_1000/trajectories/test_64.nc'
+    models['baseline_2048'] = xr.open_dataset(
+        path).isel(time=slice(19, None, 20))
+
+    for k, model in models.items():
+        model.attrs['ndim'] = 2
+        models[k] = model.rename({'vx': 'u', 'vy': 'v'})
+
+    summary = xr.concat([
+        compute_summary_dataset(ds, models['baseline_2048'])
+        for ds in models.values()
+    ], dim='model')
+    summary.coords['model'] = list(models.keys())
+
+    # starts from time=12
+    spectrum = summary.energy_spectrum_mean.tail(
+        time=80).mean('time').compute()
+
+    baseline_palette = sns.color_palette('YlGnBu', n_colors=7)[0:]
+    models_color = sns.xkcd_palette(['burnt orange'])
+    palette = baseline_palette + models_color
+
+    for color, model in zip(palette, summary['model'].data):
+        if 'baseline_64' in model:
+            continue
+        style = '-' if 'baseline' in model else '--'
+        (spectrum.k ** 5 * spectrum).sel(model=model).plot.line(
+            color=color, linestyle=style, label=model, linewidth=3, ax=ax)
+    ax.legend()
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    ax.set_title('')
+    ax.set_xlim(3.6, None)
+    ax.set_ylim(1.3e9, None)
+    ax.set_xlabel('Wavenumber')
+    ax.set_ylabel('Scaled engery spectrum')
 
 
 def plot_test_losses_over_time(ax):
