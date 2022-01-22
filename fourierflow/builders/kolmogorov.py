@@ -138,15 +138,12 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         time_slice = slice(None, self.end, self.k)
         ds = self.ds.isel(sample=b, time=time_slice)
         corr_ds = self.corr_ds.isel(sample=b, time=time_slice)
-        # data = {
-        #     'vx': ds.vx,
-        #     'vy': ds.vy,
-        #     'vorticity': ds.vorticity,
-        # }
 
         return {
             'times': ds.time.data,
             'data': ds.vorticity.data,
+            'vx': ds.vx.data,
+            'vy': ds.vy.data,
             'corr_data': corr_ds.vorticity.data,
         }
 
