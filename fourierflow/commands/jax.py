@@ -21,7 +21,8 @@ def main(config_path: Path,
          overrides: Optional[List[str]] = Argument(None),
          force: bool = False,
          trial: int = 0,
-         debug: bool = False):
+         debug: bool = False,
+         no_logging: bool = False):
     """Train a JAX experiment."""
     config_dir = config_path.parent
     config_name = config_path.stem
@@ -37,12 +38,13 @@ def main(config_path: Path,
     # Set up directories to save experimental outputs.
     delete_old_results(config_dir, force, trial, resume=False)
 
-    wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
-    wandb.init(dir=config_dir,
-               mode=os.environ.get('WANDB_MODE', 'offline'),
-               config=deepcopy(cast(dict, OmegaConf.to_container(config))),
-               id=str(uuid4())[:8],
-               **wandb_opts)
+    if not no_logging:
+        wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
+        wandb.init(dir=config_dir,
+                   mode=os.environ.get('WANDB_MODE', 'offline'),
+                   config=deepcopy(cast(dict, OmegaConf.to_container(config))),
+                   id=str(uuid4())[:8],
+                   **wandb_opts)
 
     # Initialize the dataset and experiment modules.
     builder = instantiate(config.builder)
