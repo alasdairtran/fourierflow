@@ -34,6 +34,7 @@ def main(config_path: Path,
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
+        jax.config.update('jax_disable_jit', True)
 
     # Set up directories to save experimental outputs.
     delete_old_results(config_dir, force, trial, resume=False)

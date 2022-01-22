@@ -42,6 +42,7 @@ def kolmogorov(
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
         ptvsd.wait_for_attach()
+        jax.config.update('jax_disable_jit', True)
 
     device_list = [int(d) for d in devices.split(',')]
     if len(device_list) > 1:
@@ -119,7 +120,7 @@ def kolmogorov(
     durations = []
 
     for i in range(c.n_trajectories):
-        outs = dask.delayed(generate_kolmogorov)(
+        outs = generate_kolmogorov(
             sim_grid=sim_grid,
             out_sizes=c.out_sizes,
             method=c.method,
