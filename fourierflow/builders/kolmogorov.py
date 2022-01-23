@@ -116,6 +116,42 @@ class KolmogorovTorchDataset(TorchDataset, ElegyDataset):
         }
 
 
+class KolmogorovMultiTorchDataset(TorchDataset, ElegyDataset):
+    def __init__(self, paths, k, batch_size):
+        self.dss = [xr.open_dataset(path) for path in paths]
+        self.k = k
+        self.B = len(self.ds.sample)
+        self.T = len(self.ds.time) - self.k
+        self.counter = 0
+        self.batch_size = batch_size
+        self.ds_index = 0
+
+    def __len__(self):
+        return self.B * self.T
+
+    def __getitem__(self, idx):
+        b = idx // self.T
+        t = idx % self.T
+        k = self.k
+
+        ds = self.dss[self.ds_index]
+        ds = ds.isel(sample=b, time=slice(t, t+k+1, k))
+        in_ds = ds.isel(time=slice(0, 1)).transpose('x', 'y', 'time')
+        out_ds = ds.isel(time=slice(1, 2)).transpose('x', 'y', 'time')
+        self.update_counter()
+
+        return {
+            'x': in_ds.vorticity.data,
+            'y': out_ds.vorticity.data,
+        }
+
+    @property
+    def update_counter(self):
+        self.counter += 1
+        if self.counter % self.batch_size == 0:
+            self.ds_index = (self.ds_index + 1) % len(self.dss)
+
+
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
     def __init__(self, init_path, path, corr_path, k, end=None):
         ds = xr.open_dataset(path)
