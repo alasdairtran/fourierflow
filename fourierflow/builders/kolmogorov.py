@@ -145,7 +145,6 @@ class KolmogorovMultiTorchDataset(TorchDataset, ElegyDataset):
             'y': out_ds.vorticity.data,
         }
 
-    @property
     def update_counter(self):
         self.counter += 1
         if self.counter % self.batch_size == 0:
