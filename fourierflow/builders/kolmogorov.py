@@ -120,8 +120,8 @@ class KolmogorovMultiTorchDataset(TorchDataset, ElegyDataset):
     def __init__(self, paths, k, batch_size):
         self.dss = [xr.open_dataset(path) for path in paths]
         self.k = k
-        self.B = len(self.ds.sample)
-        self.T = len(self.ds.time) - self.k
+        self.B = len(self.dss[0].sample)
+        self.T = len(self.dss[0].time) - self.k
         self.counter = 0
         self.batch_size = batch_size
         self.ds_index = 0
