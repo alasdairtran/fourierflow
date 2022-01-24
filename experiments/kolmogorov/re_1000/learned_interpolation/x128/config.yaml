@@ -56,3 +56,8 @@ routine:
     b1: 0.9
     b2: 0.99
   seed: 5123
+trainer:
+  epochs: 1
+  steps_per_epoch: 2
+  shuffle: true
+  callbacks: []

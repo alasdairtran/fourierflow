@@ -54,12 +54,8 @@ def main(config_path: Path,
 
     routine.fit(
         inputs=builder.train_dataloader(),
-        epochs=2,
-        steps_per_epoch=200,
-        batch_size=1,
         validation_data=builder.val_dataloader(),
-        shuffle=True,
-        # callbacks=[eg.callbacks.TensorBoard("summaries")]
+        **OmegaConf.to_container(config.trainer),
     )
 
 
