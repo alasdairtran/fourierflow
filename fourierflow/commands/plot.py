@@ -43,6 +43,7 @@ def resolution():
                 # bbox_extra_artists=(lgd,),
                 bbox_inches='tight')
 
+
 @app.command()
 def correlation():
     fig = plt.figure(figsize=(8, 3))
@@ -55,7 +56,7 @@ def correlation():
 
     lines = lines_1
 
-    labels = ['Adams-Bashforth numerical simulator',
+    labels = ['DNS (Carpenter-Kennedy)',
               'F-FNO (our full model)']
 
     lgd = fig.legend(handles=lines,
@@ -232,7 +233,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
 
-    groups = ['ffno/step_sizes/20', 'ffno/grid_sizes/modes_32/128']
+    groups = ['ffno/step_sizes/20', 'ffno/grid_sizes/modes_32/longer/128']
     times = []
     untils = []
 
@@ -245,7 +246,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
         time = [run.summary['inference_time'] for run in runs]
         times.append(np.array(time).mean())
 
-        until = [run.summary['test_time_until'] for run in runs]
+        until = [run.summary['test_reduced_time_until'] for run in runs]
         untils.append(np.array(until).mean())
 
     lines.append(ax.errorbar(times, untils, color=pal[3], marker='o'))
@@ -280,7 +281,7 @@ def plot_varying_step_size(ax):
             'state': 'finished'
         })
         assert len(runs) == 1
-        until = [run.summary['test_time_until'] for run in runs]
+        until = [run.summary['valid_time_until'] for run in runs]
         untils.append(np.array(until).mean())
 
     lines = []
