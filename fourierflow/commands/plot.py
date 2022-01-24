@@ -73,10 +73,10 @@ def correlation():
 
 def plot_correlation_over_time(ax):
     groups = [
-        'ffno/superresolution/32',
-        'ffno/superresolution/64',
-        'ffno/superresolution/128',
-        'ffno/superresolution/256',
+        'ffno/superresolution/x32_x64/32',
+        'ffno/superresolution/x32_x64/64',
+        'ffno/superresolution/x32_x64/128',
+        'ffno/superresolution/x32_x64/256',
     ]
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
