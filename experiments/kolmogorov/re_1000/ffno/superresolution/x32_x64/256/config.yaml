@@ -81,7 +81,7 @@ callbacks:
     filename: "{epoch}-{step}-{valid_loss:.5f}"
     save_top_k: 1
     save_last: false # not needed when save_top_k == 1
-    monitor: null # valid_loss
+    monitor: valid_time_until
     mode: min
     every_n_train_steps: null
     every_n_epochs: 1
