@@ -120,7 +120,7 @@ def kolmogorov(
     durations = []
 
     for i in range(c.n_trajectories):
-        outs = generate_kolmogorov(
+        outs = dask.delayed(generate_kolmogorov)(
             sim_grid=sim_grid,
             out_sizes=c.out_sizes,
             method=c.method,
