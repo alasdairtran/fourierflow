@@ -5,6 +5,7 @@ from typing import List, Optional, cast
 from uuid import uuid4
 
 import hydra
+import jax
 import ptvsd
 import wandb
 from hydra.utils import instantiate
