@@ -1,0 +1,31 @@
+# time_step: 0.007012483601762931
+domain:
+  - [0, '${eval:2 * ${import:numpy.pi}}']
+  - [0, '${eval:2 * ${import:numpy.pi}}']
+sim_grid:
+  _target_: fourierflow.utils.Grid
+  shape: [64, 64]
+  domain: ${domain} # size of the domain during simulation
+time_step: 0.014024967203525862
+method: pseudo_spectral
+step_fn:
+  _target_: jax_cfd.spectral.time_stepping.crank_nicolson_rk4
+  equation:
+    _target_: jax_cfd.spectral.equations.NavierStokes2D
+    grid: ${sim_grid}
+    viscosity: 1e-3
+    drag: 0.1
+    smooth: true # use anti-aliasing
+    forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}
+  time_step: ${time_step}
+downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_vorticity}
+out_sizes: [64] # size of the domain for saving to disk
+n_trajectories: 4 # number of trajectories to generate
+density: 1 # density of the fluid
+max_velocity: 7.0 # maximum velocity of the fluid
+peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
+seed: 83816 # random seed for the initial velocity field
+inner_steps: 1 # take a snapshot of the field once every these many ODE steps
+outer_steps: 2441 # the data saved on disk will have these many snapshots
+warmup_steps: 0 # we load initial conditions from init_path instead
+init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
