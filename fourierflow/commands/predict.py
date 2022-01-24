@@ -84,7 +84,7 @@ def main(data_path: Path,
     routine.load_lightning_model_state(str(checkpoint_path), map_location)
 
     if 'kolmogorov' in str(data_path):
-        k = config.builder.test_k
+        k = config.builder.test_dataset.k
 
         test_ds = xr.open_dataset(data_path)
 
