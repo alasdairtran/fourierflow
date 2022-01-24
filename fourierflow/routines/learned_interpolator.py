@@ -42,7 +42,7 @@ class LearnedInterpolator(eg.Model):
             inputs = []
             for v, offset in zip([vx, vy], sim_grid.cell_faces):
                 variable = GridVariable(
-                    array=GridArray(v[0], offset, sim_grid),
+                    array=GridArray(v, offset, sim_grid),
                     bc=periodic_boundary_conditions(sim_grid.ndim))
                 inputs.append(variable)
             model = modular_navier_stokes_model(
@@ -50,7 +50,7 @@ class LearnedInterpolator(eg.Model):
                 convection_module=convection_module)
             return model(inputs)
 
-        step_model = hk.transform_with_state(step_fwd)
+        step_model = hk.transform_with_state(jax.vmap(step_fwd))
 
         super().__init__(module=step_model, **kwargs)
 
@@ -107,8 +107,8 @@ class LearnedInterpolator(eg.Model):
 
         preds, model = model.pred_step(inputs)
         vx_pred, vy_pred = preds[0].array.data, preds[1].array.data
-        vx_loss = l2_loss(vx_pred, inputs['vx'][0]).mean()
-        vy_loss = l2_loss(vy_pred, inputs['vy'][0]).mean()
+        vx_loss = l2_loss(vx_pred, inputs['vx']).mean()
+        vy_loss = l2_loss(vy_pred, inputs['vy']).mean()
         loss = vx_loss + vy_loss
 
         logs = {'loss': loss}
@@ -118,7 +118,7 @@ class LearnedInterpolator(eg.Model):
     def test_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TestStepOutput[M]:
         model: M = self
 
-        T = inputs['data'].shape[-1]  # [1, 32, 32, 2441]
+        B, X, Y, T = inputs['data'].shape
 
         w_preds = []
         for t in tqdm(range(T)):
@@ -129,8 +129,8 @@ class LearnedInterpolator(eg.Model):
             }
             preds, model = model.pred_step(batch)
             vx_pred, vy_pred = preds[0].array.data, preds[1].array.data
-            vx_loss = l2_loss(vx_pred, batch['vx'][0]).mean()
-            vy_loss = l2_loss(vy_pred, batch['vy'][0]).mean()
+            vx_loss = l2_loss(vx_pred, batch['vx']).mean()
+            vy_loss = l2_loss(vy_pred, batch['vy']).mean()
             loss = vx_loss + vy_loss
 
             if vx_pred.shape[1] > 32:
