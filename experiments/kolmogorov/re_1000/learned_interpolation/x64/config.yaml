@@ -1,0 +1,58 @@
+wandb:
+  project: kolmogorov_re_1000
+  group: learned_interpolation/x64
+  tags:
+    - pde
+    - navier-stokes
+    - learned-interpolation
+  notes: ""
+builder:
+  _target_: fourierflow.builders.KolmogorovBuilder
+  train_dataset:
+    _target_: fourierflow.builders.KolmogorovElegyDataset
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/train_64.nc
+    k: 2
+  valid_dataset:
+    _target_: fourierflow.builders.KolmogorovTrajectoryDataset
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_64.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_32.nc
+    k: 2
+  test_dataset:
+    _target_: fourierflow.builders.KolmogorovTrajectoryDataset
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_64.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc
+    k: 2
+  loader_target: elegy.data.DataLoader
+  batch_size: 1
+routine:
+  _target_: fourierflow.routines.LearnedInterpolator
+  size: 32
+  dt: 0.001
+  physics_specs:
+    _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
+    density: 1.0
+    viscosity: 1e-3
+    forcing_module:
+      _target_: functools.partial
+      _args_: ["${get_method: jax_cfd.ml.forcings.kolmogorov_forcing}"]
+      scale: 1.0
+      wavenumber: 4
+      linear_coefficient: -0.1
+  convection_module:
+    _target_: functools.partial
+    _args_: ["${get_method: jax_cfd.ml.advections.self_advection}"]
+    advection_module:
+      _target_: functools.partial
+      _args_: ["${get_method: jax_cfd.ml.advections.modular_self_advection}"]
+      interpolation_module:
+        _target_: functools.partial
+        _args_: ["${get_method: jax_cfd.ml.interpolations.FusedLearnedInterpolation}"]
+        tags: ['u', 'c']
+  optimizer:
+    _target_: optax.adam
+    learning_rate: 1e-3
+    b1: 0.9
+    b2: 0.99
+  seed: 5123
