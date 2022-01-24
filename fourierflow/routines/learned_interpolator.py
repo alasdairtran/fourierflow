@@ -89,10 +89,10 @@ class LearnedInterpolator(eg.Model):
     @staticmethod
     def loss_fn(params: M, model: M, inputs: Any, labels: Mapping[str, Any]) -> Tuple[jnp.ndarray, Tuple[Logs, M]]:
         model = model.merge(params)
-        loss, logs, model = model.test_step(inputs, labels)
+        loss, logs, model = model.get_loss(inputs, labels)
         return loss, (logs, model)
 
-    def test_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TestStepOutput[M]:
+    def get_loss(self, inputs, labels):
         model: M = self
 
         preds, model = model.pred_step(inputs)
@@ -100,6 +100,27 @@ class LearnedInterpolator(eg.Model):
         vx_loss = l2_loss(vx_pred, inputs['vx'][0]).mean()
         vy_loss = l2_loss(vy_pred, inputs['vy'][0]).mean()
         loss = vx_loss + vy_loss
+
+        logs = {'loss': loss}
+
+        return loss, logs, model
+
+    def test_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TestStepOutput[M]:
+        model: M = self
+
+        T = inputs['vorticity'].shape[-1]  # [1, 32, 32, 2441]
+
+        for t in range(T):
+            batch = {
+                'vorticity': inputs['vorticity'][..., t],
+                'vx': inputs['vx'][..., t],
+                'vy': inputs['vy'][..., t],
+            }
+            preds, model = model.pred_step(batch)
+            vx_pred, vy_pred = preds[0].array.data, preds[1].array.data
+            vx_loss = l2_loss(vx_pred, batch['vx'][0]).mean()
+            vy_loss = l2_loss(vy_pred, batch['vy'][0]).mean()
+            loss = vx_loss + vy_loss
 
         logs = {'loss': loss}
 
