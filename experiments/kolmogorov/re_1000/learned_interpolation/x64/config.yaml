@@ -28,8 +28,8 @@ builder:
   batch_size: 1
 routine:
   _target_: fourierflow.routines.LearnedInterpolator
-  size: 32
-  dt: 0.001
+  size: 64
+  dt: 0.007012483601762931
   physics_specs:
     _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
     density: 1.0
