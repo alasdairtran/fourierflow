@@ -7,7 +7,7 @@ wandb:
     - fourier
   notes: ""
   log_model: all
-checkpoint_path: experiments/kolmogorov/re_1000/ffno/multi_resolution/x32_x64/checkpoints/trial-0-20220124-003325-836675/epoch\=10-step\=26630-valid_loss\=1.20946.ckpt
+checkpoint_path: experiments/kolmogorov/re_1000/ffno/multi_resolution/x32_x64/checkpoints/trial-0-20220124-003325-836675/epoch=10-step=26630-valid_loss=1.20946.ckpt
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
