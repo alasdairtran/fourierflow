@@ -27,4 +27,4 @@ seed: 83816 # random seed for the initial velocity field
 inner_steps: 32 # take a snapshot of the field once every these many ODE steps
 outer_steps: 2441 # the data saved on disk will have these many snapshots
 warmup_steps: 0 # we load initial conditions from init_path instead
-init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
+init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
