@@ -13,16 +13,19 @@ builder:
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_32.nc
     k: 1
   valid_dataset:
-    _target_: fourierflow.builders.KolmogorovElegyDataset
+    _target_: fourierflow.builders.KolmogorovTrajectoryDataset
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_32.nc
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
     k: 1
   test_dataset:
-    _target_: fourierflow.builders.KolmogorovElegyDataset
+    _target_: fourierflow.builders.KolmogorovTrajectoryDataset
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_32.nc
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32.nc
     k: 1
   loader_target: elegy.data.DataLoader
   batch_size: 1
-  pin_memory: true
 routine:
   _target_: fourierflow.routines.LearnedInterpolator
   size: 32
