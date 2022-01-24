@@ -233,7 +233,9 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
 
-    groups = ['ffno/step_sizes/20', 'ffno/grid_sizes/modes_32/longer/128']
+    groups = ['ffno/step_sizes/20',
+              'ffno/grid_sizes/modes_32/longer/128',
+              'ffno/grid_sizes/modes_64/longer/256']
     times = []
     untils = []
 
