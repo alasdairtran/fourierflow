@@ -1,5 +1,6 @@
 from .array import (Grid, calculate_time_until, downsample_vorticity,
-                    downsample_vorticity_hat, grid_correlation)
+                    downsample_vorticity_hat, grid_correlation,
+                    velocity_to_vorticity)
 from .exceptions import ExistingExperimentFound
 from .forcings import kolmogorov_forcing_fn
 from .helpers import cache_fn, default, exists

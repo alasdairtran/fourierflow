@@ -57,12 +57,7 @@ def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid, o
         in_grid, out_grid, velocity)
 
     # Convert back to the vorticity field.
-    x, y = out_grid.axes()
-    dx = x[1] - x[0]
-    dy = y[1] - y[0]
-    dv_dx = (jnp.roll(vy.data, shift=-1, axis=0) - vy.data) / dx
-    du_dy = (jnp.roll(vx.data, shift=-1, axis=1) - vx.data) / dy
-    vorticity = dv_dx - du_dy
+    vorticity = velocity_to_vorticity(vx, vy, out_grid)
 
     if out_xarray:
         coords = {'x': out_grid.axes()[0], 'y': out_grid.axes()[1]}
@@ -70,6 +65,16 @@ def downsample_vorticity_hat(vorticity_hat, velocity_solve, in_grid, out_grid, o
         return {'vx': vx, 'vy': vy, 'vorticity': vorticity}
 
     return {'vx': vx.data, 'vy': vy.data, 'vorticity': vorticity}
+
+
+def velocity_to_vorticity(vx, vy, grid):
+    x, y = grid.axes()
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
+    dv_dx = (jnp.roll(vy.data, shift=-1, axis=0) - vy.data) / dx
+    du_dy = (jnp.roll(vx.data, shift=-1, axis=1) - vx.data) / dy
+    vorticity = dv_dx - du_dy
+    return vorticity
 
 
 def calculate_time_until(vorticity_corr, threshold=0.95):
