@@ -5,7 +5,7 @@ sim_grid:
   _target_: fourierflow.utils.Grid
   shape: [64, 64]
   domain: ${domain} # size of the domain during simulation
-time_step: 0.0002191401125550916
+time_step: 0.0004382802251101832
 method: pseudo_spectral
 step_fn:
   _target_: jax_cfd.spectral.time_stepping.crank_nicolson_rk4
@@ -25,6 +25,6 @@ max_velocity: 7.0 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
 seed: 83816 # random seed for the initial velocity field
 inner_steps: 64 # take a snapshot of the field once every these many ODE steps
-outer_steps: 2441 # the data saved on disk will have these many snapshots
+outer_steps: 1220 # the data saved on disk will have these many snapshots
 warmup_steps: 0 # we load initial conditions from init_path instead
 init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
