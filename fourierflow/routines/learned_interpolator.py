@@ -108,11 +108,11 @@ class LearnedInterpolator(eg.Model):
     def test_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TestStepOutput[M]:
         model: M = self
 
-        T = inputs['vorticity'].shape[-1]  # [1, 32, 32, 2441]
+        T = inputs['data'].shape[-1]  # [1, 32, 32, 2441]
 
         for t in range(T):
             batch = {
-                'vorticity': inputs['vorticity'][..., t],
+                'vorticity': inputs['data'][..., t],
                 'vx': inputs['vx'][..., t],
                 'vy': inputs['vy'][..., t],
             }
