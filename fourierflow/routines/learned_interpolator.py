@@ -126,7 +126,7 @@ class LearnedInterpolator(eg.Model):
 
     def test_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TestStepOutput[M]:
         model = self
-        preds = self.unroll(inputs['vx'][..., 0], inputs['vy'][..., 0])
+        preds = self.manual_unroll(inputs['vx'][..., 0], inputs['vy'][..., 0])
         # preds.shape == [B, M, N, outer_steps]
 
         s = self.inner_steps
@@ -151,6 +151,33 @@ class LearnedInterpolator(eg.Model):
         logs = {'loss': loss, 'time_until': time_until}
 
         return loss, logs, model
+
+    def manual_unroll(self, vx, vy):
+        def downsample(velocity):
+            vx, vy = velocity
+            B, M, N = vx.shape
+            vorticities = []
+
+            for b in range(B):
+                if M > 32:
+                    vel = (GridArray(vx[b], offset=(1, 0.5), grid=self.sim_grid),
+                           GridArray(vy[b], offset=(0.5, 1), grid=self.sim_grid))
+                    u, v = downsample_staggered_velocity(
+                        self.sim_grid, self.out_grid, vel)
+                vort = velocity_to_vorticity(u, v, self.out_grid)
+                vorticities.append(vort)
+
+            vorticities = jnp.stack(vorticities, axis=0)
+            return vorticities
+
+        trajs = []
+        for i in range(self.outer_steps):
+            for j in range(self.inner_steps):
+                vx, vy = self.module(vx, vy)
+            vort = downsample((vx, vy))
+            trajs.append(vort)
+
+        return jnp.stack(trajs, axis=-1)
 
     def unroll(self, vx, vy):
         def downsample(velocity):
