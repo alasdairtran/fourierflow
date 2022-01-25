@@ -25,13 +25,13 @@ builder:
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc
     k: 4
   loader_target: elegy.data.DataLoader
-  batch_size: 4
+  batch_size: 32
 routine:
   _target_: fourierflow.routines.LearnedInterpolator
   size: 32
   dt: 0.014024967203525862
-  inner_steps: 2
-  outer_steps: 2
+  inner_steps: 4
+  outer_steps: 200
   physics_specs:
     _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
     density: 1.0
@@ -59,7 +59,7 @@ routine:
     b2: 0.99
   seed: 5123
 trainer:
-  epochs: 1
-  steps_per_epoch: 2
+  epochs: 10
+  steps_per_epoch: 5000
   shuffle: true
   callbacks: []
