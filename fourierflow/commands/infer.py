@@ -1,4 +1,5 @@
 import logging
+import time
 from pathlib import Path
 
 import hydra
@@ -7,6 +8,7 @@ import jax.numpy as jnp
 import numpy as np
 import ptvsd
 import xarray as xr
+from einops import repeat
 from hydra.utils import instantiate
 from typer import Typer
 
@@ -20,7 +22,6 @@ def main(config_path: Path,
          checkpoint_path: Path,
          debug: bool = False):
     """Re-implement F-FNO in JAX."""
-
     # This debug mode is for those who use VS Code's internal debugger.
     if debug:
         ptvsd.enable_attach(address=('0.0.0.0', 5678))
@@ -37,15 +38,54 @@ def main(config_path: Path,
     logger.info('Converting params...')
     params = get_params(routine)
 
-    logger.info('Jitting functions...')
-    step_fn = jax.jit(ffno)
-
     logger.info('Loading data...')
-    x = np.random.randn(64, 64, 3)
-    x = jnp.array(x)
+    path = config.builder.test_dataset.init_path
+    ds = xr.open_dataset(path, engine='h5netcdf')
+    x = jnp.array(ds.vorticity.data)[..., None]
+    # x.shape == [batch_size, grid_size, grid_size, 1]
+
+    pos_feats = encode_positions(x.shape[1:-1])
+    pos_feats = repeat(pos_feats, '... -> b ...', b=x.shape[0])
+    x = jnp.concatenate([x, pos_feats], axis=-1)
+    # x.shape == [batch_size, grid_size, grid_size, 3]
+
+    mean = params['normalizer']['mean']
+    std = params['normalizer']['std']
+    x = (x - mean) / std
+
+    def step(x, _):
+        y = ffno(params, x)
+        x = jnp.concatenate([y, x[..., 1:]], axis=-1)
+        return x, jnp.squeeze(y, axis=-1)
+
+    n_steps = 100
+
+    def trajectory(x):
+        trajs = jax.lax.scan(step, x, None, length=n_steps)
+        return trajs
+
+    logger.info('Jitting functions...')
+    trajectory = jax.vmap(trajectory, in_axes=0, out_axes=0)
+    trajectory = jax.jit(trajectory)
 
     logger.info('Running inference...')
-    y = step_fn(params, x)
+    start = time.time()
+    _, trajs = trajectory(x)
+    sim_time = config.routine.step_size * n_steps
+    elapsed = time.time() - start
+    t = elapsed / sim_time / x.shape[0]
+    print(trajs.shape, t)
+
+
+def encode_positions(dim_sizes, low=-1, high=1):
+    # dim_sizes is a list of dimensions in all positional/time dimensions
+    # e.g. for a 64 x 64 image over 20 steps, dim_sizes = [64, 64, 20]
+    def generate_grid(size):
+        return jnp.linspace(low, high, size)
+    grid_list = list(map(generate_grid, dim_sizes))
+    pos = jnp.stack(jnp.meshgrid(*grid_list, indexing='ij'), axis=-1)
+
+    return pos
 
 
 def get_params(routine):
@@ -80,9 +120,13 @@ def get_params(routine):
         'out_bias': to_jnp(ff[1].bias),
     }
 
+    count = to_jnp(routine.normalizer.count)
+    sum_1 = to_jnp(routine.normalizer.sum)
+    sum_2 = to_jnp(routine.normalizer.sum_squared)
+    mean = sum_1 / count
     params['normalizer'] = {
-        'sum': to_jnp(routine.normalizer.sum),
-        'sum_squared': to_jnp(routine.normalizer.sum_squared),
+        'mean': mean,
+        'std': jnp.sqrt(sum_2 / count - mean**2),
     }
 
     return params
