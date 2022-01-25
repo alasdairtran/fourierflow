@@ -79,13 +79,13 @@ class KolmogorovElegyDataset(TorchDataset, ElegyDataset):
         inputs = {
             'vx': in_ds.vx,
             'vy': in_ds.vy,
-            'vorticity': in_ds.vorticity,
+            # 'vorticity': in_ds.vorticity,
         }
 
         outputs = {
             'vx': out_ds.vx,
             'vy': out_ds.vy,
-            'vorticity': out_ds.vorticity,
+            # 'vorticity': out_ds.vorticity,
         }
 
         return inputs, outputs
