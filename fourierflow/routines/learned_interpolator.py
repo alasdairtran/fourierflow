@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Tuple
+from typing import Any, Callable, Mapping, Tuple
 
 import elegy as eg
 import haiku as hk
@@ -9,7 +9,7 @@ from elegy.model.model_core import (PredStepOutput, TestStepOutput,
                                     TrainStepOutput)
 from elegy.types import Logs
 from jax_cfd.base.boundaries import periodic_boundary_conditions
-from jax_cfd.base.funcutils import init_context
+from jax_cfd.base.funcutils import init_context, scan, trajectory
 from jax_cfd.base.grids import Grid, GridArray, GridVariable
 from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.ml.advections import ConvectionModule
@@ -29,16 +29,22 @@ class LearnedInterpolator(eg.Model):
                  dt: float,
                  physics_specs: BasePhysicsSpecs,
                  convection_module: ConvectionModule,
+                 inner_steps: int,
+                 outer_steps: int,
                  **kwargs):
         sim_grid = Grid(shape=(size, size),
                         domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
-        self.sim_grid = sim_grid
 
         out_grid = Grid(shape=(32, 32),
                         domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
-        self.out_grid = out_grid
 
-        def step_fwd(vx, vy, vorticity):
+        self.sim_grid = sim_grid
+        self.out_grid = out_grid
+        self.inner_steps = inner_steps
+        self.outer_steps = outer_steps
+        self.step_size = dt * inner_steps
+
+        def step_fwd(vx, vy):
             inputs = []
             for v, offset in zip([vx, vy], sim_grid.cell_faces):
                 variable = GridVariable(
@@ -48,7 +54,9 @@ class LearnedInterpolator(eg.Model):
             model = modular_navier_stokes_model(
                 sim_grid, dt, physics_specs,
                 convection_module=convection_module)
-            return model(inputs)
+            next_state = model(inputs)
+            vx, vy = next_state[0].array.data, next_state[1].array.data
+            return vx, vy
 
         step_model = hk.transform_with_state(jax.vmap(step_fwd))
 
@@ -56,6 +64,8 @@ class LearnedInterpolator(eg.Model):
 
     def init_step(self: M, key: jnp.ndarray, inputs: Any) -> M:
         model: M = self
+
+        inputs = (inputs['vx'], inputs['vy'])
 
         with init_context():
             model.module = model.module.init(key, inputs=inputs)
@@ -105,8 +115,7 @@ class LearnedInterpolator(eg.Model):
     def get_loss(self, inputs, labels):
         model: M = self
 
-        preds, model = model.pred_step(inputs)
-        vx_pred, vy_pred = preds[0].array.data, preds[1].array.data
+        vx_pred, vy_pred = model.pred_step(inputs)
         vx_loss = l2_loss(vx_pred, inputs['vx']).mean()
         vy_loss = l2_loss(vy_pred, inputs['vy']).mean()
         loss = vx_loss + vy_loss
@@ -116,48 +125,69 @@ class LearnedInterpolator(eg.Model):
         return loss, logs, model
 
     def test_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TestStepOutput[M]:
-        model: M = self
+        model = self
+        preds = self.unroll(inputs['vx'][..., 0], inputs['vy'][..., 0])
+        # preds.shape == [B, M, N, outer_steps]
 
-        B, X, Y, T = inputs['data'].shape
+        s = self.inner_steps
+        e = s + self.outer_steps * s
+        targets = inputs['corr_data'][..., s:e:s]
+        # targets.shape == [B, M, N, outer_steps]
 
-        w_preds = []
-        for t in tqdm(range(T)):
-            batch = {
-                'vorticity': inputs['data'][..., t],
-                'vx': inputs['vx'][..., t],
-                'vy': inputs['vy'][..., t],
-            }
-            preds, model = model.pred_step(batch)
-            vx_pred, vy_pred = preds[0].array.data, preds[1].array.data
-            vx_loss = l2_loss(vx_pred, batch['vx']).mean()
-            vy_loss = l2_loss(vy_pred, batch['vy']).mean()
-            loss = vx_loss + vy_loss
+        preds_norm = jnp.linalg.norm(preds, axis=(1, 2), keepdims=True)
+        targets_norm = jnp.linalg.norm(targets, axis=(1, 2), keepdims=True)
+        rho = (preds / preds_norm) * (targets / targets_norm)
+        rho = rho.sum(axis=(1, 2)).mean(axis=0)
+        # rho.shape == [outer_steps]
 
-            if vx_pred.shape[1] > 32:
-                vx_pred, vy_pred = downsample_staggered_velocity(
-                    self.sim_grid, self.out_grid, preds)
+        loss = -rho.mean()
 
-            w_pred = velocity_to_vorticity(vx_pred, vy_pred, self.out_grid)
-            w_preds.append(w_pred)
+        has_diverged = rho < 0.95
+        diverged_idx = has_diverged.nonzero(
+            size=1, fill_value=len(has_diverged))
+        diverged_t = diverged_idx[0][0]
+        time_until = diverged_t * self.step_size
 
-        w_preds = jnp.stack(w_preds, axis=-1)
-        w_targets = inputs['corr_data'][0][...]
-
-        w_pred_norm = jnp.linalg.norm(w_preds, axis=(0, 1), keepdims=True)
-        w_target_norm = jnp.linalg.norm(
-            w_targets, axis=(0, 1), keepdims=True)
-
-        rho = (w_preds / w_pred_norm) * (w_targets / w_target_norm)
-        rho = rho.sum(axis=(0, 1))
-
-        logs = {'loss': loss}
+        logs = {'loss': loss, 'time_until': time_until}
 
         return loss, logs, model
 
+    def unroll(self, vx, vy):
+        def downsample(velocity):
+            vx, vy = velocity
+            B, M, N = vx.shape
+            vorticities = []
+
+            for b in range(B):
+                if M > 32:
+                    vel = (GridArray(vx[b], offset=(1, 0.5), grid=self.sim_grid),
+                           GridArray(vy[b], offset=(0.5, 1), grid=self.sim_grid))
+                    u, v = downsample_staggered_velocity(
+                        self.sim_grid, self.out_grid, vel)
+                vort = velocity_to_vorticity(u, v, self.out_grid)
+                vorticities.append(vort)
+
+            vorticities = jnp.stack(vorticities, axis=0)
+            return vorticities
+
+        outer_step_fn = repeated(self.module, self.inner_steps)
+        trajectory_fn = trajectory(outer_step_fn, self.outer_steps, downsample)
+        _, trajs = trajectory_fn((vx, vy))
+        trajs = trajs.transpose((1, 2, 3, 0))
+        # trajs.shape == [B, M, N, outer_steps]
+
+        return trajs
+
     def pred_step(self: M, inputs: Any) -> PredStepOutput[M]:
         model: M = self
-        inputs_obj = Inputs.from_value(inputs)
+        preds = model.module(inputs['vx'], inputs['vy'])
+        return preds
 
-        preds = model.module(*inputs_obj.args, **inputs_obj.kwargs)
 
-        return preds, model
+def repeated(f: Callable, steps: int) -> Callable:
+    """Returns a repeatedly applied version of f()."""
+    def f_repeated(x_initial):
+        def g(x, _): return (f(*x), None)
+        x_final, _ = scan(g, x_initial, xs=None, length=steps)
+        return x_final
+    return f_repeated
