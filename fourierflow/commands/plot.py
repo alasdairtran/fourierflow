@@ -234,8 +234,8 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     dataset = 'kolmogorov_re_1000'
 
     groups = ['ffno/step_sizes/20',
-              'ffno/grid_sizes/modes_32/longer/128',
-              'ffno/grid_sizes/modes_64/longer/256']
+              'ffno/grid_sizes/modes_32/with_velocity/128', ]
+    #   'ffno/grid_sizes/modes_64/longer/256']
     times = []
     untils = []
 
