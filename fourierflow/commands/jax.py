@@ -12,7 +12,7 @@ from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from typer import Argument, Typer
 
-from fourierflow.utils import delete_old_results
+from fourierflow.utils import delete_old_results, get_experiment_id
 
 app = Typer()
 
@@ -41,11 +41,14 @@ def main(config_path: Path,
     delete_old_results(config_dir, force, trial, resume=False)
 
     if not no_logging:
+        wandb_id = get_experiment_id(None, trial, config_dir, False)
+        config.trial = trial
+        config.wandb.name = f"{config.wandb.group}/{trial}"
         wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
         wandb.init(dir=config_dir,
                    mode=os.environ.get('WANDB_MODE', 'offline'),
                    config=deepcopy(cast(dict, OmegaConf.to_container(config))),
-                   id=str(uuid4())[:8],
+                   id=wandb_id,
                    **wandb_opts)
 
     # Initialize the dataset and experiment modules.
