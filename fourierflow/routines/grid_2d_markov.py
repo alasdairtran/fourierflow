@@ -1,4 +1,3 @@
-from fourierflow.utils import downsample_vorticity_hat
 import math
 from pathlib import Path
 from typing import Optional
@@ -15,7 +14,7 @@ from torch import nn
 
 from fourierflow.modules import Normalizer, fourier_encode
 from fourierflow.modules.loss import LpLoss
-from fourierflow.utils import downsample_vorticity
+from fourierflow.utils import downsample_vorticity, downsample_vorticity_hat
 from fourierflow.viz import log_navier_stokes_heatmap
 
 from .base import Routine
@@ -47,6 +46,7 @@ class Grid2DMarkovExperiment(Routine):
                  domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)),
                  heatmap_scale: int = 1,
                  pred_path: Optional[Path] = None,
+                 grid_size: int = 64,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -77,9 +77,9 @@ class Grid2DMarkovExperiment(Routine):
         self.domain = domain
         self.pred_path = pred_path
         if self.shuffle_grid:
-            self.x_idx = torch.randperm(64)
+            self.x_idx = torch.randperm(grid_size)
             self.x_inv = torch.argsort(self.x_idx)
-            self.y_idx = torch.randperm(64)
+            self.y_idx = torch.randperm(grid_size)
             self.y_inv = torch.argsort(self.y_idx)
 
         if self.use_velocity:
@@ -87,7 +87,7 @@ class Grid2DMarkovExperiment(Routine):
             k_y = torch.cat((
                 torch.arange(start=0, end=k_max, step=1),
                 torch.arange(start=-k_max, end=0, step=1)),
-                0).repeat(64, 1)
+                0).repeat(grid_size, 1)
             # Wavenumbers in x-direction
             k_x = k_y.transpose(0, 1)
             # Negative Laplacian in Fourier space
