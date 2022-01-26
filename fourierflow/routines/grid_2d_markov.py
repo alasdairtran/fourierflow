@@ -24,7 +24,6 @@ class Grid2DMarkovExperiment(Routine):
     def __init__(self,
                  conv: nn.Module,
                  n_steps: Optional[int] = None,
-                 k_max: int = 32,
                  num_freq_bands: int = 8,
                  freq_base: int = 2,
                  low: float = 0,
@@ -54,7 +53,6 @@ class Grid2DMarkovExperiment(Routine):
         self.l2_loss = LpLoss(size_average=True)
         self.use_fourier_position = use_fourier_position
         self.use_position = use_position
-        self.k_max = k_max
         self.num_freq_bands = num_freq_bands
         self.freq_base = freq_base
         self.append_force = append_force
@@ -83,6 +81,7 @@ class Grid2DMarkovExperiment(Routine):
             self.y_inv = torch.argsort(self.y_idx)
 
         if self.use_velocity:
+            k_max = grid_size // 2
             # Wavenumbers in y-direction
             k_y = torch.cat((
                 torch.arange(start=0, end=k_max, step=1),
