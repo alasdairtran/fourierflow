@@ -51,10 +51,12 @@ def main(config_path: Path,
     # Initialize the dataset and experiment modules.
     builder = instantiate(config.builder)
     routine = instantiate(config.routine)
+    callbacks = [instantiate(p) for p in config.trainer.pop('callbacks', [])]
 
     routine.fit(
         inputs=builder.train_dataloader(),
         validation_data=builder.val_dataloader(),
+        callbacks=callbacks,
         **OmegaConf.to_container(config.trainer),
     )
 
