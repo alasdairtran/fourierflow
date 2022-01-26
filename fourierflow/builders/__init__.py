@@ -1,4 +1,5 @@
 from .kolmogorov import (KolmogorovBuilder, KolmogorovElegyDataset,
+                         KolmogorovElegyTrajectoryDataset,
                          KolmogorovMultiTorchDataset, KolmogorovTorchDataset,
                          KolmogorovTrajectoryDataset, generate_kolmogorov)
 from .ns_contextual import NSContextualBuilder

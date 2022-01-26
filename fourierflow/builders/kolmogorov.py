@@ -152,8 +152,7 @@ class KolmogorovMultiTorchDataset(TorchDataset, ElegyDataset):
 
 
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
-    def __init__(self, init_path, path, corr_path, k, end=None,
-                 return_vorticity=True):
+    def __init__(self, init_path, path, corr_path, k, end=None):
         ds = xr.open_dataset(path)
         init_ds = xr.open_dataset(init_path)
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
@@ -166,7 +165,6 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         self.k = k
         self.B = len(self.ds.sample)
         self.end = end
-        self.return_vorticity = return_vorticity
 
     def __len__(self):
         return self.B
@@ -178,12 +176,49 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
 
         out = {
             'times': ds.time.data,
+            'data': ds.vorticity.data,
             'vx': ds.vx.data,
             'vy': ds.vy.data,
             'corr_data': corr_ds.vorticity.data,
         }
-        if self.return_vorticity:
-            out['data'] = ds.vorticity.data
+        return out
+
+
+class KolmogorovElegyTrajectoryDataset(TorchDataset, ElegyDataset):
+    def __init__(self, init_path, path, corr_path, k, end=None,
+                 inner_steps=1, outer_steps=100):
+        ds = xr.open_dataset(path)
+        init_ds = xr.open_dataset(init_path)
+        init_ds = init_ds.expand_dims(dim={'time': [0.0]})
+        ds = xr.concat([init_ds, ds], dim='time')
+        self.ds = ds.transpose('sample', 'x', 'y', 'time')
+
+        corr_ds = xr.open_dataset(corr_path)
+        self.corr_ds = corr_ds.transpose('sample', 'x', 'y', 'time')
+
+        self.k = k
+        self.B = len(self.ds.sample)
+        self.end = end
+        self.inner_steps = inner_steps
+        self.outer_steps = outer_steps
+
+    def __len__(self):
+        return self.B
+
+    def __getitem__(self, b):
+        time_slice = slice(None, self.end, self.k)
+        ds = self.ds.isel(sample=b, time=time_slice)
+        corr_ds = self.corr_ds.isel(sample=b, time=time_slice)
+
+        s = self.inner_steps
+        e = s + self.outer_steps * s
+
+        out = {
+            'times': ds.time.data,
+            'vx': ds.vx.data[..., 0],
+            'vy': ds.vy.data[..., 0],
+            'corr_data': corr_ds.vorticity.data[..., s:e:s],
+        }
         return out
 
 

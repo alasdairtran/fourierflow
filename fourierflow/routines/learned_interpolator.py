@@ -126,12 +126,12 @@ class LearnedInterpolator(eg.Model):
 
     def test_step(self: M, inputs: Any, labels: Mapping[str, Any]) -> TestStepOutput[M]:
         model = self
-        preds = self.manual_unroll(inputs['vx'][..., 0], inputs['vy'][..., 0])
+        preds = self.manual_unroll(inputs['vx'], inputs['vy'])
         # preds.shape == [B, M, N, outer_steps]
 
         s = self.inner_steps
         e = s + self.outer_steps * s
-        targets = inputs['corr_data'][..., s:e:s]
+        targets = inputs['corr_data']
         # targets.shape == [B, M, N, outer_steps]
 
         preds_norm = jnp.linalg.norm(preds, axis=(1, 2), keepdims=True)
@@ -148,7 +148,7 @@ class LearnedInterpolator(eg.Model):
         diverged_t = diverged_idx[0][0]
         time_until = diverged_t * self.step_size
 
-        logs = {'loss': loss, 'time_until': time_until}
+        logs = {'loss': loss, 'time_until': time_until, 'rho': -loss}
 
         return loss, logs, model
 
