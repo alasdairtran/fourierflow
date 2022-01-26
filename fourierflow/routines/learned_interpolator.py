@@ -165,6 +165,9 @@ class LearnedInterpolator(eg.Model):
                            GridArray(v, offset=(0.5, 1), grid=self.sim_grid))
                     u, v = downsample_staggered_velocity(
                         self.sim_grid, self.out_grid, vel)
+                else:
+                    u = GridArray(u, offset=(1, 0.5), grid=self.sim_grid)
+                    v = GridArray(v, offset=(0.5, 1), grid=self.sim_grid)
                 vort = velocity_to_vorticity(u, v, self.out_grid)
                 vorticities.append(vort)
 
@@ -198,6 +201,9 @@ class LearnedInterpolator(eg.Model):
                            GridArray(v, offset=(0.5, 1), grid=self.sim_grid))
                     u, v = downsample_staggered_velocity(
                         self.sim_grid, self.out_grid, vel)
+                else:
+                    u = GridArray(u, offset=(1, 0.5), grid=self.sim_grid)
+                    v = GridArray(v, offset=(0.5, 1), grid=self.sim_grid)
                 vort = velocity_to_vorticity(u, v, self.out_grid)
                 vorticities.append(vort)
 
