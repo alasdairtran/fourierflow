@@ -18,15 +18,18 @@ builder:
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_32.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_32.nc
     k: 4
+    return_vorticity: false
   test_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_32.nc
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc
     k: 4
+    return_vorticity: false
   loader_target: elegy.data.DataLoader
   batch_size: 32
-  n_workers: 0
+  n_workers: 4
+  timeout: 10000
 routine:
   _target_: fourierflow.routines.LearnedInterpolator
   size: 32
