@@ -60,10 +60,10 @@ routine:
     b2: 0.99
   seed: 5123
 trainer:
-  epochs: 10
-  steps_per_epoch: 5000
+  epochs: 3
+  steps_per_epoch: 20000
   shuffle: true
-  validation_freq: 5
+  validation_freq: 1
   drop_remaining: false
   callbacks:
     - _target_: elegy.callbacks.ModelCheckpoint
