@@ -152,7 +152,8 @@ class KolmogorovMultiTorchDataset(TorchDataset, ElegyDataset):
 
 
 class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
-    def __init__(self, init_path, path, corr_path, k, end=None):
+    def __init__(self, init_path, path, corr_path, k, end=None,
+                 return_vorticity=True):
         ds = xr.open_dataset(path)
         init_ds = xr.open_dataset(init_path)
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
@@ -165,6 +166,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         self.k = k
         self.B = len(self.ds.sample)
         self.end = end
+        self.return_vorticity = return_vorticity
 
     def __len__(self):
         return self.B
@@ -174,13 +176,15 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         ds = self.ds.isel(sample=b, time=time_slice)
         corr_ds = self.corr_ds.isel(sample=b, time=time_slice)
 
-        return {
+        out = {
             'times': ds.time.data,
-            'data': ds.vorticity.data,
             'vx': ds.vx.data,
             'vy': ds.vy.data,
             'corr_data': corr_ds.vorticity.data,
         }
+        if self.return_vorticity:
+            out['data'] = ds.vorticity.data
+        return out
 
 
 def generate_kolmogorov(sim_grid: Grid,
