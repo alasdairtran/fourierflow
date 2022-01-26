@@ -174,14 +174,13 @@ class LearnedInterpolator(eg.Model):
             vorticities = jnp.stack(vorticities, axis=0)
             return vorticities
 
-        @jax.jit
         def inner_step_fn(vx, vy, module):
-            for j in range(self.inner_steps):
+            for _ in range(self.inner_steps):
                 vx, vy = module(vx, vy)
             return vx, vy
 
         trajs = []
-        for i in tqdm(range(self.outer_steps)):
+        for _ in tqdm(range(self.outer_steps)):
             vx, vy = inner_step_fn(vx, vy, self.module)
             vort = downsample((vx, vy))
             trajs.append(vort)
