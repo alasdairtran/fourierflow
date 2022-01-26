@@ -60,6 +60,15 @@ def main(config_path: Path,
         **OmegaConf.to_container(config.trainer),
     )
 
+    logs = routine.evaluate(
+        x=builder.test_dataloader(),
+        callbacks=callbacks,
+        drop_remaining=False,
+    )
+
+    logs = {"test_" + name: val for name, val in logs.items()}
+    print(logs)
+
 
 if __name__ == "__main__":
     app()
