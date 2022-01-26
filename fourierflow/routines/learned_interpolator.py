@@ -154,14 +154,15 @@ class LearnedInterpolator(eg.Model):
 
     def manual_unroll(self, vx, vy):
         def downsample(velocity):
-            vx, vy = velocity
-            B, M, N = vx.shape
+            us, vs = velocity
+            B, M, N = v.shape
             vorticities = []
 
             for b in range(B):
+                u, v = us[b], vs[b]
                 if M > 32:
-                    vel = (GridArray(vx[b], offset=(1, 0.5), grid=self.sim_grid),
-                           GridArray(vy[b], offset=(0.5, 1), grid=self.sim_grid))
+                    vel = (GridArray(u, offset=(1, 0.5), grid=self.sim_grid),
+                           GridArray(v, offset=(0.5, 1), grid=self.sim_grid))
                     u, v = downsample_staggered_velocity(
                         self.sim_grid, self.out_grid, vel)
                 vort = velocity_to_vorticity(u, v, self.out_grid)
