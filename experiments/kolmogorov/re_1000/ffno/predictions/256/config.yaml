@@ -1,6 +1,6 @@
 wandb:
   project: kolmogorov_re_1000
-  group: ffno/ablation/use_velocity
+  group: ffno/grid_sizes/modes_64/with_velocity/256
   tags:
     - pde
     - navier-stokes
@@ -11,29 +11,29 @@ builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
     _target_: fourierflow.builders.KolmogorovTorchDataset
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_64.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_256.nc
     k: 20
   valid_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
-    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_64.nc
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_256.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_256.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
     k: 20
   test_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
-    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_64.nc
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_256.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_256.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32.nc
     k: 20
-  batch_size: 32
+  batch_size: 12
   num_workers: 4
   pin_memory: true
-checkpoint_path: experiments/kolmogorov/re_1000/ffno/ablation/use_velocity/checkpoints/trial-0-20220125-142907-251404/last.ckpt
+checkpoint_path: experiments/kolmogorov/re_1000/ffno/grid_sizes/modes_64/with_velocity/checkpoints/trial-0-20220126-125551-660223/last.ckpt
 routine:
   _target_: fourierflow.routines.Grid2DMarkovExperiment
   conv:
     _target_: fourierflow.modules.FNOFactorized2DBlock
-    modes: 16
+    modes: 32
     width: 64
     n_layers: 16
     input_dim: 5
@@ -45,11 +45,12 @@ routine:
     in_dropout: 0.0
   step_size: 0.28049934407051724 # 0.0002191401125550916 * 64 * 20
   n_test_steps_logged: 0
-  max_accumulations: 2421
+  max_accumulations: 6456
   heatmap_scale: 10
   noise_std: 0.01
   use_velocity: true
-  pred_path: experiments/kolmogorov/re_1000/ffno/predictions/64/preds.nc
+  grid_size: 256
+  pred_path: experiments/kolmogorov/re_1000/ffno/predictions/256/preds.nc
   domain:
     - [0, '${eval:2 * ${import:numpy.pi}}']
     - [0, '${eval:2 * ${import:numpy.pi}}']
@@ -63,7 +64,7 @@ routine:
       _target_: functools.partial
       _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
       num_warmup_steps: 500
-      num_training_steps: 24210 # 2421 batches per epoch
+      num_training_steps: 64560 # 6456 batches per epoch
       num_cycles: 0.5
     name: learning_rate
 trainer:
