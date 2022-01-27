@@ -117,6 +117,9 @@ def plot_energy_spectrum(ax):
     path = f'../experiments/kolmogorov/re_1000/ffno/predictions/128/preds.nc'
     models['ffno_128'] = xr.open_dataset(path)
 
+    path = f'../experiments/kolmogorov/re_1000/ffno/predictions/256/preds.nc'
+    models['ffno_256'] = xr.open_dataset(path)
+
     for size in sizes:
         path = f'../data/kolmogorov/re_1000/baselines/{size}_64.nc'
         models[f'baseline_{size}'] = xr.open_dataset(
@@ -149,7 +152,7 @@ def plot_energy_spectrum(ax):
             continue
         style = '-' if 'baseline' in model else '--'
         (spectrum.k ** 5 * spectrum).sel(model=model).plot.line(
-            color=color, linestyle=style, label=model, linewidth=3, ax=ax)
+            color=color, linestyle=style, label=model, linewidth=2, ax=ax)
     ax.legend()
     ax.set_yscale('log')
     ax.set_xscale('log')
@@ -233,7 +236,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
 
-    groups = ['ffno/step_sizes/20',
+    groups = ['ffno/ablation/use_velocity',
               'ffno/grid_sizes/modes_32/with_velocity/128',
               'ffno/grid_sizes/modes_64/with_velocity/256',
               ]
@@ -255,7 +258,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     lines.append(ax.errorbar(times, untils, color=pal[3], marker='o'))
     print(times)
 
-    grids = [64, 128]
+    grids = [64, 128, 256]
     for i, s in enumerate(grids):
         xy = (times[i], untils[i])
         xytext = (xy[0] * 1.1, xy[1] - 0.3)
