@@ -43,4 +43,10 @@ class Routine(LightningModule):
             checkpoint = pl_load(checkpoint_path,
                                  map_location=lambda storage, loc: storage)
 
-        self.load_state_dict(checkpoint['state_dict'], strict=strict)
+        # Allow us to run super-resolution evaluations
+        state_dict = checkpoint['state_dict']
+        for key in ['k_x', 'k_y', 'lap']:
+            if key in state_dict:
+                del state_dict[key]
+
+        self.load_state_dict(state_dict, strict=strict)

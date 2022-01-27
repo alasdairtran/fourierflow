@@ -23,6 +23,7 @@ def main(config_path: Path,
          force: bool = False,
          trial: int = 0,
          map_location: Optional[str] = None,
+         strict: bool = True,
          debug: bool = False,
          no_logging: bool = False):
     """Test a Pytorch Lightning experiment."""
@@ -70,7 +71,8 @@ def main(config_path: Path,
 
     builder = instantiate(config.builder)
     routine = instantiate(config.routine)
-    routine.load_lightning_model_state(str(checkpoint_path), map_location)
+    routine.load_lightning_model_state(
+        str(checkpoint_path), map_location, strict=strict)
 
     # Start the main testing pipeline.
     if no_logging:
