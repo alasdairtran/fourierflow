@@ -218,7 +218,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     duration = combined.elapsed.mean(dim='sample') / combined.time.max()
     lines.append(ax.errorbar(
         duration[:-1], times_until[:-1], color=pal[4], marker='x'))
-    print(duration)
+    print('DNS durations:', duration)
     ax.set_xlabel('Runtime per time unit (s)')
     ax.set_ylabel('Time until correlation < 95%')
     ax.set_xlim(1e-2, 1e1)
@@ -232,6 +232,33 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
         xy = (duration[i], times_until[i])
         xytext = (xy[0] * 1.1, xy[1] - 0.3)
         ax.annotate(f'{s}', xy, xytext)
+
+    # # # Learned Interpolation # # #
+    # sizes = [64, 128]
+    # simulations = {}
+    # for size in sizes:
+    #     path = f'../data/kolmogorov/re_1000/learned_interpolation/{size}_32.nc'
+    #     simulations[size] = xr.open_dataset(path)
+    # path = '../data/kolmogorov/re_1000/trajectories/test_32.nc'
+    # simulations[2048] = xr.open_dataset(path)
+
+    # combined = xr.concat(simulations.values(), dim='size')
+    # combined.coords['size'] = sizes + [2048]
+
+    # # Even the best model diverges from ground truth by time 10. Thus we
+    # # only look at the first 10 simulation steps to save computation time.
+    # w = combined.vorticity.sel(time=slice(10))
+    # rho = grid_correlation(w, w.sel(size=2048)).compute()
+
+    # lines = []
+
+    # times_until = calculate_time_until(rho.isel(sample=slice(0, 4)))
+    # duration = combined.elapsed.mean(dim='sample') / combined.time.max()
+    # lines.append(ax.errorbar(
+    #     duration[:-1], times_until[:-1], color=pal[5], marker='o'))
+    # print('LI durations:', duration)
+
+    # # # # # # # # # # # # # # # # #
 
     api = wandb.Api()
     dataset = 'kolmogorov_re_1000'
@@ -256,7 +283,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
         untils.append(np.array(until).mean())
 
     lines.append(ax.errorbar(times, untils, color=pal[3], marker='o'))
-    print(times)
+    print('F-FNO times:', times)
 
     grids = [64, 128, 256]
     for i, s in enumerate(grids):

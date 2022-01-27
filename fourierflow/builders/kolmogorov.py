@@ -222,6 +222,76 @@ class KolmogorovElegyTrajectoryDataset(TorchDataset, ElegyDataset):
         return out
 
 
+def get_learned_interpolation_step_fn(grid):
+
+    from functools import partial
+
+    import elegy
+    import haiku as hk
+    from jax_cfd.base.funcutils import init_context
+    from jax_cfd.base.grids import GridArray, GridVariable
+    from jax_cfd.ml.advections import modular_self_advection, self_advection
+    from jax_cfd.ml.equations import modular_navier_stokes_model
+    from jax_cfd.ml.forcings import kolmogorov_forcing
+    from jax_cfd.ml.interpolations import FusedLearnedInterpolation
+    from jax_cfd.ml.physics_specifications import NavierStokesPhysicsSpecs
+
+    dt = 0.007012483601762931
+    forcing_module = partial(kolmogorov_forcing,
+                             scale=1.0,
+                             wavenumber=4,
+                             linear_coefficient=-0.1,
+                             )
+    interpolation_module = partial(FusedLearnedInterpolation,
+                                   tags=['u', 'c']
+                                   )
+    advection_module = partial(modular_self_advection,
+                               interpolation_module=interpolation_module,
+                               )
+    convection_module = partial(self_advection,
+                                advection_module=advection_module,
+                                )
+    physics_specs = NavierStokesPhysicsSpecs(
+        density=1.0,
+        viscosity=1e-3,
+        forcing_module=forcing_module,
+    )
+
+    def step_fwd(x):
+        model = modular_navier_stokes_model(
+            grid=grid,
+            dt=dt,
+            physics_specs=physics_specs,
+            convection_module=convection_module,
+        )
+        return model(x)
+
+    step_model = hk.without_apply_rng(hk.transform(step_fwd))
+
+    model = elegy.load(
+        "./experiments/kolmogorov/re_1000/learned_interpolation/x128/checkpoints/weights.06-0.99")
+    params = hk.data_structures.to_immutable_dict(model.module.params_)
+
+    # inputs = []
+    # for seed, offset in enumerate(grid.cell_faces):
+    #     rng_key = jax.random.PRNGKey(seed)
+    #     data = jax.random.uniform(rng_key, grid.shape, jnp.float32)
+    #     variable = GridVariable(
+    #         array=GridArray(data, offset, grid),
+    #         bc=periodic_boundary_conditions(grid.ndim))
+    #     inputs.append(variable)
+    # inputs = tuple(inputs)
+    # rng = jax.random.PRNGKey(42)
+
+    # with init_context():
+    #     params = step_model.init(rng, inputs)
+
+    def step_fn(inputs):
+        return step_model.apply(params, inputs)
+
+    return step_fn
+
+
 def generate_kolmogorov(sim_grid: Grid,
                         out_sizes: List[int],
                         method: str,
@@ -274,6 +344,7 @@ def generate_kolmogorov(sim_grid: Grid,
         state = v0
 
     step_fn = instantiate(step_fn)
+    # step_fn = get_learned_interpolation_step_fn(sim_grid)
     outer_step_fn = repeated(step_fn, inner_steps)
 
     # During warming up, we ignore intermediate results and just return

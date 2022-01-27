@@ -1,0 +1,50 @@
+# time_step: 0.007012483601762931
+domain:
+  - [0, '${eval:2 * ${import:numpy.pi}}']
+  - [0, '${eval:2 * ${import:numpy.pi}}']
+sim_grid:
+  _target_: fourierflow.utils.Grid
+  shape: [64, 64]
+  domain: ${domain} # size of the domain during simulation
+time_step:
+  _target_: jax_cfd.base.equations.stable_time_step
+  max_velocity: 7.0 # maximum velocity of the fluid
+  max_courant_number: 0.5
+  viscosity: 1e-3
+  grid: ${sim_grid}
+method: projection
+step_fn: {}
+  # _target_: jax_cfd.ml.equations.modular_navier_stokes_model
+  # grid: ${sim_grid}
+  # dt: 0.007012483601762931
+  # physics_specs:
+  #   _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
+  #   density: 1.0
+  #   viscosity: 1e-3
+  #   forcing_module:
+  #     _target_: functools.partial
+  #     _args_: ["${get_method: jax_cfd.ml.forcings.kolmogorov_forcing}"]
+  #     scale: 1.0
+  #     wavenumber: 4
+  #     linear_coefficient: -0.1
+  # convection_module:
+  #   _target_: functools.partial
+  #   _args_: ["${get_method: jax_cfd.ml.advections.self_advection}"]
+  #   advection_module:
+  #     _target_: functools.partial
+  #     _args_: ["${get_method: jax_cfd.ml.advections.modular_self_advection}"]
+  #     interpolation_module:
+  #       _target_: functools.partial
+  #       _args_: ["${get_method: jax_cfd.ml.interpolations.FusedLearnedInterpolation}"]
+  #       tags: ['u', 'c']
+downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_velocity}
+out_sizes: [32, 64] # size of the domain for saving to disk
+n_trajectories: 4 # number of trajectories to generate
+density: 1 # density of the fluid
+max_velocity: 7.0 # maximum velocity of the fluid
+peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
+seed: 83816 # random seed for the initial velocity field
+inner_steps: 2 # take a snapshot of the field once every these many ODE steps
+outer_steps: 2441 # the data saved on disk will have these many snapshots
+warmup_steps: 0 # we load initial conditions from init_path instead
+init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
