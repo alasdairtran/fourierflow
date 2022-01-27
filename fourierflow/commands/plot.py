@@ -7,6 +7,7 @@ import seaborn as sns
 import wandb
 import xarray as xr
 from jax_cfd.data.evaluation import compute_summary_dataset
+from matplotlib import gridspec
 from matplotlib.lines import Line2D
 from typer import Typer
 
@@ -19,28 +20,17 @@ app = Typer()
 
 @app.command()
 def resolution():
-    fig = plt.figure(figsize=(8, 3))
+    fig = plt.figure(figsize=(12, 4))
+    gs = gridspec.GridSpec(1, 2, width_ratios=[5, 5])
 
-    ax = plt.subplot(1, 2, 1)
+    ax = plt.subplot(gs[0])
     lines_1 = plot_correlation_over_time(ax)
 
-    ax = plt.subplot(1, 2, 2)
+    ax = plt.subplot(gs[1])
     lines_2 = plot_energy_spectrum(ax)
-
-    # lines = lines_1
-
-    # labels = ['Adams-Bashforth numerical simulator',
-    #           'F-FNO (our full model)']
-
-    # lgd = fig.legend(handles=lines,
-    #                  labels=labels,
-    #                  loc="center",
-    #                  borderaxespad=0.1,
-    #                  bbox_to_anchor=[1.2, 0.55])
 
     fig.tight_layout()
     fig.savefig('figures/superresolution.pdf',
-                # bbox_extra_artists=(lgd,),
                 bbox_inches='tight')
 
 
@@ -69,6 +59,38 @@ def correlation():
     fig.savefig('figures/correlation.pdf',
                 bbox_extra_artists=(lgd,),
                 bbox_inches='tight')
+
+
+@app.command()
+def flows():
+    paths = [
+        '../data/kolmogorov/re_1000/trajectories/test_64.nc',
+        '../experiments/kolmogorov/re_1000/ffno/predictions/128/preds.nc',
+        '../data/kolmogorov/re_1000/baselines/128_64.nc',
+    ]
+    names = [
+        'DNS 2048x2048',
+        'F-FNO 128x128',
+        'DNS 128x128',
+    ]
+
+    dss = []
+    dss.append(xr.open_dataset(paths[0]).vorticity.isel(
+        time=slice(19, None, 20)))
+    dss.append(xr.open_dataset(paths[1]).vorticity)
+    dss.append(xr.open_dataset(paths[2]).vorticity.isel(
+        time=slice(19, None, 20)))
+
+    combined = xr.concat(dss, dim='model')
+    combined.coords['model'] = names
+    combined = combined.isel(time=[0, 10, 21])
+
+    artist = combined.isel(sample=1).plot.imshow(
+        row='model', col='time', x='x', y='y', robust=True, size=2.3, aspect=1,
+        add_colorbar=True, cmap=sns.cm.icefire)
+    artist.fig.savefig('figures/samples.pdf',
+                       # bbox_extra_artists=(lgd,),
+                       bbox_inches='tight')
 
 
 def plot_correlation_over_time(ax):
@@ -102,31 +124,32 @@ def plot_correlation_over_time(ax):
         line, = ax.plot(time, corr)
         lines.append(line)
 
-    labels = ['32x32', '64x64', '128x128', '256x256']
+    labels = ['F-FNO (32x32)', 'F-FNO (64x64)',
+              'F-FNO (super-resolution on 128x128)', 'F-FNO (super-resolution on 256x256)']
     ax.legend(lines, labels)
     ax.set_xlabel('Simulation time')
     ax.set_ylabel('Vorticity correlation')
 
 
 def plot_energy_spectrum(ax):
-    sizes = [64, 128, 256, 512, 1024]
+    sizes = [128, 256, 512, 1024]
     models = {}
     path = f'../experiments/kolmogorov/re_1000/ffno/predictions/64/preds.nc'
-    models['ffno_64'] = xr.open_dataset(path)
+    models['F-FNO (64x64)'] = xr.open_dataset(path)
 
     path = f'../experiments/kolmogorov/re_1000/ffno/predictions/128/preds.nc'
-    models['ffno_128'] = xr.open_dataset(path)
+    models['F-FNO (128x128)'] = xr.open_dataset(path)
 
     path = f'../experiments/kolmogorov/re_1000/ffno/predictions/256/preds.nc'
-    models['ffno_256'] = xr.open_dataset(path)
+    models['F-FNO (256x256)'] = xr.open_dataset(path)
 
     for size in sizes:
         path = f'../data/kolmogorov/re_1000/baselines/{size}_64.nc'
-        models[f'baseline_{size}'] = xr.open_dataset(
+        models[f'DNS ({size}x{size})'] = xr.open_dataset(
             path).isel(time=slice(19, None, 20))
 
     path = f'../data/kolmogorov/re_1000/trajectories/test_64.nc'
-    models['baseline_2048'] = xr.open_dataset(
+    models['DNS (2048x2048)'] = xr.open_dataset(
         path).isel(time=slice(19, None, 20))
 
     for k, model in models.items():
@@ -134,7 +157,7 @@ def plot_energy_spectrum(ax):
         models[k] = model.rename({'vx': 'u', 'vy': 'v'})
 
     summary = xr.concat([
-        compute_summary_dataset(ds, models['baseline_2048'])
+        compute_summary_dataset(ds, models['DNS (2048x2048)'])
         for ds in models.values()
     ], dim='model')
     summary.coords['model'] = list(models.keys())
@@ -148,9 +171,7 @@ def plot_energy_spectrum(ax):
     palette = baseline_palette + models_color
 
     for color, model in zip(palette, summary['model'].data):
-        if 'baseline_64' in model:
-            continue
-        style = '-' if 'baseline' in model else '--'
+        style = '-' if 'DNS' in model else '--'
         (spectrum.k ** 5 * spectrum).sel(model=model).plot.line(
             color=color, linestyle=style, label=model, linewidth=2, ax=ax)
     ax.legend()
