@@ -13,11 +13,9 @@ class NSZongyiBuilder(Builder):
     name = 'ns_zongyi'
 
     def __init__(self, data_path: str, train_size: int, test_size: int,
-                 ssr: int, n_steps: int, n_workers: int, batch_size: int,
-                 append_pos: bool = True):
+                 ssr: int, n_steps: int, append_pos: bool = True, **kwargs):
         super().__init__()
-        self.n_workers = n_workers
-        self.batch_size = batch_size
+        self.kwargs = kwargs
 
         data = scipy.io.loadmat(os.path.expandvars(data_path))[
             'u'].astype(np.float32)
@@ -45,29 +43,23 @@ class NSZongyiBuilder(Builder):
 
     def train_dataloader(self) -> DataLoader:
         loader = DataLoader(self.train_dataset,
-                            batch_size=self.batch_size,
                             shuffle=True,
-                            num_workers=self.n_workers,
                             drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
     def val_dataloader(self) -> DataLoader:
         loader = DataLoader(self.test_dataset,
-                            batch_size=self.batch_size,
                             shuffle=False,
-                            num_workers=self.n_workers,
                             drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
     def test_dataloader(self) -> DataLoader:
         loader = DataLoader(self.test_dataset,
-                            batch_size=self.batch_size,
                             shuffle=False,
-                            num_workers=self.n_workers,
                             drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
 

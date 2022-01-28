@@ -9,11 +9,9 @@ from .base import Builder
 class NSContextualBuilder(Builder):
     name = 'ns_contextual'
 
-    def __init__(self, data_path: str, ssr: int, k: int, n_workers: int, batch_size: int):
+    def __init__(self, data_path: str, ssr: int, k: int, **kwargs):
         super().__init__()
-        self.n_workers = n_workers
-        self.batch_size = batch_size
-
+        self.kwargs = kwargs
         data_path = os.path.expandvars(data_path)
         h5f = h5py.File(data_path)
 
@@ -23,29 +21,23 @@ class NSContextualBuilder(Builder):
 
     def train_dataloader(self) -> DataLoader:
         loader = DataLoader(self.train_dataset,
-                            batch_size=self.batch_size,
                             shuffle=True,
-                            num_workers=self.n_workers,
                             drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
     def val_dataloader(self) -> DataLoader:
         loader = DataLoader(self.valid_dataset,
-                            batch_size=self.batch_size,
                             shuffle=False,
-                            num_workers=self.n_workers,
                             drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
     def test_dataloader(self) -> DataLoader:
         loader = DataLoader(self.test_dataset,
-                            batch_size=self.batch_size,
                             shuffle=False,
-                            num_workers=self.n_workers,
                             drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
 
