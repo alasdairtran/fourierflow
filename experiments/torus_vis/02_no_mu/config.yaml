@@ -1,6 +1,6 @@
 wandb:
-  project: ns_time_varying_forces
-  group: 01_baseline
+  project: torus_vis
+  group: 02_no_mu
   tags:
     - pde
     - navier-stokes
@@ -8,7 +8,7 @@ wandb:
   notes: ""
 builder:
   _target_: fourierflow.builders.NSContextualBuilder
-  data_path: ${oc.env:DATA_ROOT}/ns_contextual/ns_time_varying_forces.h5
+  data_path: ${oc.env:DATA_ROOT}/torus/torus_vis.h5
   ssr: 4 # sub-sampling rate
   k: 10 # the number of steps between input and output
   batch_size: 19
@@ -21,7 +21,7 @@ routine:
     modes: 16
     width: 64
     n_layers: 24
-    input_dim: 5
+    input_dim: 4
     share_weight: true
     factor: 4
     ff_weight_norm: true
@@ -32,7 +32,7 @@ routine:
   max_accumulations: 10000
   noise_std: 0.01
   append_force: true
-  append_mu: true
+  append_mu: false
   optimizer:
     _target_: functools.partial
     _args_: ["${get_method: torch.optim.AdamW}"]

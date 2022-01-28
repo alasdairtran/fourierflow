@@ -91,13 +91,13 @@ fourierflow download fno
 # viscosity for each sample. Takes 14 hours.
 fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
     --mu-max 1e-4 --steps 200 --delta 1e-4 \
-    data/ns_contextual/ns_random_forces.h5
+    data/torus/torus_vis.h5
 
 # Generate Navier Stokes on toruses with a different time-varying forcing
 # function and a different viscosity for each sample. Takes 21 hours.
 fourierflow generate navier-stokes --force random --cycles 2 --mu-min 1e-5 \
     --mu-max 1e-4 --steps 200 --delta 1e-4 --varying-force \
-    data/ns_contextual/ns_time_varying_forces.h5
+    data/torus/torus_vis_force.h5
 
 # If we decrease delta from 1e-4 to 1e-5, generating the same dataset would now
 # take 10 times as long, while the difference between the solutions in step 20

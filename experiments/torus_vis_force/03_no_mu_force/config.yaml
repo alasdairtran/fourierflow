@@ -1,5 +1,5 @@
 wandb:
-  project: ns_random_forces
+  project: torus_vis_force
   group: 03_no_mu_force
   tags:
     - pde
@@ -8,7 +8,7 @@ wandb:
   notes: ""
 builder:
   _target_: fourierflow.builders.NSContextualBuilder
-  data_path: ${oc.env:DATA_ROOT}/ns_contextual/ns_random_forces.h5
+  data_path: ${oc.env:DATA_ROOT}/torus/torus_vis_force.h5
   ssr: 4 # sub-sampling rate
   k: 10 # the number of steps between input and output
   batch_size: 19
