@@ -163,8 +163,8 @@ def plot_ablation_correlation_over_time(ax):
 
     labels = [
         'Vorticity',
-        'Vorticity + Positions',
-        'Vorticity + Positions + Velocity',
+        'Vorticity + Coordinates',
+        'Vorticity + Coordinates + Velocity',
     ]
     ax.legend(lines, labels)
     ax.set_xlabel('Simulation time')
