@@ -131,6 +131,47 @@ def plot_correlation_over_time(ax):
     ax.set_ylabel('Vorticity correlation')
 
 
+def plot_ablation_correlation_over_time(ax):
+    groups = [
+        'ffno/ablation/no_positional',
+        'ffno/step_sizes/20',
+        'ffno/ablation/use_velocity',
+    ]
+    api = wandb.Api()
+    dataset = 'kolmogorov_re_1000'
+
+    corrs = []
+    times = []
+    lines = []
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'state': 'finished',
+        })
+        assert len(runs) == 1
+
+        name = f'{dataset}/run-{runs[0].id}-test_correlations:latest'
+        artifact = api.artifact(name)
+        table = artifact.get('test_correlations')
+        time = table.get_column('time')
+        corr = table.get_column('corr')
+        corrs.append(np.array(corr))
+        times.append(np.array(time))
+
+        line, = ax.plot(time, corr)
+        lines.append(line)
+
+    labels = [
+        'Vorticity',
+        'Vorticity + Positions',
+        'Vorticity + Positions + Velocity',
+    ]
+    ax.legend(lines, labels)
+    ax.set_xlabel('Simulation time')
+    ax.set_ylabel('Vorticity correlation')
+    ax.set_xlim(0, 10)
+
+
 def plot_energy_spectrum(ax):
     sizes = [128, 256, 512, 1024]
     models = {}
