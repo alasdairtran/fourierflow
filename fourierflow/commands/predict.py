@@ -29,6 +29,7 @@ def main(data_path: Path,
          overrides: Optional[List[str]] = Argument(None),
          trial: Optional[int] = None,
          map_location: Optional[str] = None,
+         strict: bool = True,
          debug: bool = False):
     """Test a Pytorch Lightning experiment."""
     if not config_path:
@@ -83,7 +84,8 @@ def main(data_path: Path,
 
     # builder = Builder.from_params(params['builder'])
     routine = instantiate(config.routine)
-    routine.load_lightning_model_state(str(checkpoint_path), map_location)
+    routine.load_lightning_model_state(
+        str(checkpoint_path), map_location, strict=strict)
 
     if 'kolmogorov' in str(data_path):
         k = config.builder.test_dataset.k
