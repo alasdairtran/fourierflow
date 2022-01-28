@@ -37,16 +37,17 @@ def resolution():
 @app.command()
 def correlation():
     fig = plt.figure(figsize=(8, 3))
+    gs = gridspec.GridSpec(1, 2, width_ratios=[5, 5])
 
-    ax = plt.subplot(1, 2, 1)
+    ax = plt.subplot(gs[0])
     lines_1 = plot_correlation_vs_time_of_different_grid_sizes(ax)
 
-    ax = plt.subplot(1, 2, 2)
+    ax = plt.subplot(gs[1])
     lines_2 = plot_varying_step_size(ax)
 
     lines = lines_1
 
-    labels = ['DNS (Carpenter-Kennedy)',
+    labels = ['DNS (Carpenter-Kennedy 4th-order)',
               'F-FNO (our full model)']
 
     lgd = fig.legend(handles=lines,
@@ -58,6 +59,79 @@ def correlation():
     fig.tight_layout()
     fig.savefig('figures/correlation.pdf',
                 bbox_extra_artists=(lgd,),
+                bbox_inches='tight')
+
+
+@app.command()
+def superresolution():
+    fig = plt.figure(figsize=(6, 4))
+
+    ax = plt.subplot(1, 1, 1)
+    plot_correlation_over_time(ax)
+    fig.tight_layout()
+    fig.savefig('figures/pareto.pdf',
+                bbox_inches='tight')
+
+
+@app.command()
+def energy():
+    fig = plt.figure(figsize=(6, 4))
+    ax = plt.subplot(1, 1, 1)
+    plot_energy_spectrum(ax)
+    fig.tight_layout()
+    fig.savefig('figures/energy.pdf',
+                bbox_inches='tight')
+
+
+@app.command()
+def coordinates():
+    fig = plt.figure(figsize=(6, 3.7))
+    ax = plt.subplot(1, 1, 1)
+    plot_ablation_correlation_over_time(ax)
+    fig.tight_layout()
+    fig.savefig('figures/kochkov-ablation.pdf',
+                bbox_inches='tight')
+
+
+@app.command()
+def context():
+    sns.set_theme(style="ticks")
+
+    context = pd.DataFrame.from_dict({
+        '0': ['TorusVis', 'Without context', 0.3333],
+        '1': ['TorusVis', 'Without context', 0.326],
+        '2': ['TorusVis', 'Without context', 0.3311],
+        '3': ['TorusVis', 'With force', 0.04253],
+        '4': ['TorusVis', 'With force', 0.04269],
+        '5': ['TorusVis', 'With force', 0.04055],
+        '6': ['TorusVis', 'With force and viscosity', 0.01954],
+        '7': ['TorusVis', 'With force and viscosity', 0.02055],
+        '8': ['TorusVis', 'With force and viscosity', 0.02026],
+        '9': ['TorusVisForce', 'Without context', 0.4462],
+        '10': ['TorusVisForce', 'Without context', 0.4291],
+        '11': ['TorusVisForce', 'Without context', 0.4393],
+        '12': ['TorusVisForce', 'With force', 0.04449],
+        '13': ['TorusVisForce', 'With force', 0.04412],
+        '14': ['TorusVisForce', 'With force', 0.04585],
+        '15': ['TorusVisForce', 'With force and viscosity', 0.02058],
+        '16': ['TorusVisForce', 'With force and viscosity', 0.02073],
+        '17': ['TorusVisForce', 'With force and viscosity', 0.02039],
+    }, columns=['Dataset', 'Variant', 'nmse'], orient='index')
+    context['nmse'] = context['nmse'] * 100
+
+    # Draw a nested barplot by species and sex
+    # fig = plt.figure(figsize=(8, 3))
+    # ax = plt.subplot(1, 1, 1)
+    g = sns.catplot(
+        data=context, kind="bar",
+        x="Variant", y="nmse", hue="Dataset",
+        ci="sd", palette="dark", alpha=.6, height=4, aspect=1.6,
+        legend_out=False,
+    )
+    g.despine(left=False, bottom=False, right=False, top=False)
+    g.set_axis_labels("", "N-MSE (%)")
+    g.legend.set_title("")
+    plt.savefig('figures/context-ablation.pdf',
                 bbox_inches='tight')
 
 
@@ -91,6 +165,8 @@ def flows():
     artist.fig.savefig('figures/samples.pdf',
                        # bbox_extra_artists=(lgd,),
                        bbox_inches='tight')
+
+    flows()
 
 
 def plot_correlation_over_time(ax):
@@ -280,20 +356,22 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     duration = combined.elapsed.mean(dim='sample') / combined.time.max()
     lines.append(ax.errorbar(
         duration[:-1], times_until[:-1], color=pal[4], marker='x'))
-    print('DNS durations:', duration)
+    print('DNS runtime:', duration.data)
+    print('DNS time until:', times_until.data)
     ax.set_xlabel('Runtime per time unit (s)')
     ax.set_ylabel('Time until correlation < 95%')
-    ax.set_xlim(1e-2, 1e1)
+    ax.set_xlim(1e-3, 2e2)
+    ax.set_ylim(0, 6.5)
     ax.set_xscale('log')
     # array([0.448799, 1.248222, 2.440344, 3.744666, 5.048988, 6.40941 , 0.      ])
     # Compared to original paper:
     # array([1.711046, 2.973293, 4.15139 , 5.497787, 7.208833, 0.      ])
 
-    grids = [32, 64, 128, 256, 512, 1024, 2048]
+    grids = [32, 64, 128, 256, 512, 1024]
     for i, s in enumerate(grids):
         xy = (duration[i], times_until[i])
-        xytext = (xy[0] * 1.1, xy[1] - 0.3)
-        ax.annotate(f'{s}', xy, xytext)
+        xytext = (xy[0] * 1.15, xy[1] - 0.25)
+        ax.annotate(f'{s}x{s}', xy, xytext)
 
     # # # Learned Interpolation # # #
     # sizes = [64, 128]
@@ -327,7 +405,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
 
     groups = ['ffno/ablation/use_velocity',
               'ffno/grid_sizes/modes_32/with_velocity/128',
-              'ffno/grid_sizes/modes_64/with_velocity/256',
+              'ffno/grid_sizes/modes_64/deeper/256',
               ]
     times = []
     untils = []
@@ -345,13 +423,19 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
         untils.append(np.array(until).mean())
 
     lines.append(ax.errorbar(times, untils, color=pal[3], marker='o'))
-    print('F-FNO times:', times)
+    print('F-FNO runtime:', times)
+    print('F-FNO time until:', untils)
 
     grids = [64, 128, 256]
     for i, s in enumerate(grids):
         xy = (times[i], untils[i])
-        xytext = (xy[0] * 1.1, xy[1] - 0.3)
-        ax.annotate(f'{s}', xy, xytext)
+
+        if s == 64:
+            xytext = (xy[0] * 0.15, xy[1] - 0.25)
+        else:
+            xytext = (xy[0] * 0.085, xy[1])
+
+        ax.annotate(f'{s}x{s}', xy, xytext)
 
     return lines
 
@@ -471,7 +555,7 @@ def complexity():
     sim_line = Line2D(range(1), range(1), color="white",
                       marker='o', markerfacecolor=pal[4])
     lines = [sim_line] + lines_2[-1:] + lines_1
-    labels = ['Crank-Nicolson numerical simulator',
+    labels = ['DNS (Crank-Nicolson 2nd-order)',
               'FNO (proposed by Li et al. [2021a])',
               'FNO++ (with a bag of tricks)',
               'F-FNO-NW (without weight sharing)',
@@ -652,7 +736,7 @@ def plot_performance_vs_layer(ax):
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
     lines = []
 
     groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
@@ -676,7 +760,7 @@ def plot_performance_vs_layer(ax):
     lines.append(container.lines[0])
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
-    ax.set_xlabel('Number of Layers')
+    ax.set_xlabel('Number of layers')
     ax.set_ylabel('Normalized MSE (%)')
 
     return lines
@@ -685,7 +769,7 @@ def plot_performance_vs_layer(ax):
 def plot_ablation(ax):
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
     lines = []
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
@@ -704,7 +788,7 @@ def plot_ablation(ax):
     lines.append(container.lines[0])
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
-    ax.set_xlabel('Number of Layers')
+    ax.set_xlabel('Number of layers')
 
     return lines
 
@@ -727,7 +811,7 @@ def get_step_losses(dataset, group):
 
 def plot_step_loss_curves(ax):
     xs = list(range(1, 11))
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
 
     losses = get_step_losses(dataset, 'zongyi/4_layers')
     plot_line(xs, losses, ax, axis=0, color=pal[0], linestyle='--')
@@ -739,7 +823,7 @@ def plot_step_loss_curves(ax):
     plot_line(xs, losses, ax, axis=0, color=pal[3])
 
     ax.set_xticks(xs)
-    ax.set_xlabel('Inference Step')
+    ax.set_xlabel('Simulation time')
 
 
 def get_paramter_count(dataset, groups):
@@ -759,7 +843,7 @@ def get_paramter_count(dataset, groups):
 
 
 def plot_parameters(ax):
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
     xs = [4, 8, 12, 16, 20, 24]
     lines = []
 
@@ -779,8 +863,8 @@ def plot_parameters(ax):
     lines.append(line[0])
 
     ax.set_yscale('log')
-    ax.set_xlabel('Number of Layers')
-    ax.set_ylabel('Parameter Count')
+    ax.set_xlabel('Number of layers')
+    ax.set_ylabel('Parameter count')
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
 
     return lines
@@ -798,7 +882,7 @@ def get_inference_times(dataset, groups):
         losses.append([run.summary['test_loss'] for run in runs])
         times.append([run.summary['inference_time'] for run in runs])
 
-    return 100 * np.array(losses), np.array(times)
+    return 100 * np.array(losses), np.array(times) / 512 / 10
 
 
 def plot_xy_line(xs, ys, ax, axis=1, **kwargs):
@@ -816,7 +900,7 @@ def plot_xy_line(xs, ys, ax, axis=1, **kwargs):
 
 
 def plot_pde_inference_performance_tradeoff(ax):
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     lines = []
@@ -836,9 +920,9 @@ def plot_pde_inference_performance_tradeoff(ax):
     container = plot_xy_line(losses, times, ax, color=pal[0], linestyle='--')
     lines.append(container.lines[0])
 
-    ax.scatter([0], [244], color=pal[4])
+    ax.scatter([0], [244 / 512 / 10], color=pal[4])
     ax.set_xlabel('Normalized MSE (%)')
-    ax.set_ylabel('Inference Time (s)')
+    ax.set_ylabel('Runtime per time unit (s)')
     ax.set_yscale('log')
     ax.set_xticks([0, 5, 10, 15, 20])
 
@@ -846,7 +930,7 @@ def plot_pde_inference_performance_tradeoff(ax):
 
 
 def plot_pde_training_performance_tradeoff(ax):
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     lines = []
@@ -867,7 +951,7 @@ def plot_pde_training_performance_tradeoff(ax):
     lines.append(container.lines[0])
 
     ax.set_xlabel('Normalized MSE (%)')
-    ax.set_ylabel('Training Time (h)')
+    ax.set_ylabel('Training time (h)')
     ax.set_xticks([0, 5, 10, 15, 20])
 
     return lines
@@ -895,7 +979,7 @@ def plot_scalable():
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
     lines = []
 
     groups = [f'zongyi/{i}_layers' for i in layers_1]
@@ -909,7 +993,7 @@ def plot_scalable():
     lines.append(container.lines[0])
 
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24])
-    ax.set_xlabel('Number of Layers')
+    ax.set_xlabel('Number of layers')
     ax.set_ylabel('Normalized MSE (%)')
 
     labels = ['FNO [Li et al., 2021a]',
@@ -927,7 +1011,7 @@ def plot_10_steps():
     ax = plt.subplot(1, 1, 1)
 
     xs = list(range(1, 11))
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
     lines = []
 
     losses = get_step_losses(dataset, 'zongyi/4_layers')
@@ -939,7 +1023,7 @@ def plot_10_steps():
     lines.append(container.lines[0])
 
     ax.set_xticks(xs)
-    ax.set_xlabel('Inference Step')
+    ax.set_xlabel('Simulation time')
     ax.set_ylabel('Normalized MSE (%)')
     labels = ['FNO [Li et al., 2021a]',
               'F-FNO (our full model)']
@@ -955,7 +1039,7 @@ def plot_poster_pde_inference():
     fig = plt.figure(figsize=(4, 3))
     ax = plt.subplot(1, 1, 1)
 
-    dataset = 'ns_zongyi_4'
+    dataset = 'navier-stokes-4'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     lines = []
@@ -972,7 +1056,7 @@ def plot_poster_pde_inference():
 
     ax.scatter([0], [244], color=pal[4])
     ax.set_xlabel('Normalized MSE (%)')
-    ax.set_ylabel('Inference Time (s)')
+    ax.set_ylabel('Runtime per time unit (s)')
     ax.set_yscale('log')
     ax.set_xticks([0, 5, 10, 15, 20])
 
