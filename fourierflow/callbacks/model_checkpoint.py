@@ -42,8 +42,6 @@ class CustomModelCheckpoint(ModelCheckpoint):
             else:
                 save_dir = trainer.logger.save_dir or trainer.default_root_dir
 
-            unix_ts = trainer.logger.experiment.start_time
-            ts = datetime.fromtimestamp(unix_ts).strftime('%Y%m%d_%H%M%S')
             version = (
                 trainer.logger.version
                 if isinstance(trainer.logger.version, str)
