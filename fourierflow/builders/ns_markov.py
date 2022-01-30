@@ -5,6 +5,7 @@ import scipy.io
 import torch
 from einops import rearrange
 from einops.einops import rearrange
+from numpy import np
 from torch.utils.data import DataLoader, Dataset
 
 from .base import Builder
@@ -90,6 +91,7 @@ class NavierStokesTrainingDataset(Dataset):
 class NavierStokesDataset(Dataset):
     def __init__(self, data):
         self.data = data
+        self.times = np.arange(0, 20, 1)
 
     def __len__(self):
         return self.data.shape[0]
@@ -97,4 +99,5 @@ class NavierStokesDataset(Dataset):
     def __getitem__(self, idx):
         return {
             'data': self.data[idx],
+            'times': self.times,
         }

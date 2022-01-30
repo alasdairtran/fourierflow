@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 import torch
 import torch.nn as nn
+import wandb
 from einops import rearrange, repeat
 
 from fourierflow.modules import fourier_encode
@@ -21,7 +22,7 @@ class Grid2DRolloutExperiment(Routine):
                  use_fourier_position: bool = False,
                  append_pos: bool = True,
                  teacher_forcing: bool = False,
-                 model_path: str = None,
+                 step_size: float = 1.0,
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -33,12 +34,9 @@ class Grid2DRolloutExperiment(Routine):
         self.freq_base = freq_base
         self.append_pos = append_pos
         self.teacher_forcing = teacher_forcing
+        self.step_size = step_size
         if self.use_fourier_position:
             self.in_proj = nn.Linear(n_steps, 34)
-
-        # if model_path:
-        #     best_model_state = torch.load(model_path)
-        #     self.load_state_dict(best_model_state)
 
     def forward(self, data):
         xx = data[..., :10]
@@ -76,7 +74,7 @@ class Grid2DRolloutExperiment(Routine):
         return fourier_feats
 
     def _learning_step(self, batch):
-        xx, yy = batch
+        xx, yy = batch['x'], batch['y']
         B, *dim_sizes, _ = xx.shape
         X, Y = dim_sizes
         # Note here the in_channels consists of the first 10 time steps
@@ -141,29 +139,52 @@ class Grid2DRolloutExperiment(Routine):
         loss /= self.n_steps
         loss_full = self.l2_loss(pred.reshape(B, -1), yy.reshape(B, -1))
 
-        return loss, loss_full, pred, step_losses
+        pred_norm = torch.norm(pred, dim=[1, 2], keepdim=True)
+        yy_norm = torch.norm(yy, dim=[1, 2], keepdim=True)
+        p = (pred / pred_norm) * (yy / yy_norm)
+        p = p.sum(dim=[1, 2]).mean(dim=0)
+        # p.shape == [n_steps]
+
+        has_diverged = p < 0.95
+        diverged_idx = has_diverged.nonzero()
+        diverged_t = diverged_idx[0, 0] if len(
+            diverged_idx) > 0 else len(has_diverged)
+        time_until = diverged_t * self.step_size
+
+        return loss, loss_full, pred, step_losses, p, time_until
 
     def training_step(self, batch, batch_idx):
-        loss, loss_full, _, _ = self._learning_step(batch)
+        loss, loss_full, _, _, _, _ = self._learning_step(batch)
         self.log('train_loss', loss)
         self.log('train_loss_full', loss_full)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_full, preds, _ = self._learning_step(batch)
+        loss, loss_full, preds, _, _, time_until = self._learning_step(batch)
         self.log('valid_loss_avg', loss)
-        self.log('valid_loss', loss_full)
+        self.log('valid_loss', loss_full, prog_bar=True)
+        self.log('valid_time_until', time_until, prog_bar=True)
 
         if batch_idx == 0:
-            xx, yy = batch
+            xx, yy = batch['x'], batch['y']
             expt = self.logger.experiment
             log_navier_stokes_heatmap(expt, xx[0, :, :, -1], 'gt t=9', 1)
             log_navier_stokes_heatmap(expt, yy[0, :, :, -1], 'gt t=19', 1)
             log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19', 1)
 
     def test_step(self, batch, batch_idx):
-        loss, loss_full, _, step_losses = self._learning_step(batch)
+        loss, loss_full, _, step_losses, p, time_until = self._learning_step(
+            batch)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
-        for i in range(len(step_losses)):
-            self.log(f'test_loss_{i}', step_losses[i])
+        self.log('test_time_until', time_until)
+
+        if self.logger:
+            times = batch['times'].cpu().numpy()
+            corr_rows = list(zip(times, p.cpu().numpy()))
+            self.logger.experiment.log({
+                'test_correlations': wandb.Table(['time', 'corr'], corr_rows)})
+
+            loss_rows = list(zip(times, step_losses))
+            self.logger.experiment.log({
+                'test_losses': wandb.Table(['time', 'loss'], loss_rows)})

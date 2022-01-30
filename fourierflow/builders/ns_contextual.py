@@ -1,6 +1,7 @@
 import os
 
 import h5py
+import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
 from .base import Builder
@@ -82,6 +83,7 @@ class NavierStokesDataset(Dataset):
 
         self.B = self.u.shape[0]
         self.T = self.u.shape[-1] - k
+        self.times = np.arange(0, 20, 0.1 * k)
 
     def __len__(self):
         return self.B
@@ -96,4 +98,4 @@ class NavierStokesDataset(Dataset):
             'data': self.u[b, ::self.ssr, ::self.ssr, ::self.k],
             'mu': self.mu[b],
             'f': f,
-        }
+            'times': self.times}

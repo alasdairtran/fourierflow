@@ -67,9 +67,14 @@ class NavierStokesDataset(Dataset):
     def __init__(self, a, u):
         self.a = a
         self.u = u
+        self.times = np.arange(10, 20)
 
     def __len__(self):
         return self.a.shape[0]
 
     def __getitem__(self, idx):
-        return (self.a[idx], self.u[idx])
+        return {
+            'x': self.a[idx],
+            'y': self.u[idx],
+            'times': self.times,
+        }

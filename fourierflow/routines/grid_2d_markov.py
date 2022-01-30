@@ -40,7 +40,7 @@ class Grid2DMarkovExperiment(Routine):
                  shuffle_grid: bool = False,
                  use_velocity: bool = False,
                  learn_difference: bool = False,
-                 step_size: float = 1/64,
+                 step_size: float = 1.0,
                  n_test_steps_logged: Optional[int] = None,
                  domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)),
                  heatmap_scale: int = 1,
@@ -454,7 +454,7 @@ class Grid2DMarkovExperiment(Routine):
             batch, loss, preds)
         self.log('test_loss_avg', loss)
         self.log('test_loss', loss_full)
-        self.log('test_time_until', time_until, prog_bar=True)
+        self.log('test_time_until', time_until)
         self.log('test_reduced_time_until', reduced_time_until)
 
         if self.logger:
