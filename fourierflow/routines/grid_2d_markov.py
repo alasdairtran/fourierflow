@@ -15,7 +15,6 @@ from torch import nn
 from fourierflow.modules import Normalizer, fourier_encode
 from fourierflow.modules.loss import LpLoss
 from fourierflow.utils import downsample_vorticity, downsample_vorticity_hat
-from fourierflow.viz import log_navier_stokes_heatmap
 
 from .base import Routine
 
@@ -95,6 +94,8 @@ class Grid2DMarkovExperiment(Routine):
             self.register_buffer('k_x', k_x)
             self.register_buffer('k_y', k_y)
             self.register_buffer('lap', lap)
+
+        self.flow_table = wandb.Table(columns=['step', 'flow'])
 
     def forward(self, data):
         batch = {'data': data}
@@ -433,20 +434,6 @@ class Grid2DMarkovExperiment(Routine):
         self.log('valid_loss', loss_full, prog_bar=True)
         self.log('valid_time_until', time_until, prog_bar=True)
         self.log('valid_reduced_time_until', reduced_time_until)
-
-        if batch_idx == 0 and self.logger:
-            data = batch['data']
-            expt = self.logger.experiment
-            s = self.heatmap_scale
-            log_navier_stokes_heatmap(expt, data[0, :, :, 9], 'gt t=9', s)
-            log_navier_stokes_heatmap(expt, data[0, :, :, 19], 'gt t=19', s)
-            log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19', s)
-
-            if pred_list:
-                layers = pred_list[-1]
-                for i, layer in enumerate(layers):
-                    log_navier_stokes_heatmap(
-                        expt, layer[0], f'layer {i} t=19', s * 3)
 
     def test_step(self, batch, batch_idx):
         loss, step_losses, preds, pred_layer_list = self._valid_step(batch)

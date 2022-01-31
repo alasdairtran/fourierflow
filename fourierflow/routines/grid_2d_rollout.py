@@ -7,7 +7,6 @@ from einops import rearrange, repeat
 
 from fourierflow.modules import fourier_encode
 from fourierflow.modules.loss import LpLoss
-from fourierflow.viz import log_navier_stokes_heatmap
 
 from .base import Routine
 
@@ -164,13 +163,6 @@ class Grid2DRolloutExperiment(Routine):
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
         self.log('valid_time_until', time_until, prog_bar=True)
-
-        if batch_idx == 0:
-            xx, yy = batch['x'], batch['y']
-            expt = self.logger.experiment
-            log_navier_stokes_heatmap(expt, xx[0, :, :, -1], 'gt t=9', 1)
-            log_navier_stokes_heatmap(expt, yy[0, :, :, -1], 'gt t=19', 1)
-            log_navier_stokes_heatmap(expt, preds[0, :, :, -1], 'pred t=19', 1)
 
     def test_step(self, batch, batch_idx):
         loss, loss_full, _, step_losses, p, time_until = self._learning_step(
