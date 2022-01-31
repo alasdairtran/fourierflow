@@ -5,7 +5,6 @@ import scipy.io
 import torch
 from einops import rearrange
 from einops.einops import rearrange
-from numpy import np
 from torch.utils.data import DataLoader, Dataset
 
 from .base import Builder
