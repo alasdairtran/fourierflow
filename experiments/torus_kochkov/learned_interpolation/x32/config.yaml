@@ -6,6 +6,7 @@ wandb:
     - navier-stokes
     - learned-interpolation
   notes: ""
+  log_model: all
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:

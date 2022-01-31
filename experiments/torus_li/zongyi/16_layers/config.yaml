@@ -6,6 +6,7 @@ wandb:
     - navier-stokes
     - fourier
   notes: ""
+  log_model: all
 builder:
   _target_: fourierflow.builders.NSZongyiBuilder
   data_path: ${oc.env:DATA_ROOT}/zongyi/NavierStokes_V1e-5_N1200_T20.mat
