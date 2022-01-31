@@ -55,8 +55,8 @@ tfrecord = "^1.14.1"
 # Note that we need to specify the exact version of pytorch, otherwise
 # torch-1.10.1+rocm will be installed instead :-/
 torch = [
-    {version = "1.10.1+cu113", source = "torch", markers = "sys_platform == 'linux' or sys_platform == 'win32'"},
-    {version = "1.10.1", source = "torch", markers = "sys_platform == 'darwin'"},
+    {version = "1.10.2+cu113", source = "torch", markers = "sys_platform == 'linux' or sys_platform == 'win32'"},
+    {version = "1.10.2", source = "torch", markers = "sys_platform == 'darwin'"},
 ]
 torchdiffeq = "^0.2.2"
 torchtyping = "^0.1.4"
