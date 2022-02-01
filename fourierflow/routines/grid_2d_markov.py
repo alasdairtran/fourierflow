@@ -434,6 +434,7 @@ class Grid2DMarkovExperiment(Routine):
         self.log('valid_loss', loss_full, prog_bar=True)
         self.log('valid_time_until', time_until, prog_bar=True)
         self.log('valid_reduced_time_until', reduced_time_until)
+        self.log('valid_corr', p.mean())
 
     def test_step(self, batch, batch_idx):
         loss, step_losses, preds, pred_layer_list = self._valid_step(batch)
@@ -443,6 +444,7 @@ class Grid2DMarkovExperiment(Routine):
         self.log('test_loss', loss_full)
         self.log('test_time_until', time_until)
         self.log('test_reduced_time_until', reduced_time_until)
+        self.log('test_corr', p.mean())
 
         if self.logger:
             corr_rows = list(zip(times.cpu().numpy(), p.cpu().numpy()))
