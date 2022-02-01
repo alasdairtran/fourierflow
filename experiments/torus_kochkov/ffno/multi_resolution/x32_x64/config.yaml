@@ -37,7 +37,7 @@ routine:
     _target_: fourierflow.modules.FNOFactorized2DBlock
     modes: 16
     width: 64
-    n_layers: 16
+    n_layers: 24
     input_dim: 3
     share_weight: true
     factor: 4
@@ -50,6 +50,7 @@ routine:
   max_accumulations: 2421
   heatmap_scale: 10
   noise_std: 0.01
+  use_velocity: true
   domain:
     - [0, "${eval:2 * ${import:numpy.pi}}"]
     - [0, "${eval:2 * ${import:numpy.pi}}"]

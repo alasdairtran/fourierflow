@@ -1,6 +1,6 @@
 wandb:
   project: torus_kochkov
-  group: ffno/multi_resolution/x32_x128
+  group: ffno/grid_sizes/128
   tags:
     - pde
     - navier-stokes
@@ -10,36 +10,32 @@ wandb:
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
-    _target_: fourierflow.builders.KolmogorovMultiTorchDataset
-    paths:
-      - ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_128.nc
-      - ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_64.nc
-      - ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_32.nc
+    _target_: fourierflow.builders.KolmogorovTorchDataset
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_128.nc
     k: 20
-    batch_size: 32
   valid_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
-    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_64.nc
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_128.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_128.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
     k: 20
   test_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
-    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_64.nc
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_128.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_128.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32.nc
     k: 20
-  batch_size: 32
+  batch_size: 8
   num_workers: 4
   pin_memory: true
 routine:
   _target_: fourierflow.routines.Grid2DMarkovExperiment
   conv:
     _target_: fourierflow.modules.FNOFactorized2DBlock
-    modes: 16
+    modes: 32
     width: 64
     n_layers: 24
-    input_dim: 3
+    input_dim: 5
     share_weight: true
     factor: 4
     ff_weight_norm: true
@@ -48,13 +44,14 @@ routine:
     in_dropout: 0.0
   step_size: 0.28049934407051724 # 0.0002191401125550916 * 64 * 20
   n_test_steps_logged: 0
-  max_accumulations: 2421
+  max_accumulations: 9684
   heatmap_scale: 10
   noise_std: 0.01
   use_velocity: true
+  grid_size: 128
   domain:
-    - [0, "${eval:2 * ${import:numpy.pi}}"]
-    - [0, "${eval:2 * ${import:numpy.pi}}"]
+    - [0, '${eval:2 * ${import:numpy.pi}}']
+    - [0, '${eval:2 * ${import:numpy.pi}}']
   optimizer:
     _target_: functools.partial
     _args_: ["${get_method: torch.optim.AdamW}"]
@@ -63,10 +60,9 @@ routine:
   scheduler:
     scheduler:
       _target_: functools.partial
-      _args_:
-        ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
+      _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
       num_warmup_steps: 500
-      num_training_steps: 24210 # 2421 batches per epoch
+      num_training_steps: 96840 # 9684 batches per epoch
       num_cycles: 0.5
     name: learning_rate
 trainer:
