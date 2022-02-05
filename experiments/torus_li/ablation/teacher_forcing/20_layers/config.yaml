@@ -1,6 +1,6 @@
 wandb:
   project: torus_li
-  group: ablation/teaching_forcing/20_layers
+  group: ablation/teacher_forcing/20_layers
   tags:
     - pde
     - navier-stokes
