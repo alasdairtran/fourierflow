@@ -58,11 +58,12 @@ class KolmogorovBuilder(Builder):
 
 
 class KolmogorovElegyDataset(TorchDataset, ElegyDataset):
-    def __init__(self, path, k):
+    def __init__(self, path, k, unroll_length):
         self.ds = xr.open_dataset(path)
         self.k = k
         self.B = len(self.ds.sample)
-        self.T = len(self.ds.time) - self.k
+        self.L = unroll_length
+        self.T = len(self.ds.time) - self.k * self.L
 
     def __len__(self):
         return self.B * self.T
@@ -71,10 +72,11 @@ class KolmogorovElegyDataset(TorchDataset, ElegyDataset):
         b = idx // self.T
         t = idx % self.T
         k = self.k
+        L = self.L
 
-        ds = self.ds.isel(sample=b, time=slice(t, t+k+1, k))
+        ds = self.ds.isel(sample=b, time=slice(t, t+L*k+1, k))
         in_ds = ds.isel(time=0)
-        out_ds = ds.isel(time=1)
+        out_ds = ds.isel(time=slice(1, None, None)).transpose('x', 'y', 'time')
 
         inputs = {
             'vx': in_ds.vx,

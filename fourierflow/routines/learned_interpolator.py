@@ -33,6 +33,7 @@ class LearnedInterpolator:
                  convection_module: ConvectionModule,
                  inner_steps: int,
                  outer_steps: int,
+                 unroll_length: int,
                  **kwargs):
         sim_grid = Grid(shape=(size, size),
                         domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
@@ -45,6 +46,7 @@ class LearnedInterpolator:
         self.out_grid = out_grid
         self.inner_steps = inner_steps
         self.outer_steps = outer_steps
+        self.unroll_length = unroll_length
         self.step_size = dt * inner_steps
         self.optimizer = optax.adam(learning_rate=1e-3)
         self.params = None
@@ -80,9 +82,17 @@ class LearnedInterpolator:
         return params
 
     def loss_fn(self, params, inputs, outputs):
-        preds = self.model.apply(params, **inputs)
-        vx_loss = optax.l2_loss(preds['vx'], outputs['vx']).mean()
-        vy_loss = optax.l2_loss(preds['vy'], outputs['vy']).mean()
+        state = inputs
+        vx_preds, vy_preds = [], []
+        for _ in range(self.unroll_length):
+            state = self.model.apply(params, **state)
+            vx_preds.append(state['vx'])
+            vy_preds.append(state['vy'])
+
+        vx_preds = jnp.stack(vx_preds, axis=-1)
+        vy_preds = jnp.stack(vy_preds, axis=-1)
+        vx_loss = optax.l2_loss(vx_preds, outputs['vx']).mean()
+        vy_loss = optax.l2_loss(vy_preds, outputs['vy']).mean()
         loss = vx_loss + vy_loss
         return loss
 
