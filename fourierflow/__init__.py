@@ -9,6 +9,7 @@ import fourierflow.callbacks
 import fourierflow.modules
 import fourierflow.routines
 import fourierflow.schedulers
+import fourierflow.trainers
 from fourierflow.utils import import_string
 
 # Allow partial instantiations of optimizers and schedulers.
