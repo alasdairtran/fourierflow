@@ -27,7 +27,7 @@ class TrainerCallbackHookMixin(ABC):
     # this is just a summary on variables used in this abstract class,
     # the proper values/initialisation should be done in child class
     callbacks: List[Callback] = []
-    routine: "fourierflow.routines.Routine"
+    routine: Any
 
     def on_before_accelerator_backend_setup(self) -> None:
         """Called at the beginning of fit (train + validate), validate, test, or predict, or tune."""
