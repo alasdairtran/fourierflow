@@ -1,8 +1,22 @@
 import os
-from datetime import datetime
+import pickle
+from pathlib import Path
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
+
+from .callback import Callback
+
+
+class JAXModelCheckpoint(Callback):
+    def __init__(self, save_dir):
+        self.save_dir = Path(save_dir)
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+
+    def on_validation_epoch_end(self, trainer, routine):
+        path = self.save_dir / f'params_{trainer.current_epoch}.pkl'
+        with open(path, 'wb') as f:
+            pickle.dump(routine.params, f)
 
 
 class CustomModelCheckpoint(ModelCheckpoint):

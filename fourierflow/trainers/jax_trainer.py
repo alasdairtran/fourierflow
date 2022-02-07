@@ -1,5 +1,4 @@
-import pickle
-from pathlib import Path
+
 from typing import List, Optional
 
 import jax
@@ -21,8 +20,11 @@ class JAXTrainer(TrainerCallbackHookMixin):
         self.max_epochs = max_epochs
         self.limit_train_batches = limit_train_batches
         self.callbacks = callbacks or []
+        self.current_epoch = -1
+        self.routine = None
 
     def fit(self, routine, builder):
+        self.routine = routine
         params = routine.init()
         opt_state = routine.optimizer.init(params)
 
@@ -38,6 +40,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
 
         self.on_train_start()
         for epoch in range(self.max_epochs):
+            self.current_epoch += 1
             self.on_train_epoch_start()
             train_batches = iter(builder.train_dataloader())
             with tqdm(train_batches, unit="batch") as tepoch:
@@ -46,6 +49,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
                     tepoch.set_description(f"Epoch {epoch}")
                     outputs = step(params, opt_state, batch)
                     params, opt_state, loss_value = outputs
+                    routine.params = params
                     tepoch.set_postfix(loss=loss_value.item())
                     self.on_train_batch_end(outputs, batch, i)
 
@@ -62,11 +66,5 @@ class JAXTrainer(TrainerCallbackHookMixin):
                 print(logs)
                 self.on_validation_batch_end(outputs, batch, i, 0)
             self.on_validation_epoch_end()
-
-            # checkpoint
-            path = Path(f'checkpoints/jax/params_{epoch}.pkl')
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, 'wb') as f:
-                pickle.dump(params, f)
 
         self.on_train_end()

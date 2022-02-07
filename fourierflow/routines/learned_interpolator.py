@@ -47,6 +47,7 @@ class LearnedInterpolator:
         self.outer_steps = outer_steps
         self.step_size = dt * inner_steps
         self.optimizer = optax.adam(learning_rate=1e-3)
+        self.params = None
 
         def step_fwd(vx, vy):
             inputs = []
@@ -75,6 +76,7 @@ class LearnedInterpolator:
                 inputs[k] = data
             params = self.model.init(rng, **inputs)
 
+        self.params = params
         return params
 
     def loss_fn(self, params, inputs, outputs):

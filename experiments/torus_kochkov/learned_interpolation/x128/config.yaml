@@ -67,12 +67,5 @@ routine:
 trainer:
   max_epochs: 10
   callbacks:
-    - _target_: elegy.callbacks.ModelCheckpoint
-      path: experiments/kolmogorov/re_1000/learned_interpolation/x128/checkpoints/weights.{epoch:02d}-{val_rho:.2f}
-      monitor: val_rho
-      save_best_only: false
-      mode: max
-      save_freq: epoch
-      period: 1
-    - _target_: fourierflow.callbacks.WandbLogger
-      update_freq: 100
+    - _target_: fourierflow.callbacks.JAXModelCheckpoint
+      save_dir: experiments/torus_kochkov/learned_interpolation/x128/checkpoints
