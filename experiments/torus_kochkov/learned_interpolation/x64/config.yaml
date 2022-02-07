@@ -66,6 +66,7 @@ routine:
   seed: 5123
 trainer:
   max_epochs: 10
+  # limit_train_batches: 20
   callbacks:
     - _target_: fourierflow.callbacks.JAXModelCheckpoint
       save_dir: experiments/torus_kochkov/learned_interpolation/x64/checkpoints
