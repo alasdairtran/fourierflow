@@ -12,6 +12,7 @@ from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from typer import Argument, Typer
 
+from fourierflow.trainers import JAXTrainer
 from fourierflow.utils import delete_old_results, get_experiment_id
 
 app = Typer()
@@ -56,21 +57,24 @@ def main(config_path: Path,
     routine = instantiate(config.routine)
     callbacks = [instantiate(p) for p in config.trainer.pop('callbacks', [])]
 
-    routine.fit(
-        inputs=builder.train_dataloader(),
-        validation_data=builder.val_dataloader(),
-        callbacks=callbacks,
-        **OmegaConf.to_container(config.trainer),
-    )
+    trainer = JAXTrainer(**OmegaConf.to_container(config.trainer))
+    trainer.fit(routine, builder)
 
-    logs = routine.evaluate(
-        x=builder.test_dataloader(),
-        callbacks=callbacks,
-        drop_remaining=False,
-    )
+    # routine.fit(
+    #     inputs=builder.train_dataloader(),
+    #     validation_data=builder.val_dataloader(),
+    #     callbacks=callbacks,
+    #     **OmegaConf.to_container(config.trainer),
+    # )
 
-    logs = {"test_" + name: val for name, val in logs.items()}
-    print(logs)
+    # logs = routine.evaluate(
+    #     x=builder.test_dataloader(),
+    #     callbacks=callbacks,
+    #     drop_remaining=False,
+    # )
+
+    # logs = {"test_" + name: val for name, val in logs.items()}
+    # print(logs)
 
 
 if __name__ == "__main__":

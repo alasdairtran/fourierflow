@@ -6,7 +6,6 @@ wandb:
     - navier-stokes
     - learned-interpolation
   notes: ""
-  log_model: all
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
@@ -19,16 +18,16 @@ builder:
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_64.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_32.nc
     k: 2
-    inner_steps: 1
-    outer_steps: 10
+    inner_steps: 16
+    outer_steps: 100
   test_dataset:
     _target_: fourierflow.builders.KolmogorovElegyTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_64.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc
     k: 2
-    inner_steps: 1
-    outer_steps: 10
+    inner_steps: 16
+    outer_steps: 100
   loader_target: elegy.data.DataLoader
   batch_size: 32
   n_workers: 4
@@ -37,8 +36,8 @@ routine:
   _target_: fourierflow.routines.LearnedInterpolator
   size: 64
   dt: 0.007012483601762931
-  inner_steps: 1
-  outer_steps: 10
+  inner_steps: 16
+  outer_steps: 100
   physics_specs:
     _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
     density: 1.0
@@ -66,11 +65,7 @@ routine:
     b2: 0.99
   seed: 5123
 trainer:
-  epochs: 6
-  steps_per_epoch: 9000
-  shuffle: true
-  validation_freq: 1
-  drop_remaining: false
+  max_epochs: 10
   callbacks:
     - _target_: elegy.callbacks.ModelCheckpoint
       path: experiments/kolmogorov/re_1000/learned_interpolation/x64/checkpoints/weights.{epoch:02d}-{val_rho:.2f}
