@@ -1,15 +1,26 @@
 import pickle
 from pathlib import Path
+from typing import List, Optional
 
 import jax
 import optax
 from tqdm import tqdm
 
+from fourierflow.callbacks import Callback
 
-class JAXTrainer:
-    def __init__(self, max_epochs, limit_train_batches=None):
+from .jax_callback_hook import TrainerCallbackHookMixin
+
+
+class JAXTrainer(TrainerCallbackHookMixin):
+    def __init__(
+        self,
+        max_epochs,
+        limit_train_batches=None,
+        callbacks: Optional[List[Callback]] = None,
+    ):
         self.max_epochs = max_epochs
         self.limit_train_batches = limit_train_batches
+        self.callbacks = callbacks or []
 
     def fit(self, routine, builder):
         params = routine.init()
