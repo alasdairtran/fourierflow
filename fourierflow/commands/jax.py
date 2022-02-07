@@ -57,7 +57,8 @@ def main(config_path: Path,
     routine = instantiate(config.routine)
     callbacks = [instantiate(p) for p in config.trainer.pop('callbacks', [])]
 
-    trainer = JAXTrainer(**OmegaConf.to_container(config.trainer))
+    trainer = JAXTrainer(callbacks=callbacks,
+                         **OmegaConf.to_container(config.trainer))
     trainer.fit(routine, builder)
 
     # routine.fit(

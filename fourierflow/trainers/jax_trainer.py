@@ -27,7 +27,8 @@ class JAXTrainer(TrainerCallbackHookMixin):
         opt_state = routine.optimizer.init(params)
 
         @jax.jit
-        def step(params, opt_state, inputs, outputs):
+        def step(params, opt_state, batch):
+            inputs, outputs = batch
             loss_value, grads = jax.value_and_grad(
                 routine.loss_fn)(params, inputs, outputs)
             updates, opt_state = routine.optimizer.update(
@@ -35,26 +36,37 @@ class JAXTrainer(TrainerCallbackHookMixin):
             params = optax.apply_updates(params, updates)
             return params, opt_state, loss_value
 
+        self.on_train_start()
         for epoch in range(self.max_epochs):
+            self.on_train_epoch_start()
             train_batches = iter(builder.train_dataloader())
             with tqdm(train_batches, unit="batch") as tepoch:
-                for i, (inputs, outputs) in enumerate(tepoch):
+                for i, batch in enumerate(tepoch):
+                    self.on_train_batch_start(batch, i)
                     tepoch.set_description(f"Epoch {epoch}")
-                    params, opt_state, loss_value = step(
-                        params, opt_state, inputs, outputs)
+                    outputs = step(params, opt_state, batch)
+                    params, opt_state, loss_value = outputs
                     tepoch.set_postfix(loss=loss_value.item())
+                    self.on_train_batch_end(outputs, batch, i)
 
                     if self.limit_train_batches and i >= self.limit_train_batches:
                         break
+            self.on_train_epoch_start()
 
-            print('Validating...')
+            self.on_validation_epoch_start()
             validate_batches = iter(builder.val_dataloader())
             for i, batch in tqdm(enumerate(validate_batches)):
-                loss, logs = routine.valid_step(params, **batch)
+                self.on_validation_batch_start(batch, i, 0)
+                outputs = routine.valid_step(params, **batch)
+                loss, logs = outputs
                 print(logs)
+                self.on_validation_batch_end(outputs, batch, i, 0)
+            self.on_validation_epoch_end()
 
             # checkpoint
             path = Path(f'checkpoints/jax/params_{epoch}.pkl')
             path.parent.mkdir(parents=True, exist_ok=True)
             with open(path, 'wb') as f:
                 pickle.dump(params, f)
+
+        self.on_train_end()
