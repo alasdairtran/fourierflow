@@ -29,10 +29,11 @@ builder:
     k: 2
     inner_steps: 16
     outer_steps: 100
-  loader_target: elegy.data.DataLoader
   batch_size: 32
-  n_workers: 4
-  timeout: 10000
+  num_workers: 2
+  collate_fn:
+    _target_: functools.partial
+    _args_: ["${get_method: fourierflow.builders.collate_jax}"]
 routine:
   _target_: fourierflow.routines.LearnedInterpolator
   size: 64

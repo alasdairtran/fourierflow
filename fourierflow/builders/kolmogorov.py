@@ -7,7 +7,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import xarray as xr
-from elegy.data import Dataset as ElegyDataset
 from hydra.utils import instantiate
 from jax_cfd.base.boundaries import periodic_boundary_conditions
 from jax_cfd.base.finite_differences import curl_2d
@@ -57,7 +56,7 @@ class KolmogorovBuilder(Builder):
         return loader
 
 
-class KolmogorovElegyDataset(TorchDataset, ElegyDataset):
+class KolmogorovElegyDataset(TorchDataset):
     def __init__(self, path, k, unroll_length):
         self.ds = xr.open_dataset(path)
         self.k = k
@@ -79,21 +78,21 @@ class KolmogorovElegyDataset(TorchDataset, ElegyDataset):
         out_ds = ds.isel(time=slice(1, None, None)).transpose('x', 'y', 'time')
 
         inputs = {
-            'vx': in_ds.vx,
-            'vy': in_ds.vy,
+            'vx': in_ds.vx.data,
+            'vy': in_ds.vy.data,
             # 'vorticity': in_ds.vorticity,
         }
 
         outputs = {
-            'vx': out_ds.vx,
-            'vy': out_ds.vy,
+            'vx': out_ds.vx.data,
+            'vy': out_ds.vy.data,
             # 'vorticity': out_ds.vorticity,
         }
 
         return inputs, outputs
 
 
-class KolmogorovTorchDataset(TorchDataset, ElegyDataset):
+class KolmogorovTorchDataset(TorchDataset):
     def __init__(self, path, k):
         self.ds = xr.open_dataset(path)
         self.k = k
@@ -118,7 +117,7 @@ class KolmogorovTorchDataset(TorchDataset, ElegyDataset):
         }
 
 
-class KolmogorovMultiTorchDataset(TorchDataset, ElegyDataset):
+class KolmogorovMultiTorchDataset(TorchDataset):
     def __init__(self, paths, k, batch_size):
         self.dss = [xr.open_dataset(path) for path in paths]
         self.k = k
@@ -153,7 +152,7 @@ class KolmogorovMultiTorchDataset(TorchDataset, ElegyDataset):
             self.ds_index = (self.ds_index + 1) % len(self.dss)
 
 
-class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
+class KolmogorovTrajectoryDataset(TorchDataset):
     def __init__(self, init_path, path, corr_path, k, end=None):
         ds = xr.open_dataset(path)
         init_ds = xr.open_dataset(init_path)
@@ -186,7 +185,7 @@ class KolmogorovTrajectoryDataset(TorchDataset, ElegyDataset):
         return out
 
 
-class KolmogorovElegyTrajectoryDataset(TorchDataset, ElegyDataset):
+class KolmogorovElegyTrajectoryDataset(TorchDataset):
     def __init__(self, init_path, path, corr_path, k, end=None,
                  inner_steps=1, outer_steps=100):
         ds = xr.open_dataset(path)
@@ -222,6 +221,19 @@ class KolmogorovElegyTrajectoryDataset(TorchDataset, ElegyDataset):
             'targets': corr_ds.vorticity.data[..., s:e:s],
         }
         return out
+
+
+def collate_jax(sample_list):
+    sample = sample_list[0]
+    if isinstance(sample, tuple):
+        batch = tuple(collate_jax([s[i] for s in sample_list])
+                      for i in range(len(sample)))
+    elif isinstance(sample, dict):
+        batch = {k: collate_jax([s[k] for s in sample_list]) for k in sample}
+    else:
+        batch = np.stack(sample_list, axis=0)
+
+    return batch
 
 
 def get_learned_interpolation_step_fn(grid):
