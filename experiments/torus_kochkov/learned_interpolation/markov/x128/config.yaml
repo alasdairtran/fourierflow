@@ -9,12 +9,12 @@ wandb:
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
-    _target_: fourierflow.builders.KolmogorovElegyDataset
+    _target_: fourierflow.builders.KolmogorovJAXDataset
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/train_128.nc
     k: 1
     unroll_length: 1
   valid_dataset:
-    _target_: fourierflow.builders.KolmogorovElegyTrajectoryDataset
+    _target_: fourierflow.builders.KolmogorovJAXTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_128.nc
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_128.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_32.nc
@@ -22,7 +22,7 @@ builder:
     inner_steps: 32
     outer_steps: 100
   test_dataset:
-    _target_: fourierflow.builders.KolmogorovElegyTrajectoryDataset
+    _target_: fourierflow.builders.KolmogorovJAXTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_128.nc
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_128.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc

@@ -1,5 +1,5 @@
-from .kolmogorov import (KolmogorovBuilder, KolmogorovElegyDataset,
-                         KolmogorovElegyTrajectoryDataset,
+from .kolmogorov import (KolmogorovBuilder, KolmogorovJAXDataset,
+                         KolmogorovJAXTrajectoryDataset,
                          KolmogorovMultiTorchDataset, KolmogorovTorchDataset,
                          KolmogorovTrajectoryDataset, collate_jax,
                          generate_kolmogorov)

@@ -56,7 +56,7 @@ class KolmogorovBuilder(Builder):
         return loader
 
 
-class KolmogorovElegyDataset(TorchDataset):
+class KolmogorovJAXDataset(TorchDataset):
     def __init__(self, path, k, unroll_length):
         self.ds = xr.open_dataset(path)
         self.k = k
@@ -185,7 +185,7 @@ class KolmogorovTrajectoryDataset(TorchDataset):
         return out
 
 
-class KolmogorovElegyTrajectoryDataset(TorchDataset):
+class KolmogorovJAXTrajectoryDataset(TorchDataset):
     def __init__(self, init_path, path, corr_path, k, end=None,
                  inner_steps=1, outer_steps=100):
         ds = xr.open_dataset(path)
