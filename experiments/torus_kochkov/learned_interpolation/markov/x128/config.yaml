@@ -61,6 +61,18 @@ routine:
         _target_: functools.partial
         _args_: ["${get_method: jax_cfd.ml.interpolations.FusedLearnedInterpolation}"]
         tags: ['u', 'c']
+        stencil_size: 4
+        tower_factory:
+          _target_: functools.partial
+          _args_: ["${get_method: jax_cfd.ml.towers.forward_tower_factory}"]
+          inputs_scale_fn:
+            _target_: functools.partial
+            _args_: ["${get_method: jax_cfd.ml.towers.fixed_scale}"]
+            rescaled_one: 0.2
+          kernel_size: 3
+          num_hidden_channels: 64
+          num_hidden_layers: 6
+          output_kernel_size: 3
   optimizer:
     _target_: optax.adamw
     learning_rate:
@@ -72,7 +84,7 @@ routine:
       end_value: 0.0
     weight_decay: 1e-4
     b1: 0.9
-    b2: 0.999
+    b2: 0.99
   seed: 5123
 trainer:
   max_epochs: 10
