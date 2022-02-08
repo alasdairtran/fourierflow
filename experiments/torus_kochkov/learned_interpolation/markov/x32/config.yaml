@@ -78,4 +78,4 @@ trainer:
   max_epochs: 10
   callbacks:
     - _target_: fourierflow.callbacks.JAXModelCheckpoint
-      save_dir: experiments/torus_kochkov/learned_interpolation/x32/checkpoints
+      save_dir: experiments/torus_kochkov/learned_interpolation/markov/x32/checkpoints
