@@ -58,7 +58,7 @@ class KolmogorovBuilder(Builder):
 
 class KolmogorovJAXDataset(TorchDataset):
     def __init__(self, path, k, unroll_length):
-        self.ds = xr.open_dataset(path)
+        self.ds = xr.open_dataset(path, engine='h5netcdf')
         self.k = k
         self.B = len(self.ds.sample)
         self.L = unroll_length
@@ -94,7 +94,7 @@ class KolmogorovJAXDataset(TorchDataset):
 
 class KolmogorovTorchDataset(TorchDataset):
     def __init__(self, path, k):
-        self.ds = xr.open_dataset(path)
+        self.ds = xr.open_dataset(path, engine='h5netcdf')
         self.k = k
         self.B = len(self.ds.sample)
         self.T = len(self.ds.time) - self.k
@@ -119,7 +119,7 @@ class KolmogorovTorchDataset(TorchDataset):
 
 class KolmogorovMultiTorchDataset(TorchDataset):
     def __init__(self, paths, k, batch_size):
-        self.dss = [xr.open_dataset(path) for path in paths]
+        self.dss = [xr.open_dataset(path, engine='h5netcdf') for path in paths]
         self.k = k
         self.B = len(self.dss[0].sample)
         self.T = len(self.dss[0].time) - self.k
@@ -154,13 +154,13 @@ class KolmogorovMultiTorchDataset(TorchDataset):
 
 class KolmogorovTrajectoryDataset(TorchDataset):
     def __init__(self, init_path, path, corr_path, k, end=None):
-        ds = xr.open_dataset(path)
-        init_ds = xr.open_dataset(init_path)
+        ds = xr.open_dataset(path, engine='h5netcdf')
+        init_ds = xr.open_dataset(init_path, engine='h5netcdf')
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
         ds = xr.concat([init_ds, ds], dim='time')
         self.ds = ds.transpose('sample', 'x', 'y', 'time')
 
-        corr_ds = xr.open_dataset(corr_path)
+        corr_ds = xr.open_dataset(corr_path, engine='h5netcdf')
         self.corr_ds = corr_ds.transpose('sample', 'x', 'y', 'time')
 
         self.k = k
@@ -188,13 +188,13 @@ class KolmogorovTrajectoryDataset(TorchDataset):
 class KolmogorovJAXTrajectoryDataset(TorchDataset):
     def __init__(self, init_path, path, corr_path, k, end=None,
                  inner_steps=1, outer_steps=100):
-        ds = xr.open_dataset(path)
-        init_ds = xr.open_dataset(init_path)
+        ds = xr.open_dataset(path, engine='h5netcdf')
+        init_ds = xr.open_dataset(init_path, engine='h5netcdf')
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
         ds = xr.concat([init_ds, ds], dim='time')
         self.ds = ds.transpose('sample', 'x', 'y', 'time')
 
-        corr_ds = xr.open_dataset(corr_path)
+        corr_ds = xr.open_dataset(corr_path, engine='h5netcdf')
         self.corr_ds = corr_ds.transpose('sample', 'x', 'y', 'time')
 
         self.k = k
