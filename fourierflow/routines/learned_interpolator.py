@@ -91,8 +91,8 @@ class LearnedInterpolator:
 
         vx_preds = jnp.stack(vx_preds, axis=-1)
         vy_preds = jnp.stack(vy_preds, axis=-1)
-        vx_loss = optax.l2_loss(vx_preds, outputs['vx']).mean()
-        vy_loss = optax.l2_loss(vy_preds, outputs['vy']).mean()
+        vx_loss = optax.l2_loss(vx_preds, outputs['vx']).mean(axis=0).sum()
+        vy_loss = optax.l2_loss(vy_preds, outputs['vy']).mean(axis=0).sum()
         loss = vx_loss + vy_loss
         return loss
 
