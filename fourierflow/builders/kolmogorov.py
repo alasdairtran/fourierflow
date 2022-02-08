@@ -219,7 +219,7 @@ class KolmogorovElegyTrajectoryDataset(TorchDataset, ElegyDataset):
             'times': ds.time.data,
             'vx': ds.vx.data[..., 0],
             'vy': ds.vy.data[..., 0],
-            'corr_data': corr_ds.vorticity.data[..., s:e:s],
+            'targets': corr_ds.vorticity.data[..., s:e:s],
         }
         return out
 

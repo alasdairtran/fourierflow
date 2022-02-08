@@ -96,14 +96,9 @@ class LearnedInterpolator:
         loss = vx_loss + vy_loss
         return loss
 
-    def valid_step(self, params, times, vx, vy, corr_data):
+    def valid_step(self, params, times, vx, vy, targets):
         preds = self.unroll(params, vx, vy)
         # preds.shape == [B, M, N, outer_steps]
-
-        s = self.inner_steps
-        e = s + self.outer_steps * s
-        targets = corr_data
-        # targets.shape == [B, M, N, outer_steps]
 
         preds_norm = jnp.linalg.norm(preds, axis=(1, 2), keepdims=True)
         targets_norm = jnp.linalg.norm(targets, axis=(1, 2), keepdims=True)
