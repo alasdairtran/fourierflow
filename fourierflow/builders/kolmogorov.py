@@ -1,3 +1,4 @@
+import logging
 import time
 from functools import partial
 from typing import Callable, List, Optional
@@ -21,6 +22,8 @@ from torch.utils.data import Dataset as TorchDataset
 from fourierflow.utils import downsample_vorticity_hat, import_string
 
 from .base import Builder
+
+logger = logging.getLogger(__name__)
 
 KEYS = ['vx', 'vy', 'vz']
 
@@ -57,12 +60,16 @@ class KolmogorovBuilder(Builder):
 
 
 class KolmogorovJAXDataset(TorchDataset):
-    def __init__(self, path, k, unroll_length):
+    def __init__(self, path, k, unroll_length, in_memory=False):
         self.ds = xr.open_dataset(path, engine='h5netcdf')
         self.k = k
         self.B = len(self.ds.sample)
         self.L = unroll_length
         self.T = len(self.ds.time) - self.k * self.L
+
+        if in_memory:
+            logger.info('Loading dataset into memory...')
+            self.ds.load()
 
     def __len__(self):
         return self.B * self.T
@@ -93,11 +100,15 @@ class KolmogorovJAXDataset(TorchDataset):
 
 
 class KolmogorovTorchDataset(TorchDataset):
-    def __init__(self, path, k):
+    def __init__(self, path, k, in_memory=False):
         self.ds = xr.open_dataset(path, engine='h5netcdf')
         self.k = k
         self.B = len(self.ds.sample)
         self.T = len(self.ds.time) - self.k
+
+        if in_memory:
+            logger.info('Loading dataset into memory...')
+            self.ds.load()
 
     def __len__(self):
         return self.B * self.T
@@ -153,7 +164,7 @@ class KolmogorovMultiTorchDataset(TorchDataset):
 
 
 class KolmogorovTrajectoryDataset(TorchDataset):
-    def __init__(self, init_path, path, corr_path, k, end=None):
+    def __init__(self, init_path, path, corr_path, k, end=None, in_memory=False):
         ds = xr.open_dataset(path, engine='h5netcdf')
         init_ds = xr.open_dataset(init_path, engine='h5netcdf')
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
@@ -166,6 +177,11 @@ class KolmogorovTrajectoryDataset(TorchDataset):
         self.k = k
         self.B = len(self.ds.sample)
         self.end = end
+
+        if in_memory:
+            logger.info('Loading datasets into memory...')
+            self.ds.load()
+            self.corr_ds.load()
 
     def __len__(self):
         return self.B
@@ -187,7 +203,7 @@ class KolmogorovTrajectoryDataset(TorchDataset):
 
 class KolmogorovJAXTrajectoryDataset(TorchDataset):
     def __init__(self, init_path, path, corr_path, k, end=None,
-                 inner_steps=1, outer_steps=100):
+                 inner_steps=1, outer_steps=100, in_memory=False):
         ds = xr.open_dataset(path, engine='h5netcdf')
         init_ds = xr.open_dataset(init_path, engine='h5netcdf')
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
@@ -202,6 +218,11 @@ class KolmogorovJAXTrajectoryDataset(TorchDataset):
         self.end = end
         self.inner_steps = inner_steps
         self.outer_steps = outer_steps
+
+        if in_memory:
+            logger.info('Loading datasets into memory...')
+            self.ds.load()
+            self.corr_ds.load()
 
     def __len__(self):
         return self.B

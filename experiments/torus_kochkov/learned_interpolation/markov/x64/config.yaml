@@ -13,6 +13,7 @@ builder:
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/train_64.nc
     k: 2
     unroll_length: 1
+    in_memory: true
   valid_dataset:
     _target_: fourierflow.builders.KolmogorovJAXTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
@@ -21,6 +22,7 @@ builder:
     k: 2
     inner_steps: 16
     outer_steps: 100
+    in_memory: true
   test_dataset:
     _target_: fourierflow.builders.KolmogorovJAXTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
@@ -29,6 +31,7 @@ builder:
     k: 2
     inner_steps: 16
     outer_steps: 100
+    in_memory: true
   batch_size: 64
   num_workers: 2
   collate_fn:
