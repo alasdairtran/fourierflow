@@ -29,7 +29,7 @@ builder:
     k: 4
     inner_steps: 8
     outer_steps: 100
-  batch_size: 32
+  batch_size: 64
   num_workers: 4
   collate_fn:
     _target_: functools.partial
@@ -68,7 +68,7 @@ routine:
       init_value: 0.0
       peak_value: 1e-3
       warmup_steps: 500
-      decay_steps: 97630  # 9763 steps per epoch
+      decay_steps: 48820  # 4882 steps per epoch
       end_value: 0.0
     weight_decay: 1e-4
     b1: 0.9
