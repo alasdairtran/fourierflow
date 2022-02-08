@@ -1,6 +1,6 @@
 wandb:
   project: torus_kochkov
-  group: learned_interpolation/x32
+  group: learned_interpolation/markov/x128
   tags:
     - pde
     - navier-stokes
@@ -10,24 +10,24 @@ builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
     _target_: fourierflow.builders.KolmogorovElegyDataset
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/train_32.nc
-    k: 4
-    unroll_length: 10
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/train_128.nc
+    k: 1
+    unroll_length: 1
   valid_dataset:
     _target_: fourierflow.builders.KolmogorovElegyTrajectoryDataset
-    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_32.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_32.nc
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_128.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_128.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_32.nc
-    k: 4
-    inner_steps: 8
+    k: 1
+    inner_steps: 32
     outer_steps: 100
   test_dataset:
     _target_: fourierflow.builders.KolmogorovElegyTrajectoryDataset
-    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_32.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_128.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_128.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc
-    k: 4
-    inner_steps: 8
+    k: 1
+    inner_steps: 32
     outer_steps: 100
   batch_size: 32
   num_workers: 4
@@ -36,11 +36,11 @@ builder:
     _args_: ["${get_method: fourierflow.builders.collate_jax}"]
 routine:
   _target_: fourierflow.routines.LearnedInterpolator
-  size: 32
-  dt: 0.014024967203525862
-  inner_steps: 8
+  size: 128
+  dt: 0.0035062418008814655
+  inner_steps: 32
   outer_steps: 100
-  unroll_length: 10
+  unroll_length: 1
   physics_specs:
     _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
     density: 1.0
@@ -79,4 +79,4 @@ trainer:
   # limit_train_batches: 20
   callbacks:
     - _target_: fourierflow.callbacks.JAXModelCheckpoint
-      save_dir: experiments/torus_kochkov/learned_interpolation/x32/checkpoints
+      save_dir: experiments/torus_kochkov/learned_interpolation/x128/checkpoints

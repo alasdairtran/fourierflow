@@ -1,6 +1,6 @@
 wandb:
   project: torus_kochkov
-  group: learned_interpolation/x64
+  group: learned_interpolation/markov/x64
   tags:
     - pde
     - navier-stokes
@@ -12,7 +12,7 @@ builder:
     _target_: fourierflow.builders.KolmogorovElegyDataset
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/train_64.nc
     k: 2
-    unroll_length: 10
+    unroll_length: 1
   valid_dataset:
     _target_: fourierflow.builders.KolmogorovElegyTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
@@ -40,7 +40,7 @@ routine:
   dt: 0.007012483601762931
   inner_steps: 16
   outer_steps: 100
-  unroll_length: 10
+  unroll_length: 1
   physics_specs:
     _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
     density: 1.0
