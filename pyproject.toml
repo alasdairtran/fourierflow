@@ -104,6 +104,7 @@ disable = [
     "redefined-builtin",
     "too-few-public-methods",
     "unused-argument",
+    "abstract-method",
 ]
 
 [tool.pylint.similarities]
