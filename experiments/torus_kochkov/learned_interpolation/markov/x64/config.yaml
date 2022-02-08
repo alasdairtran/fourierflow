@@ -68,7 +68,7 @@ routine:
       init_value: 0.0
       peak_value: 1e-3
       warmup_steps: 500
-      decay_steps: 48820  # 4882 steps per epoch
+      decay_steps: 48810  # 4881 steps per epoch
       end_value: 0.0
     weight_decay: 1e-4
     b1: 0.9
