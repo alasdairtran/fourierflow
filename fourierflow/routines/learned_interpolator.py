@@ -34,6 +34,7 @@ class LearnedInterpolator:
                  inner_steps: int,
                  outer_steps: int,
                  unroll_length: int,
+                 optimizer: Callable,
                  **kwargs):
         sim_grid = Grid(shape=(size, size),
                         domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
@@ -48,7 +49,7 @@ class LearnedInterpolator:
         self.outer_steps = outer_steps
         self.unroll_length = unroll_length
         self.step_size = dt * inner_steps
-        self.optimizer = optax.adam(learning_rate=1e-3)
+        self.optimizer = optimizer
         self.params = None
 
         def step_fwd(vx, vy):
