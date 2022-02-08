@@ -104,6 +104,7 @@ class LearnedInterpolator:
         targets_norm = jnp.linalg.norm(targets, axis=(1, 2), keepdims=True)
         rho = (preds / preds_norm) * (targets / targets_norm)
         rho = rho.sum(axis=(1, 2)).mean(axis=0)
+        rho = jnp.nan_to_num(rho)
         # rho.shape == [outer_steps]
 
         loss = -rho.mean()
