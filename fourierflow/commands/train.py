@@ -101,6 +101,8 @@ def main(config_path: Path,
     else:
         logger = wandb_logger
         enable_checkpointing = True
+        c = wandb.wandb_sdk.wandb_artifacts.get_artifacts_cache()
+        c.cleanup(wandb.util.from_human_size("50GB"))
     trainer = pl.Trainer(logger=logger,
                          enable_checkpointing=enable_checkpointing,
                          callbacks=callbacks,
