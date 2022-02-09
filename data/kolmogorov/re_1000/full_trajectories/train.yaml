@@ -21,7 +21,12 @@ step_fn:
     viscosity: 1e-3
     drag: 0.1
     smooth: true # use anti-aliasing
-    forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}
+    forcing_fn:
+      _target_: functools.partial
+      _args_: ["${get_method:jax_cfd.base.forcings.simple_turbulence_forcing}"]
+      constant_magnitude: 1
+      constant_wavenumber: 4
+      linear_coefficient: 0
   time_step: ${time_step}
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_vorticity}
 out_sizes: [32, 64, 128] # size of the domain for saving to disk
