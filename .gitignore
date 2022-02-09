@@ -58,3 +58,6 @@ dask-worker-space
 *.mat
 *.csv
 *.pickle
+*.tfrecord
+*.index
+meta.json
