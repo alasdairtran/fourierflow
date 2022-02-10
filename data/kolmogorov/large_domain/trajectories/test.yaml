@@ -1,4 +1,4 @@
-# time_step: 0.00010957
+# time_step: 0.0002191401125550916
 domain:
   - [0, '${eval:4 * ${import:numpy.pi}}']
   - [0, '${eval:4 * ${import:numpy.pi}}']
@@ -35,7 +35,7 @@ density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
 seed: 27359 # random seed for the initial velocity field
-inner_steps: 128 # take a snapshot of the field once every these many ODE steps
+inner_steps: 64 # take a snapshot of the field once every these many ODE steps
 outer_steps: 1426 # the data saved on disk will have these many snapshots
 warmup_steps: 0 # we load initial conditions from init_path instead
 init_path: ${oc.env:DATA_ROOT}/kolmogorov/large_domain/initial_conditions/test_4096.nc

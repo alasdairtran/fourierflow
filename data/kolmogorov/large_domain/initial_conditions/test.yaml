@@ -1,4 +1,4 @@
-# time_step: 0.00010957
+# time_step: 0.0002191401125550916
 domain:
   - [0, '${eval:4 * ${import:numpy.pi}}']
   - [0, '${eval:4 * ${import:numpy.pi}}']
@@ -35,6 +35,6 @@ density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
 seed: 27359 # random seed for the initial velocity field
-inner_steps: 128 # take a snapshot of the field once every these many ODE steps
+inner_steps: 64 # take a snapshot of the field once every these many ODE steps
 outer_steps: 0 # we only want to initial vorticity field
 warmup_steps: 2852 # equivalent to 40 time units
