@@ -19,13 +19,14 @@ step_fn:
     _target_: fourierflow.utils.equations.NavierStokes2D
     grid: ${sim_grid}
     viscosity: 0.0005 # half the visocity
-    drag: 0.1
+    drag: 0.05
     smooth: true # use anti-aliasing
-    forcing_fn: # half the forcing strength scale
+    forcing_fn:
       _target_: functools.partial
-      _args_: ["${get_method:fourierflow.utils.kolmogorov_forcing_fn}"]
-      scale: -2
-      k: 2
+      _args_: ["${get_method:jax_cfd.base.forcings.simple_turbulence_forcing}"]
+      constant_magnitude: 0.5 # half the forcing strength scale
+      constant_wavenumber: 2
+      linear_coefficient: 0
   time_step: ${time_step}
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_vorticity}
 out_sizes: [32, 64, 128, 256] # size of the domain for saving to disk
