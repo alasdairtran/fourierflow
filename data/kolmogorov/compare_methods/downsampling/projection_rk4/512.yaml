@@ -26,7 +26,9 @@ step_fn:
     linear_coefficient: -0.1 # note the sign difference with the drag parameter in spectral method
   time_stepper: ${get_method:jax_cfd.base.time_stepping.classic_rk4}
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_velocity}
-out_sizes: [64] # size of the domain for saving to disk
+out_sizes: # size of the domain for saving to disk
+  - size: 64
+    k: 1
 n_trajectories: 1 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7 # maximum velocity of the fluid

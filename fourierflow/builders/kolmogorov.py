@@ -1,7 +1,7 @@
 import logging
 import time
 from functools import partial
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import elegy as eg
 import jax
@@ -328,7 +328,7 @@ def get_learned_interpolation_step_fn(grid):
 
 
 def generate_kolmogorov(sim_grid: Grid,
-                        out_sizes: List[int],
+                        out_sizes: List[Dict[str, int]],
                         method: str,
                         step_fn: Callable,
                         downsample_fn: Callable,
@@ -348,9 +348,9 @@ def generate_kolmogorov(sim_grid: Grid,
         sim_grid) if sim_grid.ndim == 2 else None
 
     out_grids = {}
-    for size in out_sizes:
-        grid = Grid(shape=[size] * sim_grid.ndim, domain=sim_grid.domain)
-        out_grids[size] = grid
+    for o in out_sizes:
+        grid = Grid(shape=[o['size']] * sim_grid.ndim, domain=sim_grid.domain)
+        out_grids[(o['size'], o['k'])] = grid
 
     downsample = partial(downsample_fn, sim_grid, out_grids, velocity_solve)
 
@@ -404,7 +404,8 @@ def generate_kolmogorov(sim_grid: Grid,
 
 def downsample_vorticity(sim_grid, out_grids, velocity_solve, vorticity_hat):
     outs = {}
-    for size, out_grid in out_grids.items():
+    for key, out_grid in out_grids.items():
+        size = key[0]
         if size == sim_grid.shape[0]:
             vxhat, vyhat = velocity_solve(vorticity_hat)
             out = {
@@ -415,13 +416,14 @@ def downsample_vorticity(sim_grid, out_grids, velocity_solve, vorticity_hat):
         else:
             out = downsample_vorticity_hat(
                 vorticity_hat, velocity_solve, sim_grid, out_grid)
-        outs[size] = out
+        outs[key] = out
     return outs
 
 
 def downsample_velocity(sim_grid, out_grids, velocity_solve, u):
     outs = {}
-    for size, out_grid in out_grids.items():
+    for key, out_grid in out_grids.items():
+        size = key[0]
         out = {}
         if size == sim_grid.shape[0]:
             for i in range(sim_grid.ndim):
@@ -435,5 +437,5 @@ def downsample_velocity(sim_grid, out_grids, velocity_solve, u):
                 out[KEYS[i]] = u_new[i].data
             if sim_grid.ndim == 2:
                 out['vorticity'] = curl_2d(u_new).data
-        outs[size] = out
+        outs[key] = out
     return outs

@@ -24,7 +24,11 @@ step_fn: {}
   #   forcing_fn: ${get_method:jax_cfd.spectral.forcings.kolmogorov_forcing_fn}
   # time_step: ${time_step}
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_velocity}
-out_sizes: [32, 64] # size of the domain for saving to disk
+out_sizes: # size of the domain for saving to disk
+  - size: 32
+    k: 1
+  - size: 64
+    k: 1
 n_trajectories: 4 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid

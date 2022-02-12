@@ -23,7 +23,9 @@ step_fn:
     grid: ${sim_grid}
     coefficient: -0.1 # note the sign difference with the drag parameter in spectral method
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_velocity}
-out_sizes: [512] # size of the domain for saving to disk
+out_sizes: # size of the domain for saving to disk
+  - size: 512
+    k: 1
 n_trajectories: 1 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7 # maximum velocity of the fluid

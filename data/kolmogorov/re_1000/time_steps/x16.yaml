@@ -23,7 +23,9 @@ step_fn:
       linear_coefficient: 0
   time_step: ${time_step}
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_vorticity}
-out_sizes: [64] # size of the domain for saving to disk
+out_sizes: # size of the domain for saving to disk
+  - size: 64
+    k: 1
 n_trajectories: 4 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid

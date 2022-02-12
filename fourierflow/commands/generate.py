@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 import dask
 import dask.array as da
@@ -58,9 +58,10 @@ def kolmogorov(
     # Define the physical dimensions of the simulation.
     sim_grid = instantiate(c.sim_grid)
     out_grids = {}
-    for size in c.out_sizes:
-        grid = Grid(shape=[size] * sim_grid.ndim, domain=sim_grid.domain)
-        out_grids[size] = grid
+    for o in c.out_sizes:
+        key = (o['size'], o['k'])
+        grid = Grid(shape=[o['size']] * sim_grid.ndim, domain=sim_grid.domain)
+        out_grids[key] = grid
 
     if sim_grid.ndim == 2:
         spatial_dims = ['x', 'y']
@@ -82,41 +83,44 @@ def kolmogorov(
         assert len(initial_ds.x) == sim_grid.shape[0]
 
     if c.outer_steps > 0:
-        shapes = {size: [c.outer_steps] + [size] * sim_grid.ndim
-                  for size in c.out_sizes}
+        shapes = {(o['size'], o['k']): [c.outer_steps // o['k']] + [o['size']] * sim_grid.ndim
+                  for o in c.out_sizes}
         dim_names = ['sample', 'time'] + spatial_dims
         coords = {}
-        for size in c.out_sizes:
-            coords[size] = {
+        for o in c.out_sizes:
+            key = (o['size'], o['k'])
+            coords[key] = {
                 'sample': range(c.n_trajectories),
-                'time': dt * c.inner_steps * np.arange(1, c.outer_steps + 1),
+                'time': dt * c.inner_steps * o['k'] * np.arange(1, c.outer_steps // o['k'] + 1),
             }
             for i, dim in enumerate(spatial_dims):
-                coords[size][dim] = out_grids[size].axes()[i]
+                coords[key][dim] = out_grids[key].axes()[i]
 
     else:
-        shapes = {size: [size] * sim_grid.ndim for size in c.out_sizes}
+        shapes = {(o['size'], o['k']): [o['size']] * sim_grid.ndim
+                  for o in c.out_sizes}
         dim_names = ['sample'] + spatial_dims
         coords = {}
-        for size in c.out_sizes:
-            coords[size] = {
+        for o in c.out_sizes:
+            key = (o['size'], o['k'])
+            coords[key] = {
                 'sample': range(c.n_trajectories),
             }
             for i, dim in enumerate(spatial_dims):
-                coords[size][dim] = out_grids[size].axes()[i]
+                coords[key][dim] = out_grids[key].axes()[i]
     # Appending to netCDF files is not supported yet, but we can use
     # dask.delayed to save simulations in a streaming fashion. See:
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
 
     if sim_grid.ndim == 2:
-        gvars: Dict[int, Dict] = {size: {
+        gvars: Dict[Tuple[int, int], Dict] = {(o['size'], o['k']): {
             'vx': [], 'vy': [], 'vorticity': [],
-        } for size in c.out_sizes}
+        } for o in c.out_sizes}
     elif sim_grid.ndim == 3:
-        gvars = {size: {
+        gvars = {(o['size'], o['k']): {
             'vx': [], 'vy': [], 'vz': [],
-        } for size in c.out_sizes}
+        } for o in c.out_sizes}
     durations = []
 
     for i in range(c.n_trajectories):
@@ -135,32 +139,35 @@ def kolmogorov(
             warmup_steps=c.warmup_steps)
         trajs, elapsed = outs[0], outs[1]
 
-        for size in c.out_sizes:
-            shape = shapes[size]
-            traj = trajs[size]
-            vx = da.from_delayed(traj['vx'], shape, np.float32)
-            gvars[size]['vx'].append(vx)
+        for o in c.out_sizes:
+            key = (o['size'], o['k'])
+            k = o['k']
+            shape = shapes[key]
+            traj = trajs[key]
+            vx = da.from_delayed(traj['vx'][k-1::k], shape, np.float32)
+            gvars[key]['vx'].append(vx)
 
-            vy = da.from_delayed(traj['vy'], shape, np.float32)
-            gvars[size]['vy'].append(vy)
+            vy = da.from_delayed(traj['vy'][k-1::k], shape, np.float32)
+            gvars[key]['vy'].append(vy)
 
             if sim_grid.ndim == 2:
                 vorticity = da.from_delayed(
-                    traj['vorticity'], shape, np.float32)
-                gvars[size]['vorticity'].append(vorticity)
+                    traj['vorticity'][k-1::k], shape, np.float32)
+                gvars[key]['vorticity'].append(vorticity)
             elif sim_grid.ndim == 3:
-                vz = da.from_delayed(traj['vz'], shape, np.float32)
-                gvars[size]['vz'].append(vz)
+                vz = da.from_delayed(traj['vz'][k-1::k], shape, np.float32)
+                gvars[key]['vz'].append(vz)
 
         durations.append(da.from_delayed(elapsed, (), np.float32))
 
-    for size in c.out_sizes:
-        gvars[size]['vx'] = da.stack(gvars[size]['vx'])
-        gvars[size]['vy'] = da.stack(gvars[size]['vy'])
+    for o in c.out_sizes:
+        key = (o['size'], o['k'])
+        gvars[key]['vx'] = da.stack(gvars[key]['vx'])
+        gvars[key]['vy'] = da.stack(gvars[key]['vy'])
         if sim_grid.ndim == 2:
-            gvars[size]['vorticity'] = da.stack(gvars[size]['vorticity'])
+            gvars[key]['vorticity'] = da.stack(gvars[key]['vorticity'])
         elif sim_grid.ndim == 3:
-            gvars[size]['vz'] = da.stack(gvars[size]['vz'])
+            gvars[key]['vz'] = da.stack(gvars[key]['vz'])
     durations = da.stack(durations)
 
     def normalize(x):
@@ -181,14 +188,15 @@ def kolmogorov(
         attrs[k] = normalize(v)
 
     ds_dict = {}
-    for size in c.out_sizes:
+    for o in c.out_sizes:
+        key = (o['size'], o['k'])
         data_vars = {'elapsed': ('sample', durations)}
-        for k, v in gvars[size].items():
+        for k, v in gvars[key].items():
             data_vars[k] = (dim_names, v)
 
-        ds_dict[size] = xr.Dataset(
+        ds_dict[key] = xr.Dataset(
             data_vars=data_vars,
-            coords=coords[size],
+            coords=coords[key],
             attrs={
                 **attrs,
                 'dt': dt,
@@ -197,8 +205,8 @@ def kolmogorov(
         )
 
     tasks = []
-    for size, ds in ds_dict.items():
-        path = config_dir / f'{stem}_{size}.nc'
+    for key, ds in ds_dict.items():
+        path = config_dir / f"{stem}_{key[0]}_{key[1]}.nc"
         task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
         tasks.append(task)
 

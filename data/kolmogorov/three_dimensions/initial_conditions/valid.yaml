@@ -27,7 +27,17 @@ step_fn:
     constant_wavenumber: 4
     linear_coefficient: -0.1
 downsample_fn: ${get_method:fourierflow.builders.kolmogorov.downsample_velocity}
-out_sizes: [32, 64, 128, 256, 512] # size of the domain for saving to disk
+out_sizes: # size of the domain for saving to disk
+  - size: 32
+    k: 1
+  - size: 64
+    k: 1
+  - size: 128
+    k: 1
+  - size: 256
+    k: 1
+  - size: 512
+    k: 1
 n_trajectories: 4 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
