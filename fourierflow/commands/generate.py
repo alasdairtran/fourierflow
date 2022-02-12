@@ -206,7 +206,10 @@ def kolmogorov(
 
     tasks = []
     for key, ds in ds_dict.items():
-        path = config_dir / f"{stem}_{key[0]}_{key[1]}.nc"
+        if c.outer_steps > 0:
+            path = config_dir / f"{stem}_{key[0]}_{key[1]}.nc"
+        else:
+            path = config_dir / f"{stem}_{key[0]}.nc"
         task: Delayed = ds.to_netcdf(path, engine='h5netcdf', compute=False)
         tasks.append(task)
 
