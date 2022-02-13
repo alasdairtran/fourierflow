@@ -10,15 +10,15 @@ builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
     _target_: fourierflow.builders.KolmogorovJAXDataset
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/train_64.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_64_1.nc
     k: 2
     unroll_length: 1
     in_memory: true
   valid_dataset:
     _target_: fourierflow.builders.KolmogorovJAXTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_64.nc
-    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/valid_32.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_64_1.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32_1.nc
     k: 2
     inner_steps: 16
     outer_steps: 100
@@ -26,8 +26,8 @@ builder:
   test_dataset:
     _target_: fourierflow.builders.KolmogorovJAXTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_64.nc
-    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/full_trajectories/test_32.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_64_1.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32_1.nc
     k: 2
     inner_steps: 16
     outer_steps: 100

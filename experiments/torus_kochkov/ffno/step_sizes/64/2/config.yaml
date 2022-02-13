@@ -11,19 +11,19 @@ builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
     _target_: fourierflow.builders.KolmogorovTorchDataset
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_64.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_64_4.nc
     k: 2
   valid_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_64.nc
-    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_64_4.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/valid_32_4.nc
     k: 2
   test_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_64.nc
-    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_64_4.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32_4.nc
     k: 2
   batch_size: 32
   num_workers: 4
