@@ -36,14 +36,20 @@ out_sizes: # size of the domain for saving to disk
     k: 1
   - size: 128
     k: 1
+  - size: 32
+    k: 4
+  - size: 64
+    k: 4
+  - size: 128
+    k: 4
   - size: 256
-    k: 1
+    k: 4
 n_trajectories: 32 # number of trajectories to generate
 density: 1 # density of the fluid
 max_velocity: 7.0 # maximum velocity of the fluid
 peak_wavenumber: 4.0 # initial peak wavenumber of the velocity field
 seed: 73714 # random seed for the initial velocity field
-inner_steps: 64 # take a snapshot of the field once every these many ODE steps
-outer_steps: 2441 # the data saved on disk will have these many snapshots
+inner_steps: 16 # take a snapshot of the field once every these many ODE steps
+outer_steps: 9764 # the data saved on disk will have these many snapshots
 warmup_steps: 0 # we load initial conditions from init_path instead
 init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/train_2048.nc
