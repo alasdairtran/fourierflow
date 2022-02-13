@@ -2,11 +2,12 @@ import os
 from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional, cast
-from uuid import uuid4
 
 import hydra
 import jax
+import numpy as np
 import ptvsd
+import pytorch_lightning as pl
 import wandb
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
@@ -41,6 +42,12 @@ def main(config_path: Path,
     # Set up directories to save experimental outputs.
     delete_old_results(config_dir, force, trial, resume=False)
 
+    # Set seed for reproducibility.
+    rs = np.random.RandomState(7231 + trial)
+    seed = config.get('seed', rs.randint(1000, 1000000))
+    pl.seed_everything(seed, workers=True)
+    config.seed = seed
+
     if not no_logging:
         wandb_id = get_experiment_id(None, trial, config_dir, False)
         config.trial = trial
@@ -58,24 +65,9 @@ def main(config_path: Path,
     callbacks = [instantiate(p) for p in config.trainer.pop('callbacks', [])]
 
     trainer = JAXTrainer(callbacks=callbacks,
+                         seed=seed,
                          **OmegaConf.to_container(config.trainer))
     trainer.fit(routine, builder)
-
-    # routine.fit(
-    #     inputs=builder.train_dataloader(),
-    #     validation_data=builder.val_dataloader(),
-    #     callbacks=callbacks,
-    #     **OmegaConf.to_container(config.trainer),
-    # )
-
-    # logs = routine.evaluate(
-    #     x=builder.test_dataloader(),
-    #     callbacks=callbacks,
-    #     drop_remaining=False,
-    # )
-
-    # logs = {"test_" + name: val for name, val in logs.items()}
-    # print(logs)
 
 
 if __name__ == "__main__":

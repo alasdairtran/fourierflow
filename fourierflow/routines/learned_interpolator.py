@@ -68,9 +68,9 @@ class LearnedInterpolator:
 
         self.model = hk.without_apply_rng(hk.transform(jax.vmap(step_fwd)))
 
-    def init(self):
+    def init(self, seed):
         with init_context():
-            rng = jax.random.PRNGKey(42)
+            rng = jax.random.PRNGKey(seed)
             inputs = {}
             for i, k in enumerate(['vx', 'vy']):
                 rgn_key = jax.random.PRNGKey(i)

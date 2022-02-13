@@ -16,16 +16,18 @@ class JAXTrainer(TrainerCallbackHookMixin):
         max_epochs,
         limit_train_batches=None,
         callbacks: Optional[List[Callback]] = None,
+        seed: Optional[int] = None,
     ):
         self.max_epochs = max_epochs
         self.limit_train_batches = limit_train_batches
         self.callbacks = callbacks or []
         self.current_epoch = -1
         self.routine = None
+        self.seed = seed
 
     def fit(self, routine, builder):
         self.routine = routine
-        params = routine.init()
+        params = routine.init(self.seed)
         opt_state = routine.optimizer.init(params)
 
         @jax.jit

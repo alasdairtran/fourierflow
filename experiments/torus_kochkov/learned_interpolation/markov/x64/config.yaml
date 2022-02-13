@@ -88,7 +88,6 @@ routine:
     weight_decay: 1e-4
     b1: 0.9
     b2: 0.99
-  seed: 5123
 trainer:
   max_epochs: 10
   callbacks:
