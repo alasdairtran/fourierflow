@@ -45,7 +45,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
             self.current_epoch += 1
             self.on_train_epoch_start()
             train_batches = iter(builder.train_dataloader())
-            with tqdm(train_batches, unit="batch") as tepoch:
+            with tqdm(train_batches, total=self.limit_train_batches, unit="batch") as tepoch:
                 for i, batch in enumerate(tepoch):
                     self.on_train_batch_start(batch, i)
                     tepoch.set_description(f"Epoch {epoch}")
