@@ -35,7 +35,7 @@ routine:
     modes: 16
     width: 64
     n_layers: 12
-    input_dim: 3
+    input_dim: 5
     share_weight: true
     factor: 4
     ff_weight_norm: true
