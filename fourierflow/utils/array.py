@@ -39,7 +39,10 @@ def downsample_vorticity(vorticity, out_size=32, domain=((0, 2 * jnp.pi), (0, 2 
     all_vorticities = jnp.stack(all_vorticities, axis=0)
 
     if is_torch_tensor:
-        all_vorticities = torch.from_numpy(np.asarray(all_vorticities))
+        # Use torch.tensor instead of torch.from_numpy to fix the error
+        # "The given NumPy array is not writeable, and PyTorch does not
+        # support non-writeable tensors".
+        all_vorticities = torch.tensor(np.asarray(all_vorticities))
 
     return all_vorticities
 
