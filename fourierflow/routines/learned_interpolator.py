@@ -122,7 +122,7 @@ class LearnedInterpolator:
             'rho': -loss.item(),
         }
 
-        return loss, logs
+        return logs
 
     def unroll(self, params, vx, vy):
         def downsample(velocity):
