@@ -124,6 +124,8 @@ class KolmogorovTorchDataset(TorchDataset):
 
         return {
             'x': in_ds.vorticity.data,
+            'vx': in_ds.vx.data,
+            'vy': in_ds.vy.data,
             'y': out_ds.vorticity.data,
         }
 
