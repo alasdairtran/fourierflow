@@ -32,7 +32,7 @@ builder:
     inner_steps: 8
     outer_steps: 100
     in_memory: true
-  batch_size: 8
+  batch_size: 4
   num_workers: 4
   collate_fn:
     _target_: functools.partial
@@ -83,14 +83,14 @@ routine:
       init_value: 0.0
       peak_value: 1e-3
       warmup_steps: 500
-      decay_steps: 10000
+      decay_steps: 20000
       end_value: 0.0
     weight_decay: 1e-4
     b1: 0.9
     b2: 0.99
 trainer:
   max_epochs: 10
-  limit_train_batches: 1000
+  limit_train_batches: 2000
   callbacks:
     - _target_: fourierflow.callbacks.JAXModelCheckpoint
       save_dir: experiments/torus_kochkov/learned_interpolation/markov/x32/checkpoints
