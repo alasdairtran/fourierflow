@@ -4,6 +4,7 @@ from typing import Optional
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import torch
 import wandb
 import xarray as xr
@@ -80,20 +81,16 @@ class Grid2DMarkovExperiment(Routine):
             self.y_inv = torch.argsort(self.y_idx)
 
         if self.use_velocity:
-            k_max = grid_size // 2
-            # Wavenumbers in y-direction
-            k_y = torch.cat((
-                torch.arange(start=0, end=k_max, step=1) / domain[0][1],
-                torch.arange(start=-k_max, end=0, step=1) / domain[0][1]),
-                0).repeat(grid_size, 1)
-            # Wavenumbers in x-direction
-            k_x = k_y.transpose(0, 1)
-            # Negative Laplacian in Fourier space
-            lap = 4 * (math.pi**2) * (k_x**2 + k_y**2)
-            lap[0, 0] = 1.0
-            self.register_buffer('k_x', k_x)
-            self.register_buffer('k_y', k_y)
-            self.register_buffer('lap', lap)
+            jax.config.update('jax_platform_name', 'cpu')
+            grid = Grid(shape=(grid_size, grid_size), domain=self.domain)
+            kx, ky = grid.rfft_mesh()
+            two_pi_i = 2 * jnp.pi * 1j
+            lap = two_pi_i ** 2 * (abs(kx)**2 + abs(ky)**2)
+            lap = lap.at[0, 0].set(1)
+
+            self.register_buffer('kx', torch.from_numpy(np.array(kx)))
+            self.register_buffer('ky', torch.from_numpy(np.array(ky)))
+            self.register_buffer('lap', torch.from_numpy(np.array(lap)))
 
         self.flow_table = wandb.Table(columns=['step', 'flow'])
 
@@ -136,18 +133,18 @@ class Grid2DMarkovExperiment(Routine):
         if self.use_velocity and 'vx' in batch and 'vy' in batch:
             x = torch.cat((x, batch['vx'], batch['vy']), dim=-1)
         elif self.use_velocity:
-            omega_hat = torch.fft.fftn(x, dim=[1, 2], norm='backward')
-            psi_hat = omega_hat / repeat(self.lap, 'm n -> b m n 1', b=B)
-            k_y = repeat(self.k_y, 'm n -> b m n 1', b=B)
-            k_x = repeat(self.k_x, 'm n -> b m n 1', b=B)
+            omega_hat = torch.fft.rfftn(x, dim=[1, 2], norm='backward')
+            psi_hat = -omega_hat / repeat(self.lap, 'm n -> b m n 1', b=B)
+            ky = repeat(self.ky, 'm n -> b m n 1', b=B)
+            kx = repeat(self.kx, 'm n -> b m n 1', b=B)
 
             # Velocity field in x-direction = psi_y
-            q = 2 * math.pi * 1j * k_y * psi_hat
-            q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
+            q = 2 * math.pi * 1j * ky * psi_hat
+            q = torch.fft.irfftn(q, dim=[1, 2], norm='backward')
 
             # Velocity field in y-direction = -psi_x
-            v = -2 * math.pi * 1j * k_x * psi_hat
-            v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
+            v = -2 * math.pi * 1j * kx * psi_hat
+            v = torch.fft.irfftn(v, dim=[1, 2], norm='backward')
 
             x = torch.cat([x, q, v], dim=-1)
 
@@ -216,18 +213,18 @@ class Grid2DMarkovExperiment(Routine):
             vy = repeat(batch['vy'], '... -> ... 1')
             inputs = torch.cat((inputs, vx, vy), dim=-1)
         elif self.use_velocity:
-            w_hat = torch.fft.fftn(inputs, dim=[1, 2], norm='backward')
-            psi_hat = w_hat / repeat(self.lap, 'm n -> b m n t 1', b=B, t=T)
-            k_y = repeat(self.k_y, 'm n -> b m n t 1', b=B, t=T)
-            k_x = repeat(self.k_x, 'm n -> b m n t 1', b=B, t=T)
+            w_hat = torch.fft.rfftn(inputs, dim=[1, 2], norm='backward')
+            psi_hat = -w_hat / repeat(self.lap, 'm n -> b m n t 1', b=B, t=T)
+            ky = repeat(self.ky, 'm n -> b m n t 1', b=B, t=T)
+            kx = repeat(self.kx, 'm n -> b m n t 1', b=B, t=T)
 
             # Velocity field in x-direction = psi_y
-            q = 2 * math.pi * 1j * k_y * psi_hat
-            q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
+            q = 2 * math.pi * 1j * ky * psi_hat
+            q = torch.fft.irfftn(q, dim=[1, 2], norm='backward')
 
             # Velocity field in y-direction = -psi_x
-            v = -2 * math.pi * 1j * k_x * psi_hat
-            v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
+            v = -2 * math.pi * 1j * kx * psi_hat
+            v = torch.fft.irfftn(v, dim=[1, 2], norm='backward')
 
             inputs = torch.cat([inputs, q, v], dim=-1)
 
@@ -278,21 +275,21 @@ class Grid2DMarkovExperiment(Routine):
                 prev_im = x[..., 0:1]
             else:
                 if self.use_velocity:
-                    w_hat = torch.fft.fftn(im, dim=[1, 2], norm='backward')
-                    psi_hat = w_hat / \
+                    w_hat = torch.fft.rfftn(im, dim=[1, 2], norm='backward')
+                    psi_hat = -w_hat / \
                         repeat(self.lap, 'm n -> b m n t', b=B, t=im.shape[-1])
-                    k_y = repeat(self.k_y, 'm n -> b m n t',
-                                 b=B, t=im.shape[-1])
-                    k_x = repeat(self.k_x, 'm n -> b m n t',
-                                 b=B, t=im.shape[-1])
+                    ky = repeat(self.ky, 'm n -> b m n t',
+                                b=B, t=im.shape[-1])
+                    kx = repeat(self.kx, 'm n -> b m n t',
+                                b=B, t=im.shape[-1])
 
                     # Velocity field in x-direction = psi_y
-                    q = 2 * math.pi * 1j * k_y * psi_hat
-                    q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
+                    q = 2 * math.pi * 1j * ky * psi_hat
+                    q = torch.fft.irfftn(q, dim=[1, 2], norm='backward')
 
                     # Velocity field in y-direction = -psi_x
-                    v = -2 * math.pi * 1j * k_x * psi_hat
-                    v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
+                    v = -2 * math.pi * 1j * kx * psi_hat
+                    v = torch.fft.irfftn(v, dim=[1, 2], norm='backward')
 
                     im = torch.cat([im, q, v], dim=-1)
                 if self.use_position:
