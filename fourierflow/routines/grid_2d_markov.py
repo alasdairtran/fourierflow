@@ -83,8 +83,8 @@ class Grid2DMarkovExperiment(Routine):
             k_max = grid_size // 2
             # Wavenumbers in y-direction
             k_y = torch.cat((
-                torch.arange(start=0, end=k_max, step=1),
-                torch.arange(start=-k_max, end=0, step=1)),
+                torch.arange(start=0, end=k_max, step=1) / domain[0][1],
+                torch.arange(start=-k_max, end=0, step=1) / domain[0][1]),
                 0).repeat(grid_size, 1)
             # Wavenumbers in x-direction
             k_x = k_y.transpose(0, 1)
@@ -142,17 +142,11 @@ class Grid2DMarkovExperiment(Routine):
             k_x = repeat(self.k_x, 'm n -> b m n 1', b=B)
 
             # Velocity field in x-direction = psi_y
-            q = psi_hat.clone()
-            q_real_temp = q.real.clone()
-            q.real = -2 * math.pi * k_y * q.imag
-            q.imag = 2 * math.pi * k_y * q_real_temp
+            q = 2 * math.pi * 1j * k_y * psi_hat
             q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
 
             # Velocity field in y-direction = -psi_x
-            v = psi_hat.clone()
-            v_real_temp = v.real.clone()
-            v.real = 2 * math.pi * k_x * v.imag
-            v.imag = -2 * math.pi * k_x * v_real_temp
+            v = -2 * math.pi * 1j * k_x * psi_hat
             v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
 
             x = torch.cat([x, q, v], dim=-1)
@@ -228,17 +222,11 @@ class Grid2DMarkovExperiment(Routine):
             k_x = repeat(self.k_x, 'm n -> b m n t 1', b=B, t=T)
 
             # Velocity field in x-direction = psi_y
-            q = psi_hat.clone()
-            q_real_temp = q.real.clone()
-            q.real = -2 * math.pi * k_y * q.imag
-            q.imag = 2 * math.pi * k_y * q_real_temp
+            q = 2 * math.pi * 1j * k_y * psi_hat
             q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
 
             # Velocity field in y-direction = -psi_x
-            v = psi_hat.clone()
-            v_real_temp = v.real.clone()
-            v.real = 2 * math.pi * k_x * v.imag
-            v.imag = -2 * math.pi * k_x * v_real_temp
+            v = -2 * math.pi * 1j * k_x * psi_hat
             v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
 
             inputs = torch.cat([inputs, q, v], dim=-1)
@@ -299,17 +287,11 @@ class Grid2DMarkovExperiment(Routine):
                                  b=B, t=im.shape[-1])
 
                     # Velocity field in x-direction = psi_y
-                    q = psi_hat.clone()
-                    q_real_temp = q.real.clone()
-                    q.real = -2 * math.pi * k_y * q.imag
-                    q.imag = 2 * math.pi * k_y * q_real_temp
+                    q = 2 * math.pi * 1j * k_y * psi_hat
                     q = torch.fft.ifftn(q, dim=[1, 2], norm='backward').real
 
                     # Velocity field in y-direction = -psi_x
-                    v = psi_hat.clone()
-                    v_real_temp = v.real.clone()
-                    v.real = 2 * math.pi * k_x * v.imag
-                    v.imag = -2 * math.pi * k_x * v_real_temp
+                    v = -2 * math.pi * 1j * k_x * psi_hat
                     v = torch.fft.ifftn(v, dim=[1, 2], norm='backward').real
 
                     im = torch.cat([im, q, v], dim=-1)
