@@ -7,6 +7,7 @@ import hydra
 import numpy as np
 import ptvsd
 import pytorch_lightning as pl
+import wandb
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
