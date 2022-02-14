@@ -83,14 +83,14 @@ routine:
       init_value: 0.0
       peak_value: 1e-3
       warmup_steps: 500
-      decay_steps: 20000
+      decay_steps: 40000
       end_value: 0.0
     weight_decay: 1e-4
     b1: 0.9
     b2: 0.99
 trainer:
   max_epochs: 10
-  limit_train_batches: 2000
+  limit_train_batches: 4000
   callbacks:
     - _target_: fourierflow.callbacks.JAXModelCheckpoint
       save_dir: experiments/torus_kochkov/learned_interpolation/markov/x32/checkpoints
