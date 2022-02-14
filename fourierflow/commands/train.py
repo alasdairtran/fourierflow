@@ -61,18 +61,8 @@ def main(config_path: Path,
     seed = config.get('seed', rs.randint(1000, 1000000))
     pl.seed_everything(seed, workers=True)
     config.seed = seed
-
-    # We use Weights & Biases to track our experiments.
     wandb_id = get_experiment_id(checkpoint_id, trial, config_dir, resume)
     config.trial = trial
-    config.wandb.name = f"{config.wandb.group}/{trial}"
-    wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
-    wandb_logger = WandbLogger(save_dir=str(config_dir),
-                               mode=os.environ.get('WANDB_MODE', 'offline'),
-                               config=deepcopy(OmegaConf.to_container(config)),
-                               id=wandb_id,
-                               **wandb_opts)
-    upload_code_to_wandb(Path(config_dir) / 'config.yaml', wandb_logger)
 
     # Initialize the dataset and experiment modules.
     builder = instantiate(config.builder)
@@ -99,7 +89,15 @@ def main(config_path: Path,
         enable_checkpointing = False
         callbacks = []
     else:
-        logger = wandb_logger
+        # We use Weights & Biases to track our experiments.
+        config.wandb.name = f"{config.wandb.group}/{trial}"
+        wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
+        logger = WandbLogger(save_dir=str(config_dir),
+                             mode=os.environ.get('WANDB_MODE', 'offline'),
+                             config=deepcopy(OmegaConf.to_container(config)),
+                             id=wandb_id,
+                             **wandb_opts)
+        upload_code_to_wandb(Path(config_dir) / 'config.yaml', logger)
         enable_checkpointing = True
         c = wandb.wandb_sdk.wandb_artifacts.get_artifacts_cache()
         c.cleanup(wandb.util.from_human_size("100GB"))
