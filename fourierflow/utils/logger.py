@@ -1,5 +1,8 @@
 
 import logging
+from glob import glob
+
+import wandb
 
 LEVEL_DICT = {
     'debug': logging.DEBUG,
@@ -25,3 +28,13 @@ def setup_logger(mode='info'):
     logger.addHandler(handler)
 
     return logger
+
+
+def upload_code_to_wandb(config_path, wandb_logger):
+    """Upload all Python code for save the exact state of the experiment."""
+    code_artifact = wandb.Artifact('fourierflow', type='code')
+    code_artifact.add_file(config_path, 'config.yaml')
+    paths = glob('fourierflow/**/*.py')
+    for path in paths:
+        code_artifact.add_file(path, path)
+    wandb_logger.experiment.log_artifact(code_artifact)

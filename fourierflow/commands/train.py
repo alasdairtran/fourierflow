@@ -1,6 +1,5 @@
 import os
 from copy import deepcopy
-from glob import glob
 from pathlib import Path
 from typing import List, Optional, cast
 
@@ -8,26 +7,16 @@ import hydra
 import numpy as np
 import ptvsd
 import pytorch_lightning as pl
-import wandb
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins import DDPPlugin
 from typer import Argument, Typer
 
-from fourierflow.utils import delete_old_results, get_experiment_id
+from fourierflow.utils import (delete_old_results, get_experiment_id,
+                               upload_code_to_wandb)
 
 app = Typer()
-
-
-def upload_code_to_wandb(config_path, wandb_logger):
-    """Upload all Python code for save the exact state of the experiment."""
-    code_artifact = wandb.Artifact('fourierflow', type='code')
-    code_artifact.add_file(config_path, 'config.yaml')
-    paths = glob('fourierflow/**/*.py')
-    for path in paths:
-        code_artifact.add_file(path, path)
-    wandb_logger.experiment.log_artifact(code_artifact)
 
 
 @app.callback(invoke_without_command=True)
