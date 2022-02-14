@@ -130,9 +130,7 @@ class Grid2DMarkovExperiment(Routine):
         X, Y = dim_sizes
         # data.shape == [batch_size, *dim_sizes]
 
-        if self.use_velocity and 'vx' in batch and 'vy' in batch:
-            x = torch.cat((x, batch['vx'], batch['vy']), dim=-1)
-        elif self.use_velocity:
+        if self.use_velocity:
             omega_hat = torch.fft.rfftn(x, dim=[1, 2], norm='backward')
             psi_hat = -omega_hat / repeat(self.lap, 'm n -> b m n 1', b=B)
             ky = repeat(self.ky, 'm n -> b m n 1', b=B)
@@ -208,11 +206,7 @@ class Grid2DMarkovExperiment(Routine):
         inputs = repeat(inputs, '... -> ... 1')
         # inputs.shape == [batch_size, *dim_sizes, total_steps, 1]
 
-        if self.use_velocity and 'vx' in batch and 'vy' in batch:
-            vx = repeat(batch['vx'], '... -> ... 1')
-            vy = repeat(batch['vy'], '... -> ... 1')
-            inputs = torch.cat((inputs, vx, vy), dim=-1)
-        elif self.use_velocity:
+        if self.use_velocity:
             w_hat = torch.fft.rfftn(inputs, dim=[1, 2], norm='backward')
             psi_hat = -w_hat / repeat(self.lap, 'm n -> b m n t 1', b=B, t=T)
             ky = repeat(self.ky, 'm n -> b m n t 1', b=B, t=T)
