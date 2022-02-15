@@ -62,7 +62,7 @@ class KolmogorovBuilder(Builder):
         ds = self.test_dataset.ds
         k = self.test_dataset.k
         test_w = ds['vorticity'].isel(time=slice(None, None, k))
-        data = torch.from_numpy(test_w.values).cuda()
+        data = test_w.values
         return data
 
 

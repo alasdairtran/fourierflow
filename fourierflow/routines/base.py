@@ -19,6 +19,9 @@ class Routine(LightningModule):
         with torch.no_grad():
             return self.forward(data)
 
+    def convert_data(self, data):
+        return torch.from_numpy(data).cuda()
+
     def on_train_start(self):
         n = sum(p.numel() for p in self.parameters() if p.requires_grad)
         if self.logger:

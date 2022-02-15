@@ -158,6 +158,9 @@ class LearnedInterpolator:
     def cuda(self):
         pass
 
+    def convert_data(self, data):
+        return data
+
 
 def repeated(f: Callable, steps: int) -> Callable:
     """Returns a repeatedly applied version of f()."""
