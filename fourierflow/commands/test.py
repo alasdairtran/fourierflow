@@ -1,3 +1,4 @@
+import jax
 import os
 from copy import deepcopy
 from pathlib import Path
@@ -40,6 +41,7 @@ def main(config_path: Path,
         ptvsd.wait_for_attach()
         # ptvsd doesn't play well with multiple processes.
         config.builder.num_workers = 0
+        jax.config.update('jax_disable_jit', True)
 
     # We use Weights & Biases to track our experiments.
     checkpoint_path = config.get('checkpoint_path', None)

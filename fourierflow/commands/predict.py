@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Optional, cast
 
 import hydra
+import jax
 import numpy as np
 import ptvsd
 import pytorch_lightning as pl
@@ -30,6 +31,8 @@ def main(data_path: Path,
          strict: bool = True,
          debug: bool = False):
     """Test a Pytorch Lightning experiment."""
+
+    # Calculate inference time for Crank-Nicolson 2nd order method.
     if not config_path:
         data_path = 'data/fourier/NavierStokes_V1e-5_N1200_T20.mat'
         data = scipy.io.loadmat(data_path)['u'].astype(np.float32)
@@ -55,6 +58,7 @@ def main(data_path: Path,
         ptvsd.wait_for_attach()
         # ptvsd doesn't play well with multiple processes.
         config.builder.n_workers = 0
+        jax.config.update('jax_disable_jit', True)
 
     # We use Weights & Biases to track our experiments.
     chkpt_dir = Path(config_dir) / 'checkpoints'
