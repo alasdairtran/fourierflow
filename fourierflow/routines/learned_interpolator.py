@@ -4,6 +4,7 @@ import elegy as eg
 import haiku as hk
 import jax
 import jax.numpy as jnp
+import numpy as np
 import optax
 from elegy.model.model import M
 from elegy.model.model_core import (PredStepOutput, TestStepOutput,
@@ -120,6 +121,7 @@ class LearnedInterpolator:
             'loss': loss.item(),
             'time_until': time_until.item(),
             'rho': -loss.item(),
+            'correlations': np.array(rho),
         }
 
         return logs
