@@ -16,6 +16,7 @@ class NSZongyiBuilder(Builder):
                  ssr: int, n_steps: int, append_pos: bool = True, **kwargs):
         super().__init__()
         self.kwargs = kwargs
+        self.data_path = data_path
 
         data = scipy.io.loadmat(os.path.expandvars(data_path))[
             'u'].astype(np.float32)
@@ -61,6 +62,11 @@ class NSZongyiBuilder(Builder):
                             drop_last=False,
                             **self.kwargs)
         return loader
+
+    def inference_data(self):
+        data = scipy.io.loadmat(self.data_path)['u'].astype(np.float32)[:512]
+        data = torch.from_numpy(data).cuda()
+        return data
 
 
 class NavierStokesDataset(Dataset):

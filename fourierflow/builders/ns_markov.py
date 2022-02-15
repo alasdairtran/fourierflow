@@ -4,7 +4,6 @@ import numpy as np
 import scipy.io
 import torch
 from einops import rearrange
-from einops.einops import rearrange
 from torch.utils.data import DataLoader, Dataset
 
 from .base import Builder
@@ -17,6 +16,7 @@ class NSMarkovBuilder(Builder):
                  ssr: int, **kwargs):
         super().__init__()
         self.kwargs = kwargs
+        self.data_path = data_path
 
         data = scipy.io.loadmat(os.path.expandvars(data_path))[
             'u'].astype(np.float32)
@@ -53,6 +53,11 @@ class NSMarkovBuilder(Builder):
                             drop_last=False,
                             **self.kwargs)
         return loader
+
+    def inference_data(self):
+        data = scipy.io.loadmat(self.data_path)['u'].astype(np.float32)[:512]
+        data = torch.from_numpy(data).cuda()
+        return data
 
 
 class NavierStokesTrainingDataset(Dataset):
