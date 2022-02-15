@@ -116,7 +116,8 @@ class JAXTrainer(TrainerCallbackHookMixin):
             self.logger.log_metrics(scalars)
 
             if 'test_correlations' in logs:
-                corr_rows = list(zip(logs['times'], logs['test_correlations']))
+                corr_rows = list(zip(logs['test_times'],
+                                     logs['test_correlations']))
                 self.logger.experiment.log({
                     'test_correlations': wandb.Table(['time', 'corr'], corr_rows)
                 })
