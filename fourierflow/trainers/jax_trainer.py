@@ -93,9 +93,9 @@ class JAXTrainer(TrainerCallbackHookMixin):
                 logs = outputs
                 logs = {f'valid_{k}': v for k, v in logs.items()}
                 self.logs = logs
-                scalar_metrics = {k: v for k, v in logs if np.isscalar(v)}
+                scalars = {k: v for k, v in logs.items() if np.isscalar(v)}
                 # TODO: merge logs when there is more than one batch
-                self.logger.log_metrics(scalar_metrics, step=self.global_step)
+                self.logger.log_metrics(scalars, step=self.global_step)
                 self.on_validation_batch_end(outputs, batch, i, 0)
             self.on_validation_epoch_end()
 
@@ -111,8 +111,8 @@ class JAXTrainer(TrainerCallbackHookMixin):
             logs = outputs
             logs = {f'test_{k}': v for k, v in logs.items()}
             # TODO: merge logs when there is more than one batch
-            scalar_metrics = {k: v for k, v in logs if np.isscalar(v)}
-            self.logger.log_metrics(scalar_metrics)
+            scalars = {k: v for k, v in logs.items() if np.isscalar(v)}
+            self.logger.log_metrics(scalars)
 
             if 'test_correlations' in logs:
                 corr_rows = list(zip(logs['times'], logs['test_correlations']))
