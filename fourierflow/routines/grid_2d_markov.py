@@ -92,8 +92,6 @@ class Grid2DMarkovExperiment(Routine):
             self.register_buffer('ky', torch.from_numpy(np.array(ky)))
             self.register_buffer('lap', torch.from_numpy(np.array(lap)))
 
-        self.flow_table = wandb.Table(columns=['step', 'flow'])
-
     def forward(self, data):
         batch = {'data': data}
         return self._valid_step(batch)
