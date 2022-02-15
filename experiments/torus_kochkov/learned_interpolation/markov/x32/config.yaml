@@ -89,9 +89,10 @@ routine:
     b1: 0.9
     b2: 0.99
 trainer:
+  _target_: fourierflow.trainers.JAXTrainer
   max_epochs: 10
   limit_train_batches: 4000
-  callbacks:
-    - _target_: fourierflow.callbacks.JAXModelCheckpoint
-      save_dir: experiments/torus_kochkov/learned_interpolation/markov/x32/checkpoints
-      monitor: valid_time_until
+callbacks:
+  - _target_: fourierflow.callbacks.JAXModelCheckpoint
+    save_dir: experiments/torus_kochkov/learned_interpolation/markov/x32/checkpoints
+    monitor: valid_time_until

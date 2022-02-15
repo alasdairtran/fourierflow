@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Optional, cast
 
 import hydra
+import jax
 import numpy as np
 import ptvsd
 import pytorch_lightning as pl
@@ -15,7 +16,7 @@ from pytorch_lightning.plugins import DDPPlugin
 from typer import Argument, Typer
 
 from fourierflow.utils import (delete_old_results, get_experiment_id,
-                               upload_code_to_wandb)
+                               import_string, upload_code_to_wandb)
 
 app = Typer()
 
@@ -42,6 +43,7 @@ def main(config_path: Path,
         ptvsd.wait_for_attach()
         # ptvsd doesn't play well with multiple processes.
         config.builder.num_workers = 0
+        jax.config.update('jax_disable_jit', True)
 
     # Set up directories to save experimental outputs.
     delete_old_results(config_dir, force, trial, resume)
@@ -91,14 +93,17 @@ def main(config_path: Path,
         enable_checkpointing = True
         c = wandb.wandb_sdk.wandb_artifacts.get_artifacts_cache()
         c.cleanup(wandb.util.from_human_size("100GB"))
-    trainer = pl.Trainer(logger=logger,
-                         enable_checkpointing=enable_checkpointing,
-                         callbacks=callbacks,
-                         plugins=plugins,
-                         weights_save_path=config_dir,
-                         resume_from_checkpoint=chkpt_path,
-                         enable_model_summary=False,
-                         **OmegaConf.to_container(config.trainer))
+
+    Trainer = import_string(config.trainer.pop(
+        '_target_', 'pytorch_lightning.Trainer'))
+    trainer = Trainer(logger=logger,
+                      enable_checkpointing=enable_checkpointing,
+                      callbacks=callbacks,
+                      plugins=plugins,
+                      weights_save_path=config_dir,
+                      resume_from_checkpoint=chkpt_path,
+                      enable_model_summary=False,
+                      **OmegaConf.to_container(config.trainer))
 
     # Tuning only has an effect when either auto_scale_batch_size or
     # auto_lr_find is set to true.
