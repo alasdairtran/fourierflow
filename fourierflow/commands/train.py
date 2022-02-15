@@ -126,9 +126,12 @@ def main(config_path: Path,
         data = builder.inference_data()
         T = data.shape[-1]
         n_steps = routine.n_steps or (T - 1)
+        routine = routine.cuda()
+
         start = time.time()
         routine.infer(data)
         elapsed = time.time() - start
+
         elapsed /= len(data)
         elapsed /= routine.step_size * n_steps
         logger.experiment.log({'inference_time': elapsed})
