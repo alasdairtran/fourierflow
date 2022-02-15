@@ -155,6 +155,9 @@ class LearnedInterpolator:
 
         return trajs
 
+    def cuda(self):
+        pass
+
 
 def repeated(f: Callable, steps: int) -> Callable:
     """Returns a repeatedly applied version of f()."""
