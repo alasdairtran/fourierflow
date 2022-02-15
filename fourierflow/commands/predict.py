@@ -28,7 +28,7 @@ def main(data_path: Path,
          overrides: Optional[List[str]] = Argument(None),
          trial: Optional[int] = None,
          map_location: Optional[str] = None,
-         strict: bool = True,
+         remove_keys: Optional[str] = None,
          debug: bool = False):
     """Test a Pytorch Lightning experiment."""
 
@@ -83,11 +83,14 @@ def main(data_path: Path,
     seed = config.get('seed', rs.randint(1000, 1000000))
     pl.seed_everything(seed, workers=True)
     config.seed = seed
+    if 'seed' in config.trainer:
+        config.trainer.seed = seed
 
     # builder = Builder.from_params(params['builder'])
     routine = instantiate(config.routine)
+    remove_keys = remove_keys.split(',') if remove_keys else []
     routine.load_lightning_model_state(
-        str(checkpoint_path), map_location, strict=strict)
+        str(checkpoint_path), map_location, remove_keys=remove_keys)
 
     if 'kolmogorov' in str(data_path):
         k = config.builder.test_dataset.k
