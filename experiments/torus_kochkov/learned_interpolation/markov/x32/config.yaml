@@ -92,7 +92,7 @@ trainer:
   _target_: fourierflow.trainers.JAXTrainer
   max_epochs: 10
   limit_train_batches: 4000
-  seed: 0 # placeholder - will be overridden
+  seed: null # placeholder - will be overridden
 callbacks:
   - _target_: fourierflow.callbacks.JAXModelCheckpoint
     save_dir: experiments/torus_kochkov/learned_interpolation/markov/x32/checkpoints
