@@ -168,7 +168,7 @@ class LearnedInterpolator:
         return trajs
 
     def cuda(self):
-        pass
+        return self
 
     def convert_data(self, data):
         return data
