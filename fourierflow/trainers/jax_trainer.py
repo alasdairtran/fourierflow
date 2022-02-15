@@ -32,6 +32,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
         self.seed = seed
         self.logger = logger or DummyLogger()
         self.global_step = -1
+        self.logs = {}
 
     def fit(self, routine, builder):
         self.routine = routine
@@ -80,6 +81,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
                 outputs = routine.valid_step(params, **batch)
                 logs = outputs
                 logs = {f'valid_{k}': v for k, v in logs.items()}
+                self.logs = logs
                 logger.info(logs)
                 # TODO: merge logs when there is more than one batch
                 self.logger.log_metrics(logs, step=self.global_step)

@@ -9,12 +9,14 @@ from .callback import Callback
 
 
 class JAXModelCheckpoint(Callback):
-    def __init__(self, save_dir):
+    def __init__(self, save_dir, monitor):
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
+        self.monitor = monitor
 
     def on_validation_epoch_end(self, trainer, routine):
-        path = self.save_dir / f'params_{trainer.current_epoch}.pkl'
+        stats = f"{self.monitor}={trainer.logs[self.monitor]:.4f}"
+        path = self.save_dir / f'epoch={trainer.current_epoch}-{stats}.pkl'
         with open(path, 'wb') as f:
             pickle.dump(routine.params, f)
 
