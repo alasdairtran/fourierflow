@@ -5,6 +5,7 @@ from typing import List, Optional
 import jax
 import numpy as np
 import optax
+import wandb
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers.base import DummyLogger
 from tqdm import tqdm
@@ -105,5 +106,12 @@ class JAXTrainer(TrainerCallbackHookMixin):
             # TODO: merge logs when there is more than one batch
             scalar_metrics = {k: v for k, v in logs if np.isscalar(v)}
             self.logger.log_metrics(scalar_metrics)
+
+            if 'test_correlations' in logs:
+                corr_rows = list(zip(logs['times'], logs['test_correlations']))
+                self.logger.experiment.log({
+                    'test_correlations': wandb.Table(['time', 'corr'], corr_rows)
+                })
+
             self.on_test_batch_end(outputs, batch, i, 0)
         self.on_test_epoch_end()

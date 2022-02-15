@@ -238,7 +238,7 @@ class KolmogorovJAXTrajectoryDataset(TorchDataset):
         e = s + self.outer_steps * s
 
         out = {
-            'times': ds.time.data,
+            'times': corr_ds.time.data[..., s:e:s],
             'vx': ds.vx.data[..., 0],
             'vy': ds.vy.data[..., 0],
             'targets': corr_ds.vorticity.data[..., s:e:s],

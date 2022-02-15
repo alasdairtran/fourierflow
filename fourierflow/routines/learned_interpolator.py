@@ -122,6 +122,7 @@ class LearnedInterpolator:
             'time_until': time_until.item(),
             'rho': -loss.item(),
             'correlations': np.array(rho),
+            'times': np.array(times[0]),
         }
 
         return logs
