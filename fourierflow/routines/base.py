@@ -1,4 +1,4 @@
-from typing import IO, Callable, Dict, Optional, Union
+from typing import IO, Callable, Dict, List, Optional, Union
 
 import torch
 from omegaconf import OmegaConf
@@ -36,7 +36,7 @@ class Routine(LightningModule):
                                    checkpoint_path: Union[str, IO],
                                    map_location: Optional[Union[Dict[str, str],
                                                                 str, torch.device, int, Callable]] = None,
-                                   strict: bool = True):
+                                   remove_keys: Optional[List[str]] = None):
         if map_location is not None:
             checkpoint = pl_load(checkpoint_path, map_location=map_location)
         else:
@@ -45,8 +45,9 @@ class Routine(LightningModule):
 
         # Allow us to run super-resolution evaluations
         state_dict = checkpoint['state_dict']
-        for key in ['k_x', 'k_y', 'lap']:
-            if key in state_dict:
-                del state_dict[key]
+        remove_keys = remove_keys or []
+        strict = len(remove_keys) == 0
+        for key in remove_keys:
+            del state_dict[key]
 
         self.load_state_dict(state_dict, strict=strict)

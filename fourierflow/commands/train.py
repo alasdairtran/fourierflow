@@ -117,8 +117,7 @@ def main(config_path: Path,
     paths = list(chkpt_dir.glob(f'trial-{trial}-*/epoch*.ckpt'))
     assert len(paths) == 1
     checkpoint_path = paths[0]
-    routine.load_lightning_model_state(
-        str(checkpoint_path), None, strict=True)
+    routine.load_lightning_model_state(str(checkpoint_path))
 
     trainer.test(routine, datamodule=builder)
 

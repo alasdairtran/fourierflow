@@ -70,7 +70,7 @@ class LearnedInterpolator:
 
         self.model = hk.without_apply_rng(hk.transform(jax.vmap(step_fwd)))
 
-    def load_lightning_model_state(self, path, map_location, strict):
+    def load_lightning_model_state(self, path, map_location, remove_keys):
         with open(path, 'rb') as f:
             params = pickle.load(f)
             self.params = params

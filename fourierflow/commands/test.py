@@ -24,7 +24,7 @@ def main(config_path: Path,
          force: bool = False,
          trial: int = 0,
          map_location: Optional[str] = None,
-         strict: bool = True,
+         remove_keys: str = '',
          debug: bool = False,
          no_logging: bool = False):
     """Test a Pytorch Lightning experiment."""
@@ -74,8 +74,9 @@ def main(config_path: Path,
 
     builder = instantiate(config.builder)
     routine = instantiate(config.routine)
+    remove_keys = remove_keys.split(',')
     routine.load_lightning_model_state(
-        str(checkpoint_path), map_location, strict=strict)
+        str(checkpoint_path), map_location, remove_keys=remove_keys)
 
     # Start the main testing pipeline.
     Trainer = import_string(config.trainer.pop(
