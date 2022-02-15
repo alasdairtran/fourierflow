@@ -45,8 +45,8 @@ def main(config_path: Path,
     if not checkpoint_path:
         chkpt_dir = Path(config_dir) / 'checkpoints'
         paths = list(chkpt_dir.glob(f'trial-{trial}-*/epoch*.ckpt'))
-        if len(paths) > 1:
-            paths = list(chkpt_dir.glob(f'trial-{trial}-*/last.ckpt'))
+        # if len(paths) > 1:
+        #     paths = list(chkpt_dir.glob(f'trial-{trial}-*/last.ckpt'))
         assert len(paths) == 1
         checkpoint_path = paths[0]
         wandb_id = Path(checkpoint_path).parent.name
