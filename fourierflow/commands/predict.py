@@ -86,48 +86,24 @@ def main(data_path: Path,
     if 'seed' in config.trainer:
         config.trainer.seed = seed
 
-    # builder = Builder.from_params(params['builder'])
+    builder = instantiate(config.builder)
     routine = instantiate(config.routine)
     remove_keys = remove_keys.split(',') if remove_keys else []
     routine.load_lightning_model_state(
         str(checkpoint_path), map_location, remove_keys=remove_keys)
 
-    if 'kolmogorov' in str(data_path):
-        k = config.builder.test_dataset.k
+    data = builder.inference_data()
+    T = data.shape[-1]
+    n_steps = routine.n_steps or (T - 1)
+    routine = routine.cuda()
 
-        test_ds = xr.open_dataset(data_path)
+    start = time.time()
+    routine.infer(data)
+    elapsed = time.time() - start
 
-        init_name = '_'.join(data_path.stem.split('_')[:2]) + '.nc'
-        init_path = data_path.parent.parent / 'initial_conditions' / init_name
-        init_ds = xr.open_dataset(init_path)
-        init_ds = init_ds.expand_dims(dim={'time': [0.0]})
-        ds = xr.concat([init_ds, test_ds], dim='time')
-
-        test_w = ds['vorticity'].isel(time=slice(None, None, k))
-        test_w = test_w.transpose('sample', 'x', 'y', 'time').values
-        data = torch.from_numpy(test_w).cuda()
-        T = data.shape[-1]
-        n_steps = routine.n_steps or (T - 1)
-        routine = routine.cuda()
-        with torch.no_grad():
-            start = time.time()
-            routine(data)
-            elasped = (time.time() - start) / len(data)
-            elasped = elasped / (routine.step_size * n_steps)
-
-    elif 'zongyi' in str(data_path):
-        data = scipy.io.loadmat(data_path)['u'].astype(np.float32)[:512]
-        data = torch.from_numpy(data).cuda()
-        routine = routine.cuda()
-        start = time.time()
-        with torch.no_grad():
-            routine(data)
-        elasped = time.time() - start
-
-    else:
-        raise ValueError(f'Unknown data path: {data_path}')
-
-    wandb_logger.experiment.log({'inference_time': elasped})
+    elapsed /= len(data)
+    elapsed /= routine.step_size * n_steps
+    wandb_logger.experiment.log({'inference_time': elapsed})
 
 
 if __name__ == "__main__":
