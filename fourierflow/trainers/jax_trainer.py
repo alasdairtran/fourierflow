@@ -37,7 +37,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
         self.callbacks = callbacks or []
         self.current_epoch = -1
         self.routine = None
-        self.seed = 32
+        self.seed = seed
         self.logger = logger or DummyLogger()
         self.global_step = -1
         self.logs = {}

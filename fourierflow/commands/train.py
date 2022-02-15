@@ -55,6 +55,8 @@ def main(config_path: Path,
     config.seed = seed
     wandb_id = get_experiment_id(checkpoint_id, trial, config_dir, resume)
     config.trial = trial
+    if 'seed' in config.trainer:
+        config.trainer.seed = seed
 
     # Initialize the dataset and experiment modules.
     builder = instantiate(config.builder)
