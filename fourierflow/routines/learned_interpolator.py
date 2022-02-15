@@ -1,16 +1,11 @@
 import pickle
-from typing import Any, Callable, Mapping, Tuple
+from typing import Callable
 
-import elegy as eg
 import haiku as hk
 import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-from elegy.model.model import M
-from elegy.model.model_core import (PredStepOutput, TestStepOutput,
-                                    TrainStepOutput)
-from elegy.types import Logs
 from jax_cfd.base.boundaries import periodic_boundary_conditions
 from jax_cfd.base.funcutils import init_context, scan, trajectory
 from jax_cfd.base.grids import Grid, GridArray, GridVariable
@@ -18,13 +13,8 @@ from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.ml.advections import ConvectionModule
 from jax_cfd.ml.equations import modular_navier_stokes_model
 from jax_cfd.ml.physics_specifications import BasePhysicsSpecs
-from optax import l2_loss
-from overrides import overrides
-from tqdm import tqdm
-from treex import Inputs, LossAndLogs
 
 from fourierflow.utils import velocity_to_vorticity
-from fourierflow.utils.array import downsample_vorticity
 
 
 class LearnedInterpolator:
