@@ -12,7 +12,8 @@ from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
 from typer import Argument, Typer
 
-from fourierflow.utils import delete_old_results, get_experiment_id
+from fourierflow.utils import (delete_old_results, get_experiment_id,
+                               import_string)
 
 app = Typer()
 
@@ -68,6 +69,8 @@ def main(config_path: Path,
     seed = config.get('seed', rs.randint(1000, 1000000))
     pl.seed_everything(seed, workers=True)
     config.seed = seed
+    if 'seed' in config.trainer:
+        config.trainer.seed = seed
 
     builder = instantiate(config.builder)
     routine = instantiate(config.routine)
@@ -75,12 +78,15 @@ def main(config_path: Path,
         str(checkpoint_path), map_location, strict=strict)
 
     # Start the main testing pipeline.
+    Trainer = import_string(config.trainer.pop(
+        '_target_', 'pytorch_lightning.Trainer'))
+
     if no_logging:
-        trainer = pl.Trainer(logger=False, enable_checkpointing=False,
-                             **OmegaConf.to_container(config.trainer))
+        trainer = Trainer(logger=False, enable_checkpointing=False,
+                          **OmegaConf.to_container(config.trainer))
     else:
-        trainer = pl.Trainer(logger=wandb_logger,
-                             **OmegaConf.to_container(config.trainer))
+        trainer = Trainer(logger=wandb_logger,
+                          **OmegaConf.to_container(config.trainer))
     trainer.test(routine, datamodule=builder)
 
 
