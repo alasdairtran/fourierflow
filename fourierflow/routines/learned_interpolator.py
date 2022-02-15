@@ -1,3 +1,4 @@
+import pickle
 from typing import Any, Callable, Mapping, Tuple
 
 import elegy as eg
@@ -68,6 +69,11 @@ class LearnedInterpolator:
             return {'vx': vx, 'vy': vy}
 
         self.model = hk.without_apply_rng(hk.transform(jax.vmap(step_fwd)))
+
+    def load_lightning_model_state(self, path, map_location, strict):
+        with open(path, 'rb') as f:
+            params = pickle.load(f)
+            self.params = params
 
     def init(self, seed):
         with init_context():
