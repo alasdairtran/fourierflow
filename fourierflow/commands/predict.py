@@ -95,6 +95,7 @@ def main(data_path: Path,
     T = data.shape[-1]
     n_steps = routine.n_steps or (T - 1)
     routine = routine.cuda()
+    data = routine.convert_data(data)
 
     start = time.time()
     routine.infer(data)
