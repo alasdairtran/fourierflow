@@ -15,6 +15,10 @@ class Routine(LightningModule):
         self.optimizer = optimizer
         self.scheduler = scheduler
 
+    def infer(self, data):
+        with torch.no_grad():
+            return self.forward(data)
+
     def on_train_start(self):
         n = sum(p.numel() for p in self.parameters() if p.requires_grad)
         if self.logger:
