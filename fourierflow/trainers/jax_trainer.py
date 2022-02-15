@@ -32,7 +32,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
         plugins=None,
     ):
         self.max_epochs = max_epochs
-        self.trial = 0
+        self.weights_save_path = weights_save_path
         self.limit_train_batches = limit_train_batches
         self.callbacks = callbacks or []
         self.current_epoch = -1

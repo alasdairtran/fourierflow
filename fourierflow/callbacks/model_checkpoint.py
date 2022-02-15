@@ -13,14 +13,31 @@ class JAXModelCheckpoint(Callback):
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self.monitor = monitor
+        self.dirpath = None
 
     def on_validation_epoch_end(self, trainer, routine):
-        save_dir = self.save_dir / f'trial-{trainer.trial}'
-        save_dir.mkdir(parents=True, exist_ok=True)
+        self.__resolve_ckpt_dir(trainer)
         stats = f"{self.monitor}={trainer.logs[self.monitor]:.4f}"
-        path = save_dir / f'epoch={trainer.current_epoch}-{stats}.pkl'
+        path = self.dirpath / f'epoch={trainer.current_epoch}-{stats}.pkl'
         with open(path, 'wb') as f:
             pickle.dump(routine.params, f)
+
+    def __resolve_ckpt_dir(self, trainer) -> None:
+        if self.dirpath is not None:
+            return  # short circuit
+
+        if trainer.logger is not None:
+            version = (
+                trainer.logger.version
+                if isinstance(trainer.logger.version, str)
+                else f"version_{trainer.logger.version}"
+            )
+            ckpt_path = os.path.join(
+                trainer.weights_save_path, "checkpoints", version)
+        else:
+            ckpt_path = os.path.join(trainer.weights_save_path, "checkpoints")
+
+        self.dirpath = ckpt_path
 
 
 class CustomModelCheckpoint(ModelCheckpoint):
