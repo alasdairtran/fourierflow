@@ -1,5 +1,6 @@
 
 import logging
+from pathlib import Path
 from typing import List, Optional
 
 import jax
@@ -32,7 +33,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
         plugins=None,
     ):
         self.max_epochs = max_epochs
-        self.weights_save_path = weights_save_path
+        self.weights_save_path = Path(weights_save_path)
         self.limit_train_batches = limit_train_batches
         self.callbacks = callbacks or []
         self.current_epoch = -1

@@ -97,3 +97,4 @@ callbacks:
   - _target_: fourierflow.callbacks.JAXModelCheckpoint
     save_dir: experiments/torus_kochkov/learned_interpolation/markov/x64/checkpoints
     monitor: valid_time_until
+    mode: max

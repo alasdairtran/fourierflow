@@ -1,5 +1,6 @@
 import os
 import pickle
+import shutil
 from pathlib import Path
 
 import pytorch_lightning as pl
@@ -9,18 +10,38 @@ from .callback import Callback
 
 
 class JAXModelCheckpoint(Callback):
-    def __init__(self, save_dir, monitor):
+    def __init__(self, save_dir, monitor, mode):
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self.monitor = monitor
+        self.mode = mode
         self.dirpath = None
+
+        assert mode in ['min', 'max']
+        self.best_metric = float('inf') if mode == 'min' else -float('inf')
 
     def on_validation_epoch_end(self, trainer, routine):
         self.__resolve_ckpt_dir(trainer)
-        stats = f"{self.monitor}={trainer.logs[self.monitor]:.4f}"
-        path = self.dirpath / f'epoch={trainer.current_epoch}-{stats}.pkl'
-        with open(path, 'wb') as f:
-            pickle.dump(routine.params, f)
+
+        metric = trainer.logs[self.monitor]
+        stats = f"{self.monitor}={metric:.4f}"
+        path = self.dirpath / f'epoch={trainer.current_epoch}-{stats}.ckpt'
+
+        if self.is_better(metric):
+            self.best_metric = metric
+
+            for old_path in list(self.dirpath.glob('*.ckpt')):
+                old_path.unlink()
+
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, 'wb') as f:
+                pickle.dump(routine.params, f)
+
+    def is_better(self, metric):
+        if self.mode == 'min':
+            return metric < self.best_metric
+        else:
+            return metric > self.best_metric
 
     def __resolve_ckpt_dir(self, trainer) -> None:
         if self.dirpath is not None:
@@ -32,10 +53,9 @@ class JAXModelCheckpoint(Callback):
                 if isinstance(trainer.logger.version, str)
                 else f"version_{trainer.logger.version}"
             )
-            ckpt_path = os.path.join(
-                trainer.weights_save_path, "checkpoints", version)
+            ckpt_path = trainer.weights_save_path / "checkpoints" / version
         else:
-            ckpt_path = os.path.join(trainer.weights_save_path, "checkpoints")
+            ckpt_path = trainer.weights_save_path / "checkpoints"
 
         self.dirpath = ckpt_path
 
