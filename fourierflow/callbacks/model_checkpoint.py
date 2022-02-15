@@ -15,7 +15,7 @@ class JAXModelCheckpoint(Callback):
         self.monitor = monitor
 
     def on_validation_epoch_end(self, trainer, routine):
-        save_dir = self.save_dir / trainer.trial
+        save_dir = self.save_dir / f'trial-{trainer.trial}'
         save_dir.mkdir(parents=True, exist_ok=True)
         stats = f"{self.monitor}={trainer.logs[self.monitor]:.4f}"
         path = save_dir / f'epoch={trainer.current_epoch}-{stats}.pkl'
