@@ -22,7 +22,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
     def __init__(
         self,
         max_epochs,
-        weights_save_path: str,
+        weights_save_path: Optional[str] = None,
         enable_model_summary: bool = False,
         resume_from_checkpoint=None,
         limit_train_batches=None,
@@ -33,7 +33,9 @@ class JAXTrainer(TrainerCallbackHookMixin):
         plugins=None,
     ):
         self.max_epochs = max_epochs
-        self.weights_save_path = Path(weights_save_path)
+        self.weights_save_path = weights_save_path
+        if weights_save_path:
+            self.weights_save_path = Path(weights_save_path)
         self.limit_train_batches = limit_train_batches
         self.callbacks = callbacks or []
         self.current_epoch = -1
