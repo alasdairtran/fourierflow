@@ -11,7 +11,6 @@ import ptvsd
 import pytorch_lightning as pl
 import scipy.io
 import torch
-import xarray as xr
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
