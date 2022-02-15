@@ -43,6 +43,7 @@ class LearnedInterpolator:
         self.step_size = dt * inner_steps
         self.optimizer = optimizer
         self.params = None
+        self.n_steps = outer_steps
 
         def step_fwd(vx, vy):
             inputs = []
@@ -59,6 +60,17 @@ class LearnedInterpolator:
             return {'vx': vx, 'vy': vy}
 
         self.model = hk.without_apply_rng(hk.transform(jax.vmap(step_fwd)))
+
+    def infer(self, data):
+        def step_fn(**x): return self.model.apply(self.params, **x)
+
+        outer_step_fn = repeated(step_fn, self.inner_steps)
+        trajectory_fn = trajectory(
+            outer_step_fn, self.outer_steps, lambda x: x)
+        vx = data['vx'][..., 0]
+        vy = data['vy'][..., 0]
+        _, trajs = trajectory_fn({'vx': vx, 'vy': vy})
+        return trajs
 
     def load_lightning_model_state(self, path, map_location, remove_keys):
         with open(path, 'rb') as f:
