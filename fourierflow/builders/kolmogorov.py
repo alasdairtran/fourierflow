@@ -58,6 +58,13 @@ class KolmogorovBuilder(Builder):
                                  **self.kwargs)
         return loader
 
+    def inference_data(self):
+        ds = self.test_dataset.ds
+        k = self.test_dataset.k
+        test_w = ds['vorticity'].isel(time=slice(None, None, k))
+        data = torch.from_numpy(test_w).cuda()
+        return data
+
 
 class KolmogorovJAXDataset(Dataset):
     def __init__(self, path, k, unroll_length, in_memory=False):
