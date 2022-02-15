@@ -22,8 +22,7 @@ app = Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(data_path: Path,
-         config_path: Optional[Path] = Argument(None),
+def main(config_path: Optional[Path] = Argument(None),
          overrides: Optional[List[str]] = Argument(None),
          trial: Optional[int] = None,
          map_location: Optional[str] = None,
@@ -91,17 +90,17 @@ def main(data_path: Path,
     routine.load_lightning_model_state(
         str(checkpoint_path), map_location, remove_keys=remove_keys)
 
-    data = builder.inference_data()
-    T = data.shape[-1]
+    batch = builder.inference_data()
+    T = batch['data'].shape[-1]
     n_steps = routine.n_steps or (T - 1)
     routine = routine.cuda()
-    data = routine.convert_data(data)
+    batch = routine.convert_data(batch)
 
     start = time.time()
-    routine.infer(data)
+    routine.infer(batch)
     elapsed = time.time() - start
 
-    elapsed /= len(data)
+    elapsed /= len(batch['data'])
     elapsed /= routine.step_size * n_steps
     wandb_logger.experiment.log({'inference_time': elapsed})
 
