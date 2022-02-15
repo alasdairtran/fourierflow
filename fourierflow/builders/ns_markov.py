@@ -57,7 +57,7 @@ class NSMarkovBuilder(Builder):
     def inference_data(self):
         data = scipy.io.loadmat(self.data_path)['u'].astype(np.float32)[:512]
         data = torch.from_numpy(data).cuda()
-        return data
+        return {'data': data}
 
 
 class NavierStokesTrainingDataset(Dataset):

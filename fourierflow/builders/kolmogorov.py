@@ -59,10 +59,13 @@ class KolmogorovBuilder(Builder):
         return loader
 
     def inference_data(self):
-        ds = self.test_dataset.ds
         k = self.test_dataset.k
-        test_w = ds['vorticity'].isel(time=slice(None, None, k))
-        data = test_w.values
+        ds = self.test_dataset.ds.isel(time=slice(None, None, k))
+        data = {
+            'data': ds.vorticity.data,
+            'vx': ds.vx.data,
+            'vy': ds.vy.data,
+        }
         return data
 
 

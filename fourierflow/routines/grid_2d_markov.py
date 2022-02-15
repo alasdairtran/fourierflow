@@ -93,8 +93,7 @@ class Grid2DMarkovExperiment(Routine):
             self.register_buffer('lap', torch.from_numpy(np.array(lap)))
 
     def forward(self, data):
-        batch = {'data': data}
-        return self._valid_step(batch)
+        return self._valid_step(data)
 
     def encode_positions(self, dim_sizes, low=-1, high=1, fourier=True):
         # dim_sizes is a list of dimensions in all positional/time dimensions
