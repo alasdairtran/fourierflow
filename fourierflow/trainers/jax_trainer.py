@@ -75,6 +75,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
             self.on_validation_epoch_start()
             validate_batches = iter(builder.val_dataloader())
             for i, batch in tqdm(enumerate(validate_batches)):
+                assert i == 0, "Need to implement log merging first"
                 self.on_validation_batch_start(batch, i, 0)
                 outputs = routine.valid_step(params, **batch)
                 logs = outputs
@@ -86,3 +87,18 @@ class JAXTrainer(TrainerCallbackHookMixin):
             self.on_validation_epoch_end()
 
         self.on_train_end()
+
+    def test(self, routine, builder):
+        self.on_test_epoch_start()
+        test_batches = iter(builder.test_dataloader())
+        for i, batch in tqdm(enumerate(test_batches)):
+            assert i == 0, "Need to implement log merging first"
+            self.on_test_batch_start(batch, i, 0)
+            outputs = routine.valid_step(routine.params, **batch)
+            logs = outputs
+            logs = {f'test_{k}': v for k, v in logs.items()}
+            logger.info(logs)
+            # TODO: merge logs when there is more than one batch
+            self.logger.log_metrics(logs)
+            self.on_test_batch_end(outputs, batch, i, 0)
+        self.on_test_epoch_end()

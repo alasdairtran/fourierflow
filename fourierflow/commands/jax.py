@@ -76,6 +76,7 @@ def main(config_path: Path,
                          logger=logger,
                          **OmegaConf.to_container(config.trainer))
     trainer.fit(routine, builder)
+    trainer.test(routine, builder)
 
 
 if __name__ == "__main__":
