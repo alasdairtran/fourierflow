@@ -12,10 +12,8 @@ import scipy.io
 import torch
 import xarray as xr
 from hydra.utils import instantiate
-from jax_cfd.data.xarray_utils import vorticity_2d
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
-from tqdm import tqdm
 from typer import Argument, Typer
 
 from fourierflow.builders.synthetic.ns_2d import solve_navier_stokes_2d
@@ -92,7 +90,8 @@ def main(data_path: Path,
 
         test_ds = xr.open_dataset(data_path)
 
-        init_path = data_path.parent.parent / 'initial_conditions' / data_path.name
+        init_name = '_'.join(data_path.stem.split('_')[:2]) + '.nc'
+        init_path = data_path.parent.parent / 'initial_conditions' / init_name
         init_ds = xr.open_dataset(init_path)
         init_ds = init_ds.expand_dims(dim={'time': [0.0]})
         ds = xr.concat([init_ds, test_ds], dim='time')
@@ -109,7 +108,7 @@ def main(data_path: Path,
             elasped = (time.time() - start) / len(data)
             elasped = elasped / (routine.step_size * n_steps)
 
-    else:
+    elif 'zongyi' in str(data_path):
         data = scipy.io.loadmat(data_path)['u'].astype(np.float32)[:512]
         data = torch.from_numpy(data).cuda()
         routine = routine.cuda()
@@ -117,6 +116,9 @@ def main(data_path: Path,
         with torch.no_grad():
             routine(data)
         elasped = time.time() - start
+
+    else:
+        raise ValueError(f'Unknown data path: {data_path}')
 
     wandb_logger.experiment.log({'inference_time': elasped})
 
