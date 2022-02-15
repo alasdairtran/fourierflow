@@ -3,6 +3,7 @@ import logging
 from typing import List, Optional
 
 import jax
+import numpy as np
 import optax
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers.base import DummyLogger
@@ -84,9 +85,9 @@ class JAXTrainer(TrainerCallbackHookMixin):
                 logs = outputs
                 logs = {f'valid_{k}': v for k, v in logs.items()}
                 self.logs = logs
-                logger.info(logs)
+                scalar_metrics = {k: v for k, v in logs if np.isscalar(v)}
                 # TODO: merge logs when there is more than one batch
-                self.logger.log_metrics(logs, step=self.global_step)
+                self.logger.log_metrics(scalar_metrics, step=self.global_step)
                 self.on_validation_batch_end(outputs, batch, i, 0)
             self.on_validation_epoch_end()
 
@@ -101,8 +102,8 @@ class JAXTrainer(TrainerCallbackHookMixin):
             outputs = routine.valid_step(routine.params, **batch)
             logs = outputs
             logs = {f'test_{k}': v for k, v in logs.items()}
-            logger.info(logs)
             # TODO: merge logs when there is more than one batch
-            self.logger.log_metrics(logs)
+            scalar_metrics = {k: v for k, v in logs if np.isscalar(v)}
+            self.logger.log_metrics(scalar_metrics)
             self.on_test_batch_end(outputs, batch, i, 0)
         self.on_test_epoch_end()
