@@ -3,10 +3,10 @@ import time
 from functools import partial
 from typing import Callable, Dict, List, Optional
 
-import elegy as eg
 import jax
 import jax.numpy as jnp
 import numpy as np
+import torch
 import xarray as xr
 from hydra.utils import instantiate
 from jax_cfd.base.boundaries import periodic_boundary_conditions
@@ -17,7 +17,7 @@ from jax_cfd.base.initial_conditions import (filtered_velocity_field,
                                              wrap_velocities)
 from jax_cfd.base.resize import downsample_staggered_velocity
 from jax_cfd.spectral.utils import vorticity_to_velocity
-from torch.utils.data import Dataset as TorchDataset
+from torch.utils.data import DataLoader, Dataset
 
 from fourierflow.utils import downsample_vorticity_hat, import_string
 
@@ -40,26 +40,26 @@ class KolmogorovBuilder(Builder):
         self.test_dataset = test_dataset
         self.DataLoader = import_string(loader_target)
 
-    def train_dataloader(self) -> eg.data.DataLoader:
+    def train_dataloader(self) -> DataLoader:
         loader = self.DataLoader(self.train_dataset,
                                  shuffle=True,
                                  **self.kwargs)
         return loader
 
-    def val_dataloader(self) -> eg.data.DataLoader:
+    def val_dataloader(self) -> DataLoader:
         loader = self.DataLoader(self.valid_dataset,
                                  shuffle=False,
                                  **self.kwargs)
         return loader
 
-    def test_dataloader(self) -> eg.data.DataLoader:
+    def test_dataloader(self) -> DataLoader:
         loader = self.DataLoader(self.test_dataset,
                                  shuffle=False,
                                  **self.kwargs)
         return loader
 
 
-class KolmogorovJAXDataset(TorchDataset):
+class KolmogorovJAXDataset(Dataset):
     def __init__(self, path, k, unroll_length, in_memory=False):
         self.ds = xr.open_dataset(path, engine='h5netcdf')
         self.k = k
@@ -99,7 +99,7 @@ class KolmogorovJAXDataset(TorchDataset):
         return inputs, outputs
 
 
-class KolmogorovTorchDataset(TorchDataset):
+class KolmogorovTorchDataset(Dataset):
     def __init__(self, path, k, in_memory=False):
         self.ds = xr.open_dataset(path, engine='h5netcdf')
         self.k = k
@@ -130,7 +130,7 @@ class KolmogorovTorchDataset(TorchDataset):
         }
 
 
-class KolmogorovMultiTorchDataset(TorchDataset):
+class KolmogorovMultiTorchDataset(Dataset):
     def __init__(self, paths, k, batch_size):
         self.dss = [xr.open_dataset(path, engine='h5netcdf') for path in paths]
         self.k = k
@@ -165,7 +165,7 @@ class KolmogorovMultiTorchDataset(TorchDataset):
             self.ds_index = (self.ds_index + 1) % len(self.dss)
 
 
-class KolmogorovTrajectoryDataset(TorchDataset):
+class KolmogorovTrajectoryDataset(Dataset):
     def __init__(self, init_path, path, corr_path, k, end=None, in_memory=False):
         ds = xr.open_dataset(path, engine='h5netcdf')
         init_ds = xr.open_dataset(init_path, engine='h5netcdf')
@@ -203,7 +203,7 @@ class KolmogorovTrajectoryDataset(TorchDataset):
         return out
 
 
-class KolmogorovJAXTrajectoryDataset(TorchDataset):
+class KolmogorovJAXTrajectoryDataset(Dataset):
     def __init__(self, init_path, path, corr_path, k, end=None,
                  inner_steps=1, outer_steps=100, in_memory=False):
         ds = xr.open_dataset(path, engine='h5netcdf')
