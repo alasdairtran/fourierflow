@@ -74,6 +74,7 @@ def main(config_path: Path,
     trainer = JAXTrainer(callbacks=callbacks,
                          seed=seed,
                          logger=logger,
+                         trial=trial,
                          **OmegaConf.to_container(config.trainer))
     trainer.fit(routine, builder)
     trainer.test(routine, builder)

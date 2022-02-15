@@ -19,12 +19,14 @@ class JAXTrainer(TrainerCallbackHookMixin):
     def __init__(
         self,
         max_epochs,
+        trial,
         limit_train_batches=None,
         callbacks: Optional[List[Callback]] = None,
         logger: Optional[WandbLogger] = None,
         seed: Optional[int] = None,
     ):
         self.max_epochs = max_epochs
+        self.trial = trial
         self.limit_train_batches = limit_train_batches
         self.callbacks = callbacks or []
         self.current_epoch = -1
