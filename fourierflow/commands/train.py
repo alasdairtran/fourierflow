@@ -1,4 +1,5 @@
 import os
+import time
 from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional, cast
@@ -118,8 +119,19 @@ def main(config_path: Path,
     assert len(paths) == 1
     checkpoint_path = paths[0]
     routine.load_lightning_model_state(str(checkpoint_path))
-
     trainer.test(routine, datamodule=builder)
+
+    # Compute inference time
+    if logger:
+        data = builder.inference_data()
+        T = data.shape[-1]
+        n_steps = routine.n_steps or (T - 1)
+        start = time.time()
+        routine.infer(data)
+        elapsed = time.time() - start
+        elapsed /= len(data)
+        elapsed /= routine.step_size * n_steps
+        logger.experiment.log({'inference_time': elapsed})
 
 
 if __name__ == "__main__":
