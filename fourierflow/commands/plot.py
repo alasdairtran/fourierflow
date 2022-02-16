@@ -261,11 +261,11 @@ def plot_energy_spectrum(ax):
     models['F-FNO (256x256)'] = xr.open_dataset(path)
 
     for size in sizes:
-        path = f'../data/kolmogorov/re_1000/baselines/{size}_64.nc'
+        path = f'../data/kolmogorov/re_1000/baselines/{size}_64_1.nc'
         models[f'DNS ({size}x{size})'] = xr.open_dataset(
             path).isel(time=slice(19, None, 20))
 
-    path = f'../data/kolmogorov/re_1000/trajectories/test_64.nc'
+    path = f'../data/kolmogorov/re_1000/trajectories/test_64_4.nc'
     models['DNS (2048x2048)'] = xr.open_dataset(
         path).isel(time=slice(19, None, 20))
 
@@ -337,9 +337,9 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     sizes = [32, 64, 128, 256, 512, 1024]
     simulations = {}
     for size in sizes:
-        path = f'../data/kolmogorov/re_1000/baselines/{size}_32.nc'
+        path = f'../data/kolmogorov/re_1000/baselines/{size}_32_1.nc'
         simulations[size] = xr.open_dataset(path)
-    path = '../data/kolmogorov/re_1000/trajectories/test_32.nc'
+    path = '../data/kolmogorov/re_1000/trajectories/test_32_4.nc'
     simulations[2048] = xr.open_dataset(path)
 
     combined = xr.concat(simulations.values(), dim='size')
@@ -361,7 +361,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     ax.set_xlabel('Runtime per time unit (s)')
     ax.set_ylabel('Time until correlation < 95%')
     ax.set_xlim(1e-3, 2e2)
-    ax.set_ylim(0, 6.5)
+    ax.set_ylim(0, 8)
     ax.set_xscale('log')
     # array([0.448799, 1.248222, 2.440344, 3.744666, 5.048988, 6.40941 , 0.      ])
     # Compared to original paper:
@@ -373,40 +373,14 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
         xytext = (xy[0] * 1.15, xy[1] - 0.25)
         ax.annotate(f'{s}x{s}', xy, xytext)
 
-    # # # Learned Interpolation # # #
-    # sizes = [64, 128]
-    # simulations = {}
-    # for size in sizes:
-    #     path = f'../data/kolmogorov/re_1000/learned_interpolation/{size}_32.nc'
-    #     simulations[size] = xr.open_dataset(path)
-    # path = '../data/kolmogorov/re_1000/trajectories/test_32.nc'
-    # simulations[2048] = xr.open_dataset(path)
-
-    # combined = xr.concat(simulations.values(), dim='size')
-    # combined.coords['size'] = sizes + [2048]
-
-    # # Even the best model diverges from ground truth by time 10. Thus we
-    # # only look at the first 10 simulation steps to save computation time.
-    # w = combined.vorticity.sel(time=slice(10))
-    # rho = grid_correlation(w, w.sel(size=2048)).compute()
-
-    # lines = []
-
-    # times_until = calculate_time_until(rho.isel(sample=slice(0, 4)))
-    # duration = combined.elapsed.mean(dim='sample') / combined.time.max()
-    # lines.append(ax.errorbar(
-    #     duration[:-1], times_until[:-1], color=pal[5], marker='o'))
-    # print('LI durations:', duration)
-
-    # # # # # # # # # # # # # # # # #
-
     api = wandb.Api()
-    dataset = 'kolmogorov_re_1000'
+    dataset = 'torus_kochkov'
 
-    groups = ['ffno/ablation/use_velocity',
-              'ffno/grid_sizes/modes_32/with_velocity/128',
-              'ffno/grid_sizes/modes_64/deeper/256',
-              ]
+    groups = [
+        'ffno/step_sizes/64/20',
+        'ffno/grid_sizes/128',
+        'ffno/grid_sizes/256',
+    ]
     times = []
     untils = []
 
@@ -429,13 +403,44 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
     grids = [64, 128, 256]
     for i, s in enumerate(grids):
         xy = (times[i], untils[i])
-
         if s == 64:
             xytext = (xy[0] * 0.15, xy[1] - 0.25)
         else:
             xytext = (xy[0] * 0.085, xy[1])
-
         ax.annotate(f'{s}x{s}', xy, xytext)
+
+    groups = [
+        # 'learned_interpolation/markov/x32',
+        'learned_interpolation/markov/x64',
+        'learned_interpolation/markov/x128',
+    ]
+    times = []
+    untils = []
+
+    for group in groups:
+        runs = api.runs(f'alasdairtran/{dataset}', {
+            'config.wandb.group': group,
+            'state': 'finished',
+        })
+        assert len(runs) == 1
+        time = [run.summary['inference_time'] for run in runs]
+        times.append(np.array(time).mean())
+
+        until = [run.summary['test_reduced_time_until'] for run in runs]
+        untils.append(np.array(until).mean())
+
+    lines.append(ax.errorbar(times, untils, color=pal[5], marker='o'))
+    print('LI runtime:', times)
+    print('LI time until:', untils)
+
+    # grids = [128]
+    # for i, s in enumerate(grids):
+    #     xy = (times[i], untils[i])
+    #     if s == 64:
+    #         xytext = (xy[0] * 0.15, xy[1] - 0.25)
+    #     else:
+    #         xytext = (xy[0] * 0.085, xy[1])
+    #     ax.annotate(f'{s}x{s}', xy, xytext)
 
     return lines
 
