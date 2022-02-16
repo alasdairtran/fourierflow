@@ -82,7 +82,7 @@ class LearnedInterpolator:
         _, trajs = trajectory_fn({'vx': vx, 'vy': vy})
         return trajs
 
-    def load_lightning_model_state(self, path, map_location, remove_keys):
+    def load_lightning_model_state(self, path, *args, **kwargs):
         with open(path, 'rb') as f:
             params = pickle.load(f)
             self.params = params
