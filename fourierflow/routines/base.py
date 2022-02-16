@@ -15,6 +15,9 @@ class Routine(LightningModule):
         self.optimizer = optimizer
         self.scheduler = scheduler
 
+    def warmup(self):
+        pass
+
     def infer(self, data):
         with torch.no_grad():
             return self.forward(data)

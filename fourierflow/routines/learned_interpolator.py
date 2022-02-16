@@ -61,6 +61,16 @@ class LearnedInterpolator:
 
         self.model = hk.without_apply_rng(hk.transform(jax.vmap(step_fwd)))
 
+    def warmup(self):
+        with init_context():
+            inputs = {}
+            for i, k in enumerate(['vx', 'vy']):
+                rgn_key = jax.random.PRNGKey(i)
+                data = jax.random.uniform(
+                    rgn_key, (1, self.size, self.size, 1), jnp.float32)
+                inputs[k] = data
+            self.infer(inputs)
+
     def infer(self, data):
         def step_fn(**x): return self.model.apply(self.params, **x)
 

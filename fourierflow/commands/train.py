@@ -128,6 +128,7 @@ def main(config_path: Path,
         n_steps = routine.n_steps or (T - 1)
         routine = routine.cuda()
         batch = routine.convert_data(batch)
+        routine.warmup()
 
         start = time.time()
         routine.infer(batch)
