@@ -60,7 +60,7 @@ def main(config_path: Optional[Path] = Argument(None),
 
     # We use Weights & Biases to track our experiments.
     chkpt_dir = Path(config_dir) / 'checkpoints'
-    paths = list(chkpt_dir.glob(f'trial-{trial}-*/*.ckpt'))
+    paths = list(chkpt_dir.glob(f'trial-{trial}-*/epoch*.ckpt'))
     # if len(paths) > 1:
     #     paths = list(chkpt_dir.glob(f'trial-{trial}-*/last.ckpt'))
     assert len(paths) == 1
