@@ -80,7 +80,7 @@ trainer:
   limit_train_batches: 1.0
 callbacks:
   - _target_: fourierflow.callbacks.CustomModelCheckpoint
-    filename: "{epoch}-{step}-{valid_loss:.5f}"
+    filename: "{epoch}-{step}-{valid_time_until:.3f}"
     save_top_k: 1
     save_last: true
     monitor: valid_time_until
