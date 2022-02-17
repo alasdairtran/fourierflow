@@ -36,6 +36,7 @@ class Grid2DMarkovExperiment(Routine):
                  use_fourier_position: bool = False,
                  clip_val: Optional[float] = 0.1,
                  automatic_optimization: bool = False,
+                 accumulate_grad_batches: int = 1,
                  noise_std: float = 0.0,
                  shuffle_grid: bool = False,
                  use_velocity: bool = False,
@@ -64,6 +65,7 @@ class Grid2DMarkovExperiment(Routine):
         self.normalizer = Normalizer([conv.input_dim], max_accumulations)
         self.register_buffer('_float', torch.FloatTensor([0.1]))
         self.automatic_optimization = automatic_optimization
+        self.accumulate_grad_batches = accumulate_grad_batches
         self.clip_val = clip_val
         self.noise_std = noise_std
         self.shuffle_grid = shuffle_grid
@@ -387,17 +389,29 @@ class Grid2DMarkovExperiment(Routine):
             self.log('train_loss', loss, prog_bar=True)
 
             if not self.automatic_optimization:
-                opt = self.optimizers()
-                opt.zero_grad()
-                self.manual_backward(loss)
-                if self.clip_val:
-                    for group in opt.param_groups:
-                        torch.nn.utils.clip_grad_value_(group["params"],
-                                                        self.clip_val)
-                opt.step()
+                if self.accumulate_grad_batches == 1:
+                    opt = self.optimizers()
+                    opt.zero_grad()
+                    self.manual_backward(loss)
+                    if self.clip_val:
+                        for group in opt.param_groups:
+                            torch.nn.utils.clip_grad_value_(group["params"],
+                                                            self.clip_val)
+                    opt.step()
 
-                sch = self.lr_schedulers()
-                sch.step()
+                else:
+                    opt = self.optimizers()
+                    self.manual_backward(loss)
+                    if (batch_idx + 1) % self.accumulate_grad_batches == 0:
+                        if self.clip_val:
+                            for group in opt.param_groups:
+                                torch.nn.utils.clip_grad_value_(group["params"],
+                                                                self.clip_val)
+                        opt.step()
+                        opt.zero_grad()
+
+                    sch = self.lr_schedulers()
+                    sch.step()
 
             return loss
 
