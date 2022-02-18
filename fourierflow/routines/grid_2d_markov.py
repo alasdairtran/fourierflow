@@ -410,8 +410,8 @@ class Grid2DMarkovExperiment(Routine):
                         opt.step()
                         opt.zero_grad()
 
-                    sch = self.lr_schedulers()
-                    sch.step()
+                sch = self.lr_schedulers()
+                sch.step()
 
             return loss
 
