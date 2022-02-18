@@ -420,6 +420,9 @@ class Grid2DMarkovExperiment(Routine):
         loss, loss_full, time_until, reduced_time_until, p, times = self.compute_losses(
             batch, loss, preds)
 
+        if torch.isnan(loss):
+            loss = 9999
+
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
         self.log('valid_time_until', time_until, prog_bar=True)
