@@ -401,6 +401,7 @@ class Grid2DMarkovExperiment(Routine):
 
                 else:
                     opt = self.optimizers()
+                    loss /= self.accumulate_grad_batches
                     self.manual_backward(loss)
                     if (batch_idx + 1) % self.accumulate_grad_batches == 0:
                         if self.clip_val:
