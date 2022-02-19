@@ -165,6 +165,8 @@ gsutil -m cp -r gs://gresearch/jax-cfd data/
 ```sh
 # DeepMind meshgraphnets simulation data
 fourierflow download meshgraphnets
+# Convert cylinder-flow data from TFRecords to HDF5 format.
+fourierflow convert cylinder-flow --data-dir data/meshgraphnets/cylinder_flow --out data/meshgraphnets/cylinder_flow/cylinder_flow.h5
 ```
 
 ## Acknowledgement
