@@ -1,3 +1,4 @@
+from .cylinder_flow import CylinderFlowBuilder
 from .kolmogorov import (KolmogorovBuilder, KolmogorovJAXDataset,
                          KolmogorovJAXTrajectoryDataset,
                          KolmogorovMultiTorchDataset, KolmogorovTorchDataset,
