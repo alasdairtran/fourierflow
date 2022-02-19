@@ -6,7 +6,6 @@ from typing import Callable, Dict, List, Optional
 import jax
 import jax.numpy as jnp
 import numpy as np
-import torch
 import xarray as xr
 from hydra.utils import instantiate
 from jax_cfd.base.boundaries import periodic_boundary_conditions
@@ -254,19 +253,6 @@ class KolmogorovJAXTrajectoryDataset(Dataset):
             'targets': corr_ds.vorticity.data[..., s:e:s],
         }
         return out
-
-
-def collate_jax(sample_list):
-    sample = sample_list[0]
-    if isinstance(sample, tuple):
-        batch = tuple(collate_jax([s[i] for s in sample_list])
-                      for i in range(len(sample)))
-    elif isinstance(sample, dict):
-        batch = {k: collate_jax([s[k] for s in sample_list]) for k in sample}
-    else:
-        batch = np.stack(sample_list, axis=0)
-
-    return batch
 
 
 def get_learned_interpolation_step_fn(grid):
