@@ -160,9 +160,18 @@ fourierflow plot correlation
 gsutil -m cp -r gs://gresearch/jax-cfd data/
 ```
 
+## Mesh Experiments
+
+```sh
+# DeepMind meshgraphnets simulation data
+fourierflow download meshgraphnets
+```
+
 ## Acknowledgement
 
 Our model is based on the code of the original author of the Fourier Neural
 Operators paper: https://github.com/zongyi-li/fourier_neural_operator
 
 JAX-based models are adapted from JAX-CFD: https://github.com/google/jax-cfd
+
+Mesh-based simulations are based on meshgraphnets: https://github.com/deepmind/deepmind-research/tree/master/meshgraphnets
