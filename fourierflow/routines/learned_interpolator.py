@@ -189,18 +189,20 @@ class LearnedInterpolator:
 
     def validation_epoch_end(self, outputs):
         logs = {}
+        total = np.sum([x['weight'] for x in outputs])
         for key in ['loss', 'reduced_time_until', 'rho', 'correlations']:
             values = [x[key] * x['weight'] for x in outputs]
-            logs[f'valid_{key}'] = np.mean(values, axis=0)
+            logs[f'valid_{key}'] = np.sum(values, axis=0) / total
         logs['valid_times'] = outputs[0]['times']
 
         return logs
 
     def test_epoch_end(self, outputs):
         logs = {}
+        total = np.sum([x['weight'] for x in outputs])
         for key in ['loss', 'reduced_time_until', 'rho', 'correlations']:
             values = [x[key] * x['weight'] for x in outputs]
-            logs[f'test_{key}'] = np.mean(values, axis=0)
+            logs[f'test_{key}'] = np.sum(values, axis=0) / total
         logs['test_times'] = outputs[0]['times']
 
         return logs

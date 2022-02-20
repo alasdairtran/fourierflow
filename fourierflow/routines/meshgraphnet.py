@@ -72,17 +72,19 @@ class MeshGraphNet:
 
     def validation_epoch_end(self, outputs):
         logs = {}
+        total = np.sum([x['weight'] for x in outputs])
         for key in ['loss']:
             values = [x[key] * x['weight'] for x in outputs]
-            logs[f'valid_{key}'] = np.mean(values, axis=0)
+            logs[f'valid_{key}'] = np.sum(values, axis=0) / total
 
         return logs
 
     def test_epoch_end(self, outputs):
         logs = {}
+        total = np.sum([x['weight'] for x in outputs])
         for key in ['loss']:
             values = [x[key] * x['weight'] for x in outputs]
-            logs[f'test_{key}'] = np.mean(values, axis=0)
+            logs[f'test_{key}'] = np.sum(values, axis=0) / total
 
         return logs
 
