@@ -61,6 +61,15 @@ class LearnedInterpolator:
 
         self.model = hk.without_apply_rng(hk.transform(jax.vmap(step_fwd)))
 
+    def step(self, params, opt_state, batch):
+        inputs, outputs = batch
+        loss_value, grads = jax.value_and_grad(
+            self.loss_fn)(params, inputs, outputs)
+        updates, opt_state = self.optimizer.update(
+            grads, opt_state, params)
+        params = optax.apply_updates(params, updates)
+        return params, opt_state, loss_value
+
     def warmup(self):
         with init_context():
             inputs = {}

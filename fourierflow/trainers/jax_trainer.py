@@ -5,7 +5,6 @@ from typing import List, Optional
 
 import jax
 import numpy as np
-import optax
 import wandb
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers.base import DummyLogger
@@ -52,16 +51,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
         self.routine = routine
         params = routine.init(self.seed)
         opt_state = routine.optimizer.init(params)
-
-        @jax.jit
-        def step(params, opt_state, batch):
-            inputs, outputs = batch
-            loss_value, grads = jax.value_and_grad(
-                routine.loss_fn)(params, inputs, outputs)
-            updates, opt_state = routine.optimizer.update(
-                grads, opt_state, params)
-            params = optax.apply_updates(params, updates)
-            return params, opt_state, loss_value
+        step = jax.jit(routine.step)
 
         self.on_train_start()
         for epoch in range(self.max_epochs):
