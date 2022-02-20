@@ -4,6 +4,7 @@ from typing import Callable
 import haiku as hk
 import jax
 import jax.numpy as jnp
+import numpy as np
 import optax
 
 
@@ -64,6 +65,24 @@ class MeshGraphNet:
         logs = {
             'loss': loss.item(),
         }
+
+        return logs
+
+    def validation_epoch_end(self, outputs):
+        # TODO: Here we assume all batch sizes are the same. Need to add
+        # weights to support variable batch sizes.
+        logs = {}
+        for key in ['loss']:
+            logs[f'valid_{key}'] = np.mean([x[key] for x in outputs], axis=0)
+
+        return logs
+
+    def test_epoch_end(self, outputs):
+        # TODO: Here we assume all batch sizes are the same. Need to add
+        # weights to support variable batch
+        logs = {}
+        for key in ['loss']:
+            logs[f'test_{key}'] = np.mean([x[key] for x in outputs], axis=0)
 
         return logs
 
