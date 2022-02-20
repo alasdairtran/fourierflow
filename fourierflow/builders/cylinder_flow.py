@@ -26,12 +26,11 @@ class CylinderFlowBuilder(Builder):
 
     name = 'cylinder_flow'
 
-    def __init__(self, data_path: str, n_workers: int, batch_size: int):
+    def __init__(self, path: str, **kwargs):
         super().__init__()
-        self.n_workers = n_workers
-        self.batch_size = batch_size
+        self.kwargs = kwargs
 
-        data_path = os.path.expandvars(data_path)
+        data_path = os.path.expandvars(path)
         h5f = h5py.File(data_path)
 
         self.train_dataset = CylinderFlowTrainingDataset(h5f['train'])
@@ -40,29 +39,20 @@ class CylinderFlowBuilder(Builder):
 
     def train_dataloader(self) -> DataLoader:
         loader = DataLoader(self.train_dataset,
-                            batch_size=self.batch_size,
                             shuffle=True,
-                            num_workers=self.n_workers,
-                            drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
     def val_dataloader(self) -> DataLoader:
         loader = DataLoader(self.valid_dataset,
-                            batch_size=self.batch_size,
                             shuffle=False,
-                            num_workers=self.n_workers,
-                            drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
     def test_dataloader(self) -> DataLoader:
         loader = DataLoader(self.test_dataset,
-                            batch_size=self.batch_size,
                             shuffle=False,
-                            num_workers=self.n_workers,
-                            drop_last=False,
-                            pin_memory=True)
+                            **self.kwargs)
         return loader
 
 
@@ -74,9 +64,6 @@ class CylinderFlowTrainingDataset(Dataset):
         self.velocity = data['velocity']
         self.target_velocity = data['target_velocity']
         self.pressure = data['pressure']
-        self.frequencies = data['frequencies']
-        self.basis = data['basis']
-        self.mass = data['mass']
         self.n_cells = data['n_cells']
         self.n_nodes = data['n_nodes']
         self.B, self.T, _, _ = self.velocity.shape
@@ -96,9 +83,6 @@ class CylinderFlowTrainingDataset(Dataset):
             'velocity': self.velocity[b, t, :n],
             'target_velocity': self.target_velocity[b, t, :n],
             'pressure': self.pressure[b, t, :n],
-            'frequencies': self.frequencies[b],
-            'basis': self.basis[b, :n],
-            'mass': self.mass[b, :n, :n],
         }
 
 
@@ -110,8 +94,6 @@ class CylinderFlowDataset(Dataset):
         self.velocity = data['velocity']
         self.target_velocity = data['target_velocity']
         self.pressure = data['pressure']
-        self.frequencies = data['frequencies']
-        self.basis = data['basis']
         self.n_cells = data['n_cells']
         self.n_nodes = data['n_nodes']
         self.B = self.cells[0]
@@ -129,7 +111,4 @@ class CylinderFlowDataset(Dataset):
             'velocity': self.velocity[b, :, :n],
             'target_velocity': self.target_velocity[b, :, :n],
             'pressure': self.pressure[b, :, :n],
-            'frequencies': self.frequencies[b],
-            'basis': self.basis[b, :n],
-            'mass': self.mass[b, :n, :n],
         }
