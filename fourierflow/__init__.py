@@ -2,6 +2,10 @@ from dotenv import load_dotenv  # isort:skip
 load_dotenv()  # noqa
 
 import hydra
+# Weird! We need to import xarray first to avoid:
+#   AttributeError: module 'setuptools._distutils' has no attribute 'version'
+# when importing pytorch_lightning later
+import xarray as xr
 from omegaconf import OmegaConf
 
 import fourierflow.builders
