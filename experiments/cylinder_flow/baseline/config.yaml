@@ -1,0 +1,40 @@
+wandb:
+  project: cylinder_flow
+  group: baseline
+  tags:
+    - pde
+    - navier-stokes
+    - meshgraphnets
+  notes: ""
+builder:
+  _target_: fourierflow.builders.CylinderFlowBuilder
+  path: ${oc.env:DATA_ROOT}/meshgraphnets/cylinder_flow/cylinder_flow.h5
+  batch_size: 1
+  num_workers: 4
+  collate_fn:
+    _target_: functools.partial
+    _args_: ["${get_method: fourierflow.builders.collate_jax}"]
+routine:
+  _target_: fourierflow.routines.MeshGraphNet
+  optimizer:
+    _target_: optax.adamw
+    learning_rate:
+      _target_: optax.warmup_cosine_decay_schedule
+      init_value: 0.0
+      peak_value: 1e-3
+      warmup_steps: 500
+      decay_steps: 40000
+      end_value: 0.0
+    weight_decay: 1e-4
+    b1: 0.9
+    b2: 0.99
+trainer:
+  _target_: fourierflow.trainers.JAXTrainer
+  max_epochs: 10
+  limit_train_batches: 20
+  seed: null # placeholder - will be overridden
+callbacks:
+  - _target_: fourierflow.callbacks.JAXModelCheckpoint
+    save_dir: experiments/cylinder_flow/baseline/checkpoints
+    monitor: valid_loss
+    mode: max
