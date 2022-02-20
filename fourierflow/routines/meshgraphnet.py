@@ -60,29 +60,29 @@ class MeshGraphNet:
     def valid_step(self, params, **batch):
         preds = self.model.apply(params, **batch)
         targets = batch['target_velocity']
+        batch_size = targets.shape[0]
         loss = optax.l2_loss(targets, preds).mean(axis=0).sum()
 
         logs = {
             'loss': loss.item(),
+            'weight': batch_size,
         }
 
         return logs
 
     def validation_epoch_end(self, outputs):
-        # TODO: Here we assume all batch sizes are the same. Need to add
-        # weights to support variable batch sizes.
         logs = {}
         for key in ['loss']:
-            logs[f'valid_{key}'] = np.mean([x[key] for x in outputs], axis=0)
+            values = [x[key] * x['weight'] for x in outputs]
+            logs[f'valid_{key}'] = np.mean(values, axis=0)
 
         return logs
 
     def test_epoch_end(self, outputs):
-        # TODO: Here we assume all batch sizes are the same. Need to add
-        # weights to support variable batch
         logs = {}
         for key in ['loss']:
-            logs[f'test_{key}'] = np.mean([x[key] for x in outputs], axis=0)
+            values = [x[key] * x['weight'] for x in outputs]
+            logs[f'test_{key}'] = np.mean(values, axis=0)
 
         return logs
 
