@@ -186,6 +186,26 @@ class LearnedInterpolator:
 
         return trajs
 
+    def validation_epoch_end(self, outputs):
+        # TODO: Here we assume all batch sizes are the same. Need to add
+        # weights to support variable batch sizes.
+        logs = {}
+        for key in ['loss', 'reduced_time_until', 'rho', 'correlations']:
+            logs[f'valid_{key}'] = np.mean([x[key] for x in outputs], axis=0)
+        logs['valid_times'] = outputs[0]['times']
+
+        return logs
+
+    def test_epoch_end(self, outputs):
+        # TODO: Here we assume all batch sizes are the same. Need to add
+        # weights to support variable batch
+        logs = {}
+        for key in ['loss', 'reduced_time_until', 'rho', 'correlations']:
+            logs[f'test_{key}'] = np.mean([x[key] for x in outputs], axis=0)
+        logs['test_times'] = outputs[0]['times']
+
+        return logs
+
     def cuda(self):
         return self
 

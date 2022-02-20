@@ -79,17 +79,19 @@ class JAXTrainer(TrainerCallbackHookMixin):
 
             self.on_validation_epoch_start()
             validate_batches = iter(datamodule.val_dataloader())
+            valid_outs = []
+
             for i, batch in tqdm(enumerate(validate_batches)):
-                assert i == 0, "Need to implement log merging first"
                 self.on_validation_batch_start(batch, i, 0)
                 outputs = routine.valid_step(params, **batch)
-                logs = outputs
-                logs = {f'valid_{k}': v for k, v in logs.items()}
-                self.logs = logs
-                scalars = {k: v for k, v in logs.items() if np.isscalar(v)}
-                # TODO: merge logs when there is more than one batch
-                self.logger.log_metrics(scalars, step=self.global_step)
+                valid_outs.append(outputs)
                 self.on_validation_batch_end(outputs, batch, i, 0)
+
+            valid_logs = routine.validation_epoch_end(valid_outs)
+            valid_scalars = {k: v for k, v in valid_logs.items()
+                             if np.isscalar(v)}
+            self.logger.log_metrics(valid_scalars, step=self.global_step)
+            self.logs = valid_logs
             self.on_validation_epoch_end()
 
         self.on_train_end()
@@ -97,22 +99,23 @@ class JAXTrainer(TrainerCallbackHookMixin):
     def test(self, routine, datamodule):
         self.on_test_epoch_start()
         test_batches = iter(datamodule.test_dataloader())
+        test_outs = []
+
         for i, batch in tqdm(enumerate(test_batches)):
-            assert i == 0, "Need to implement log merging first"
             self.on_test_batch_start(batch, i, 0)
             outputs = routine.valid_step(routine.params, **batch)
-            logs = outputs
-            logs = {f'test_{k}': v for k, v in logs.items()}
-            # TODO: merge logs when there is more than one batch
-            scalars = {k: v for k, v in logs.items() if np.isscalar(v)}
-            self.logger.log_metrics(scalars)
-
-            if 'test_correlations' in logs:
-                corr_rows = list(zip(logs['test_times'],
-                                     logs['test_correlations']))
-                self.logger.experiment.log({
-                    'test_correlations': wandb.Table(['time', 'corr'], corr_rows)
-                })
-
+            test_outs.append(outputs)
             self.on_test_batch_end(outputs, batch, i, 0)
+
+        test_logs = routine.test_epoch_end(test_outs)
+        test_scalars = {k: v for k, v in test_logs.items() if np.isscalar(v)}
+        self.logger.log_metrics(test_scalars)
+
+        if 'test_correlations' in test_logs:
+            corr_rows = list(zip(test_logs['test_times'],
+                                 test_logs['test_correlations']))
+            self.logger.experiment.log({
+                'test_correlations': wandb.Table(['time', 'corr'], corr_rows)
+            })
+
         self.on_test_epoch_end()
