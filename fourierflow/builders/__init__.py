@@ -1,4 +1,3 @@
-from .base import collate_jax
 from .cylinder_flow import CylinderFlowBuilder
 from .kolmogorov import (KolmogorovBuilder, KolmogorovJAXDataset,
                          KolmogorovJAXTrajectoryDataset,
@@ -7,3 +6,4 @@ from .kolmogorov import (KolmogorovBuilder, KolmogorovJAXDataset,
 from .ns_contextual import NSContextualBuilder
 from .ns_markov import NSMarkovBuilder
 from .ns_zongyi import NSZongyiBuilder
+from .utils import collate_jax
