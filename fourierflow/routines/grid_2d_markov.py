@@ -422,9 +422,9 @@ class Grid2DMarkovExperiment(Routine):
             batch, loss, preds)
 
         if torch.isnan(loss):
-            loss = 9999
+            loss = 9999.9
         if torch.isnan(loss_full):
-            loss_full = 9999
+            loss_full = 9999.9
 
         self.log('valid_loss_avg', loss)
         self.log('valid_loss', loss_full, prog_bar=True)
