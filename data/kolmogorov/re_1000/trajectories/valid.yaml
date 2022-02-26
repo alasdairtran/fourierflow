@@ -36,6 +36,8 @@ out_sizes: # size of the domain for saving to disk
     k: 1
   - size: 128
     k: 1
+  - size: 256
+    k: 1
   - size: 32
     k: 4
   - size: 64
