@@ -1,6 +1,6 @@
 wandb:
   project: torus_kochkov
-  group: learned_interpolation/markov/x32
+  group: learned_interpolation/rollout/x32
   tags:
     - pde
     - navier-stokes
@@ -95,6 +95,6 @@ trainer:
   seed: null # placeholder - will be overridden
 callbacks:
   - _target_: fourierflow.callbacks.JAXModelCheckpoint
-    save_dir: experiments/torus_kochkov/learned_interpolation/markov/x32/checkpoints
+    save_dir: experiments/torus_kochkov/learned_interpolation/rollout/x32/checkpoints
     monitor: valid_reduced_time_until
     mode: max

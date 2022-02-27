@@ -410,9 +410,9 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
         ax.annotate(f'{s}x{s}', xy, xytext)
 
     groups = [
-        # 'learned_interpolation/markov/x32',
-        'learned_interpolation/markov/x64',
-        'learned_interpolation/markov/x128',
+        # 'learned_interpolation/rollout/x32',
+        'learned_interpolation/rollout/x64',
+        'learned_interpolation/rollout/x128',
     ]
     times = []
     untils = []
