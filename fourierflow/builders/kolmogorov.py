@@ -336,7 +336,8 @@ def generate_kolmogorov(sim_grid: Grid,
                         max_velocity: float = 7.0,
                         inner_steps: int = 25,
                         outer_steps: int = 200,
-                        warmup_steps: int = 40):
+                        warmup_steps: int = 40,
+                        out_vorticity: bool = True):
     """Generate 2D Kolmogorov flows, similar to Kochkov et al (2021).
 
     Adapted from https://github.com/google/jax-cfd/blob/main/notebooks/demo.ipynb
@@ -350,7 +351,8 @@ def generate_kolmogorov(sim_grid: Grid,
         grid = Grid(shape=[o['size']] * sim_grid.ndim, domain=sim_grid.domain)
         out_grids[(o['size'], o['k'])] = grid
 
-    downsample = partial(downsample_fn, sim_grid, out_grids, velocity_solve)
+    downsample = partial(downsample_fn, sim_grid, out_grids,
+                         velocity_solve, out_vorticity)
 
     if initial_field is None:
         # Construct a random initial velocity. The `filtered_velocity_field`
@@ -400,7 +402,7 @@ def generate_kolmogorov(sim_grid: Grid,
         return trajs, elapsed
 
 
-def downsample_vorticity(sim_grid, out_grids, velocity_solve, vorticity_hat):
+def downsample_vorticity(sim_grid, out_grids, velocity_solve, out_vorticity, vorticity_hat):
     outs = {}
     for key, out_grid in out_grids.items():
         size = key[0]
@@ -414,11 +416,13 @@ def downsample_vorticity(sim_grid, out_grids, velocity_solve, vorticity_hat):
         else:
             out = downsample_vorticity_hat(
                 vorticity_hat, velocity_solve, sim_grid, out_grid)
+        if not out_vorticity:
+            del out['vorticity']
         outs[key] = out
     return outs
 
 
-def downsample_velocity(sim_grid, out_grids, velocity_solve, u):
+def downsample_velocity(sim_grid, out_grids, velocity_solve, out_vorticity, u):
     outs = {}
     for key, out_grid in out_grids.items():
         size = key[0]
@@ -426,14 +430,14 @@ def downsample_velocity(sim_grid, out_grids, velocity_solve, u):
         if size == sim_grid.shape[0]:
             for i in range(sim_grid.ndim):
                 out[KEYS[i]] = u[i].data
-            if sim_grid.ndim == 2:
+            if sim_grid.ndim == 2 and out_vorticity:
                 out['vorticity'] = curl_2d(u).data
         else:
             u_new = downsample_staggered_velocity(
                 sim_grid, out_grid, u)
             for i in range(sim_grid.ndim):
                 out[KEYS[i]] = u_new[i].data
-            if sim_grid.ndim == 2:
+            if sim_grid.ndim == 2 and out_vorticity:
                 out['vorticity'] = curl_2d(u_new).data
         outs[key] = out
     return outs

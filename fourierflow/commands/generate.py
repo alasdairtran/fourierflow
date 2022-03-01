@@ -54,6 +54,7 @@ def kolmogorov(
     hydra.initialize(config_path=str('../..' / config_dir))
     c = hydra.compose(config_name=stem, overrides=overrides or [])
     OmegaConf.set_struct(c, False)
+    out_vorticity = c.get('out_vorticity', True)
 
     # Define the physical dimensions of the simulation.
     sim_grid = instantiate(c.sim_grid)
@@ -113,9 +114,13 @@ def kolmogorov(
     # https://stackoverflow.com/a/46958947/3790116
     # https://github.com/pydata/xarray/issues/1672
 
-    if sim_grid.ndim == 2:
+    if sim_grid.ndim == 2 and out_vorticity:
         gvars: Dict[Tuple[int, int], Dict] = {(o['size'], o['k']): {
             'vx': [], 'vy': [], 'vorticity': [],
+        } for o in c.out_sizes}
+    elif sim_grid.ndim == 2:
+        gvars: Dict[Tuple[int, int], Dict] = {(o['size'], o['k']): {
+            'vx': [], 'vy': [],
         } for o in c.out_sizes}
     elif sim_grid.ndim == 3:
         gvars = {(o['size'], o['k']): {
@@ -136,7 +141,8 @@ def kolmogorov(
             initial_field=initial_ds.isel(sample=i) if init_path else None,
             inner_steps=c.inner_steps,
             outer_steps=c.outer_steps,
-            warmup_steps=c.warmup_steps)
+            warmup_steps=c.warmup_steps,
+            out_vorticity=out_vorticity)
         trajs, elapsed = outs[0], outs[1]
 
         for o in c.out_sizes:
@@ -150,7 +156,7 @@ def kolmogorov(
             vy = da.from_delayed(traj['vy'][k-1::k], shape, np.float32)
             gvars[key]['vy'].append(vy)
 
-            if sim_grid.ndim == 2:
+            if sim_grid.ndim == 2 and out_vorticity:
                 vorticity = da.from_delayed(
                     traj['vorticity'][k-1::k], shape, np.float32)
                 gvars[key]['vorticity'].append(vorticity)
@@ -164,7 +170,7 @@ def kolmogorov(
         key = (o['size'], o['k'])
         gvars[key]['vx'] = da.stack(gvars[key]['vx'])
         gvars[key]['vy'] = da.stack(gvars[key]['vy'])
-        if sim_grid.ndim == 2:
+        if sim_grid.ndim == 2 and out_vorticity:
             gvars[key]['vorticity'] = da.stack(gvars[key]['vorticity'])
         elif sim_grid.ndim == 3:
             gvars[key]['vz'] = da.stack(gvars[key]['vz'])
