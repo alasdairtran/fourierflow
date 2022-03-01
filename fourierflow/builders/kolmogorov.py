@@ -342,6 +342,9 @@ def generate_kolmogorov(sim_grid: Grid,
 
     Adapted from https://github.com/google/jax-cfd/blob/main/notebooks/demo.ipynb
     """
+    # Seems that there is some memory leak, especially when generating
+    # re_1000/short_trajectories
+    jax.lib.xla_bridge.get_backend.cache_clear()
     # Define the physical dimensions of the simulation.
     velocity_solve = vorticity_to_velocity(
         sim_grid) if sim_grid.ndim == 2 else None
