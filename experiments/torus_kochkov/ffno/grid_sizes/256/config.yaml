@@ -32,7 +32,7 @@ routine:
   _target_: fourierflow.routines.Grid2DMarkovExperiment
   conv:
     _target_: fourierflow.modules.FNOFactorized2DBlock
-    modes: 32
+    modes: 64
     width: 64
     n_layers: 24
     input_dim: 5
@@ -62,13 +62,13 @@ routine:
       _target_: functools.partial
       _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
       num_warmup_steps: 500
-      num_training_steps: 387360 # 38736 batches per epoch
+      num_training_steps: 774720 # 38736 batches per epoch
       num_cycles: 0.5
     name: learning_rate
 trainer:
   gpus: 1
   precision: 32
-  max_epochs: 11 # 1 accumulation epoch + 10 training epochs
+  max_epochs: 21 # 1 accumulation epoch + 10 training epochs
   stochastic_weight_avg: false
   log_every_n_steps: 100
   # Debugging parameters
