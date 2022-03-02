@@ -422,6 +422,9 @@ def downsample_vorticity(sim_grid, out_grids, velocity_solve, out_vorticity, vor
         if not out_vorticity:
             del out['vorticity']
         outs[key] = out
+
+    # cpu = jax.devices('cpu')[0]
+    # outs = {k: jax.device_put(v, cpu) for k, v in outs.items()}
     return outs
 
 
@@ -443,4 +446,7 @@ def downsample_velocity(sim_grid, out_grids, velocity_solve, out_vorticity, u):
             if sim_grid.ndim == 2 and out_vorticity:
                 out['vorticity'] = curl_2d(u_new).data
         outs[key] = out
+
+    # cpu = jax.devices('cpu')[0]
+    # outs = {k: jax.device_put(v, cpu) for k, v in outs.items()}
     return outs
