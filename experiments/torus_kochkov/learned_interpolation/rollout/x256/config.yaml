@@ -1,0 +1,97 @@
+wandb:
+  project: torus_kochkov
+  group: learned_interpolation/rollout/x256
+  tags:
+    - pde
+    - navier-stokes
+    - learned-interpolation
+  notes: ""
+builder:
+  _target_: fourierflow.builders.KolmogorovBuilder
+  train_dataset:
+    _target_: fourierflow.builders.KolmogorovJAXDataset
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/short_trajectories/train_256_1.nc
+    k: 1
+    unroll_length: 32
+  valid_dataset:
+    _target_: fourierflow.builders.KolmogorovJAXTrajectoryDataset
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_256.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/short_trajectories/valid_256_1.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/short_trajectories/valid_32_1.nc
+    k: 1
+    inner_steps: 32
+    outer_steps: 100
+  test_dataset:
+    _target_: fourierflow.builders.KolmogorovJAXTrajectoryDataset
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_256.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/short_trajectories/test_256_1.nc
+    corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/short_trajectories/test_32_1.nc
+    k: 1
+    inner_steps: 32
+    outer_steps: 100
+  batch_size: 4
+  num_workers: 4
+  collate_fn:
+    _target_: functools.partial
+    _args_: ["${get_method: fourierflow.builders.collate_jax}"]
+routine:
+  _target_: fourierflow.routines.LearnedInterpolator
+  size: 256
+  dt: 0.001753121
+  inner_steps: 64
+  outer_steps: 100
+  unroll_length: 32
+  physics_specs:
+    _target_: jax_cfd.ml.physics_specifications.NavierStokesPhysicsSpecs
+    density: 1.0
+    viscosity: 1e-3
+    forcing_module:
+      _target_: functools.partial
+      _args_: ["${get_method: jax_cfd.ml.forcings.kolmogorov_forcing}"]
+      scale: 1.0
+      wavenumber: 4
+      linear_coefficient: -0.1
+  convection_module:
+    _target_: functools.partial
+    _args_: ["${get_method: jax_cfd.ml.advections.self_advection}"]
+    advection_module:
+      _target_: functools.partial
+      _args_: ["${get_method: jax_cfd.ml.advections.modular_self_advection}"]
+      interpolation_module:
+        _target_: functools.partial
+        _args_: ["${get_method: jax_cfd.ml.interpolations.FusedLearnedInterpolation}"]
+        tags: ['u', 'c']
+        stencil_size: 4
+        tower_factory:
+          _target_: functools.partial
+          _args_: ["${get_method: jax_cfd.ml.towers.forward_tower_factory}"]
+          inputs_scale_fn:
+            _target_: functools.partial
+            _args_: ["${get_method: jax_cfd.ml.towers.fixed_scale}"]
+            rescaled_one: 0.2
+          kernel_size: 3
+          num_hidden_channels: 64
+          num_hidden_layers: 6
+          output_kernel_size: 3
+  optimizer:
+    _target_: optax.adamw
+    learning_rate:
+      _target_: optax.warmup_cosine_decay_schedule
+      init_value: 0.0
+      peak_value: 1e-3
+      warmup_steps: 500
+      decay_steps: 40000
+      end_value: 0.0
+    weight_decay: 1e-4
+    b1: 0.9
+    b2: 0.99
+trainer:
+  _target_: fourierflow.trainers.JAXTrainer
+  max_epochs: 10
+  limit_train_batches: 4000
+  seed: null # placeholder - will be overridden
+callbacks:
+  - _target_: fourierflow.callbacks.JAXModelCheckpoint
+    save_dir: experiments/torus_kochkov/learned_interpolation/rollout/x256/checkpoints
+    monitor: valid_reduced_time_until
+    mode: max
