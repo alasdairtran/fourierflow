@@ -37,4 +37,4 @@ callbacks:
   - _target_: fourierflow.callbacks.JAXModelCheckpoint
     save_dir: experiments/cylinder_flow/baseline/checkpoints
     monitor: valid_loss
-    mode: max
+    mode: min
