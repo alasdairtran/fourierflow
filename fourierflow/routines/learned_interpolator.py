@@ -96,15 +96,10 @@ class LearnedInterpolator:
             params = pickle.load(f)
             self.params = params
 
-    def init(self, seed):
+    def init(self, seed, batch):
+        inputs, _ = batch
         with init_context():
             rng = jax.random.PRNGKey(seed)
-            inputs = {}
-            for i, k in enumerate(['vx', 'vy']):
-                rgn_key = jax.random.PRNGKey(i)
-                data = jax.random.uniform(
-                    rgn_key, (2, self.size, self.size), jnp.float32)
-                inputs[k] = data
             params = self.model.init(rng, **inputs)
 
         self.params = params
