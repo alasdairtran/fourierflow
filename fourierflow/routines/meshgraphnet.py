@@ -104,11 +104,11 @@ class GraphEncoder(hk.Module):
     def __init__(self, n_edge_sets=1, name=None):
         super().__init__(name=name)
         self.node_encoder = MLPEncoder(output_sizes=[128, 128],
-                                       name=f'{name}/node_encoder')
+                                       name=f'{name}_node_encoder')
         self.edge_encoders = []
         for i in range(n_edge_sets):
             self.edge_encoders.append(MLPEncoder(output_sizes=[128, 128],
-                                                 name=f'{name}/edge_encoder_{i}'))
+                                                 name=f'{name}_edge_encoder_{i}'))
 
     def __call__(self, graph):
         node_latents = self.node_encoder(graph.node_features)  # (2059, 128)
@@ -129,10 +129,10 @@ class GraphNetBlock(hk.Module):
         self.edge_updaters = []
         for i in range(n_edge_sets):
             self.edge_updaters.append(MLPEncoder(output_sizes=[128, 128],
-                                                 name=f'{name}/edge_updater_{i}'))
+                                                 name=f'{name}_edge_updater_{i}'))
 
         self.node_updater = MLPEncoder(output_sizes=[128, 128],
-                                       name=f'{name}/node_updater')
+                                       name=f'{name}_node_updater')
 
     def _update_edges(self, node_feats, edge_set, i):
         sender_feats = jnp.take(node_feats, edge_set.senders, axis=0)
@@ -186,15 +186,15 @@ class GraphNetBlock(hk.Module):
 class GraphProcessor(hk.Module):
     def __init__(self, n_message_passing_steps=15, name=None):
         super().__init__(name=name)
-        self.graph_encoder = GraphEncoder(name=f'{name}/graph_encoder')
+        self.graph_encoder = GraphEncoder(name=f'{name}_graph_encoder')
 
         self.layers = []
         for i in range(n_message_passing_steps):
-            self.layers.append(GraphNetBlock(name=f'{name}/graph_layer_{i}'))
+            self.layers.append(GraphNetBlock(name=f'{name}_graph_layer_{i}'))
 
         self.graph_decoder = MLPEncoder(output_sizes=[128, 2],
                                         layer_norm=False,
-                                        name=f'{name}/node_updater')
+                                        name=f'{name}_node_updater')
 
     def __call__(self, graph):
         graph = self.graph_encoder(graph)
