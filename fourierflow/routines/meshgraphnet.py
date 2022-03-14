@@ -8,8 +8,9 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-from einops import repeat
+from einops import rearrange, repeat
 from jax.random import PRNGKey, split, uniform
+from tqdm import tqdm
 
 
 class NodeType(enum.IntEnum):
@@ -204,21 +205,143 @@ class GraphProcessor(hk.Module):
         return out
 
 
+class Normalizer(hk.Module):
+    def __init__(self, size, max_accumulations=10**6, std_epsilon=1e-8, name=None):
+        super().__init__(name=name)
+        self.max_accumulations = max_accumulations
+        self.std_epsilon = jnp.full(size, std_epsilon)
+        self.dim_sizes = None
+        self.size = size
+
+    @property
+    def sum(self):
+        return hk.get_state('sum', shape=self.size, dtype=jnp.int32,
+                            init=jnp.zeros)
+
+    @property
+    def sum_squared(self):
+        return hk.get_state('sum_squared', shape=self.size, dtype=jnp.int32,
+                            init=jnp.zeros)
+
+    @property
+    def count(self):
+        return hk.get_state('count', shape=[], dtype=jnp.int32,
+                            init=jnp.zeros)
+
+    @property
+    def n_accumulations(self):
+        return hk.get_state('n_accumulations', shape=[], dtype=jnp.int32,
+                            init=jnp.zeros)
+
+    def _accumulate(self, x):
+        x_count = jnp.count_nonzero(~jnp.isnan(x[..., 0]))
+        x_sum = jnp.nansum(x, axis=0)
+        x_sum_squared = jnp.nansum(x**2, axis=0)
+
+        hk.set_state("sum", self.sum + x_sum)
+        hk.set_state("sum_squared", self.sum_squared + x_sum_squared)
+        hk.set_state("count", self.count + x_count)
+        hk.set_state("n_accumulations", self.n_accumulations + 1)
+
+    def _pool_dims(self, x):
+        _, *dim_sizes, _ = x.shape
+        self.dim_sizes = dim_sizes
+        if self.dim_sizes:
+            x = rearrange(x, 'b ... h -> (b ...) h')
+
+        return x
+
+    def _unpool_dims(self, x):
+        if len(self.dim_sizes) == 1:
+            x = rearrange(x, '(b m) h -> b m h', m=self.dim_sizes[0])
+        elif len(self.dim_sizes) == 2:
+            m, n = self.dim_sizes
+            x = rearrange(x, '(b m n) h -> b m n h', m=m, n=n)
+        return x
+
+    def __call__(self, x):
+        x = self._pool_dims(x)
+        # x.shape == [batch_size, latent_dim]
+
+        self._accumulate(x)
+
+        x = (x - self.mean) / self.std
+        x = self._unpool_dims(x)
+
+        return x
+
+    def inverse(self, x, channel=None):
+        x = self._pool_dims(x)
+
+        if channel is None:
+            x = x * self.std + self.mean
+        else:
+            x = x * self.std[channel] + self.mean[channel]
+
+        x = self._unpool_dims(x)
+
+        return x
+
+    @property
+    def mean(self):
+        # safe_count = max(self.count, self.one)
+        return self.sum / self.count
+
+    @property
+    def std(self):
+        # safe_count = max(self.count, self.one)
+        std = jnp.sqrt(self.sum_squared / self.count - self.mean**2)
+        return jnp.maximum(std, self.std_epsilon)
+
+
+class TrainedNormalizer(Normalizer):
+    def __call__(self, x):
+        x = self._pool_dims(x)
+        # x.shape == [batch_size, latent_dim]
+        x = (x - self.mean) / self.std
+        x = self._unpool_dims(x)
+
+        return x
+
+
 class MeshGraphNet:
-    def __init__(self,  optimizer: Callable, n_layers: int = 15):
+    def __init__(self,
+                 optimizer: Callable,
+                 node_dim: int = 11,
+                 edge_dim: int = 3,
+                 output_dim: int = 2,
+                 max_accumulations: int = int(1e5),
+                 n_layers: int = 15):
         self.n_layers = n_layers
         self.optimizer = optimizer
         self.params = None
+        self.state = None
+        self.node_dim = node_dim
+        self.edge_dim = edge_dim
+        self.output_dim = output_dim
+        self.max_accumulations = max_accumulations
 
         def model(n_cells, n_nodes, velocity, cells, mesh_pos, node_type, target_velocity, pressure):
             processor = GraphProcessor(name='processor')
+            node_normalizer = TrainedNormalizer(
+                [node_dim], max_accumulations, name='node_normalizer')
+            edge_normalizer = TrainedNormalizer(
+                [edge_dim], max_accumulations, name='edge_normalizer')
+            output_normalizer = TrainedNormalizer(
+                [output_dim], max_accumulations, name='output_normalizer')
             graph = self._build_graph(n_cells, n_nodes, velocity, cells, mesh_pos,
-                                      node_type, target_velocity, pressure)
+                                      node_type, target_velocity, pressure,
+                                      node_normalizer, edge_normalizer)
 
             preds = processor(graph)
-            return preds
 
-        self.model = hk.without_apply_rng(hk.transform(jax.vmap(model)))
+            targets = target_velocity - velocity
+            targets = output_normalizer(targets)
+
+            return preds, targets
+
+        self.model = hk.without_apply_rng(
+            hk.transform_with_state(jax.vmap(model)))
 
     def step(self, params, opt_state, batch):
         loss_value, grads = jax.value_and_grad(
@@ -228,7 +351,7 @@ class MeshGraphNet:
         params = optax.apply_updates(params, updates)
         return params, opt_state, loss_value
 
-    def _build_graph(self, n_cells, n_nodes, velocity, cells, mesh_pos, node_type, target_velocity, pressure):
+    def _build_graph(self, n_cells, n_nodes, velocity, cells, mesh_pos, node_type, target_velocity, pressure, node_normalizer, edge_normalizer):
         # Each node has a type: 0 (normal), 4 (inflow), 5 (outflow), 6 (wall)
 
         node_types = jax.nn.one_hot(node_type, 9)
@@ -253,13 +376,13 @@ class MeshGraphNet:
         edge_features = jnp.concatenate([rel_pos, norms], axis=-1)
         # edge_features.shape == [n_edges, 3] nan padded
 
-        # edge_features = self.edge_normalizer(edge_features)
+        edge_features = edge_normalizer(edge_features)
         mesh_edges = EdgeSet(name='mesh_edges',
                              features=edge_features,
                              receivers=receivers,
                              senders=senders)
 
-        # node_features = self.node_normalizer(node_features)
+        node_features = node_normalizer(node_features)
         graph = MultiGraph(node_features=node_features,
                            edge_sets=[mesh_edges])
 
@@ -270,23 +393,32 @@ class MeshGraphNet:
             params = pickle.load(f)
             self.params = params
 
-    def init(self, seed, batch):
+    def init(self, seed, datamodule):
         rng = PRNGKey(seed)
-        params = self.model.init(rng, **batch)
+        train_batches = iter(datamodule.train_dataloader())
+
+        with tqdm(train_batches, unit="batch") as tepoch:
+            for i, batch in enumerate(tepoch):
+                if i == 0:
+                    params, self.state = self.model.init(rng, **batch)
+                    break
+
+                if i >= 2000:
+                    break
 
         self.params = params
         return params
 
     def loss_fn(self, params, batch):
-        preds = self.model.apply(params, **batch)
-        targets = batch['target_velocity']
+        (preds, targets), self.state = self.model.apply(
+            params, self.state, **batch)
         loss = optax.l2_loss(targets, preds).sum(axis=-1)
         loss = jnp.nanmean(loss)
         return loss
 
     def valid_step(self, params, **batch):
-        preds = self.model.apply(params, **batch)
-        targets = batch['target_velocity']
+        (preds, targets), self.state = self.model.apply(
+            params, self.state, **batch)
         batch_size = targets.shape[0]
         loss = optax.l2_loss(targets, preds).sum(axis=-1)
         loss = jnp.nanmean(loss)
