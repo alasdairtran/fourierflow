@@ -51,6 +51,9 @@ class JAXTrainer(TrainerCallbackHookMixin):
         self.routine = routine
         step = jax.jit(routine.step)
 
+        params = routine.init(self.seed, datamodule)
+        opt_state = routine.optimizer.init(params)
+
         self.on_train_start()
         for epoch in range(self.max_epochs):
             self.current_epoch += 1
@@ -61,10 +64,6 @@ class JAXTrainer(TrainerCallbackHookMixin):
                     self.global_step += 1
                     self.on_train_batch_start(batch, i)
                     tepoch.set_description(f"Epoch {epoch}")
-
-                    if epoch == 0 and i == 0:
-                        params = routine.init(self.seed, batch)
-                        opt_state = routine.optimizer.init(params)
 
                     outputs = step(params, opt_state, batch)
                     params, opt_state, loss_value = outputs

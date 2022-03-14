@@ -96,8 +96,9 @@ class LearnedInterpolator:
             params = pickle.load(f)
             self.params = params
 
-    def init(self, seed, batch):
-        inputs, _ = batch
+    def init(self, seed, datamodule):
+        train_batches = iter(datamodule.train_dataloader())
+        inputs, _ = next(train_batches)
         with init_context():
             rng = jax.random.PRNGKey(seed)
             params = self.model.init(rng, **inputs)
