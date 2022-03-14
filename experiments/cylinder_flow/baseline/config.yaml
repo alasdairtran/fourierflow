@@ -9,7 +9,7 @@ wandb:
 builder:
   _target_: fourierflow.builders.CylinderFlowBuilder
   path: ${oc.env:DATA_ROOT}/meshgraphnets/cylinder_flow/cylinder_flow.h5
-  batch_size: 2
+  batch_size: 4
   num_workers: 4
   collate_fn:
     _target_: functools.partial
