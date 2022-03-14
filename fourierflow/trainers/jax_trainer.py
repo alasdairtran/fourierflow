@@ -49,11 +49,11 @@ class JAXTrainer(TrainerCallbackHookMixin):
 
     def fit(self, routine, datamodule):
         self.routine = routine
-        step = jax.jit(routine.step)
 
         params = routine.init(self.seed, datamodule)
         opt_state = routine.optimizer.init(params)
 
+        step = jax.jit(routine.step)
         self.on_train_start()
         for epoch in range(self.max_epochs):
             self.current_epoch += 1
