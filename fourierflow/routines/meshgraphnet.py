@@ -186,7 +186,7 @@ class GraphNetBlock(hk.Module):
 class GraphProcessor(hk.Module):
     def __init__(self, n_message_passing_steps=15, name=None):
         super().__init__(name=name)
-        self.graph_encoder = GraphEncoder()
+        self.graph_encoder = GraphEncoder(name=f'{name}/graph_encoder')
 
         self.layers = []
         for i in range(n_message_passing_steps):
