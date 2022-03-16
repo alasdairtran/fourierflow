@@ -9,8 +9,19 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 from einops import rearrange, repeat
+from jax.example_libraries.optimizers import l2_norm
 from jax.random import PRNGKey, split, uniform
+from jax.tree_util import tree_map
 from tqdm import tqdm
+
+
+def safe_clip_grads(grad_tree, max_norm):
+    """Clip gradients stored as a pytree of arrays to maximum norm `max_norm`."""
+    norm = l2_norm(grad_tree)
+    eps = 1e-9
+    def normalize(g): return jnp.where(
+        norm < max_norm, g, g * max_norm / (norm + eps))
+    return tree_map(normalize, grad_tree)
 
 
 class NodeType(enum.IntEnum):
@@ -80,7 +91,7 @@ class MLPEncoder(hk.Module):
 
         n_layers = len(output_sizes)
         for i, size in enumerate(output_sizes):
-            components = [hk.Linear(size)]
+            components = [hk.Linear(size, name=f'linear_{i}')]
             if i < n_layers - 1:
                 components.append(jax.nn.relu)
             self.layers.append(hk.Sequential(components))
@@ -104,11 +115,11 @@ class GraphEncoder(hk.Module):
     def __init__(self, n_edge_sets=1, name=None):
         super().__init__(name=name)
         self.node_encoder = MLPEncoder(output_sizes=[128, 128],
-                                       name=f'{name}_node_encoder')
+                                       name='node_encoder')
         self.edge_encoders = []
         for i in range(n_edge_sets):
             self.edge_encoders.append(MLPEncoder(output_sizes=[128, 128],
-                                                 name=f'{name}_edge_encoder_{i}'))
+                                                 name=f'edge_encoder_{i}'))
 
     def __call__(self, graph):
         node_latents = self.node_encoder(graph.node_features)  # (2059, 128)
@@ -129,10 +140,10 @@ class GraphNetBlock(hk.Module):
         self.edge_updaters = []
         for i in range(n_edge_sets):
             self.edge_updaters.append(MLPEncoder(output_sizes=[128, 128],
-                                                 name=f'{name}_edge_updater_{i}'))
+                                                 name=f'edge_updater_{i}'))
 
         self.node_updater = MLPEncoder(output_sizes=[128, 128],
-                                       name=f'{name}_node_updater')
+                                       name='node_updater')
 
     def _update_edges(self, node_feats, edge_set, i):
         sender_feats = jnp.take(node_feats, edge_set.senders, axis=0)
@@ -186,15 +197,15 @@ class GraphNetBlock(hk.Module):
 class GraphProcessor(hk.Module):
     def __init__(self, n_message_passing_steps=15, name=None):
         super().__init__(name=name)
-        self.graph_encoder = GraphEncoder(name=f'{name}_graph_encoder')
+        self.graph_encoder = GraphEncoder(name='graph_encoder')
 
         self.layers = []
         for i in range(n_message_passing_steps):
-            self.layers.append(GraphNetBlock(name=f'{name}_graph_layer_{i}'))
+            self.layers.append(GraphNetBlock(name=f'graph_layer_{i}'))
 
         self.graph_decoder = MLPEncoder(output_sizes=[128, 2],
                                         layer_norm=False,
-                                        name=f'{name}_node_updater')
+                                        name='node_updater')
 
     def __call__(self, graph):
         graph = self.graph_encoder(graph)
@@ -311,7 +322,8 @@ class MeshGraphNet:
                  edge_dim: int = 3,
                  output_dim: int = 2,
                  max_accumulations: int = int(1e5),
-                 n_layers: int = 15):
+                 n_layers: int = 15,
+                 clip_val: float = 0.1):
         self.n_layers = n_layers
         self.optimizer = optimizer
         self.params = None
@@ -320,14 +332,15 @@ class MeshGraphNet:
         self.edge_dim = edge_dim
         self.output_dim = output_dim
         self.max_accumulations = max_accumulations
+        self.clip_val = clip_val
 
         def model(n_cells, n_nodes, velocity, cells, mesh_pos, node_type, target_velocity, pressure):
             processor = GraphProcessor(name='processor')
-            node_normalizer = TrainedNormalizer(
+            node_normalizer = Normalizer(
                 [node_dim], max_accumulations, name='node_normalizer')
-            edge_normalizer = TrainedNormalizer(
+            edge_normalizer = Normalizer(
                 [edge_dim], max_accumulations, name='edge_normalizer')
-            output_normalizer = TrainedNormalizer(
+            output_normalizer = Normalizer(
                 [output_dim], max_accumulations, name='output_normalizer')
             graph = self._build_graph(n_cells, n_nodes, velocity, cells, mesh_pos,
                                       node_type, target_velocity, pressure,
@@ -346,6 +359,7 @@ class MeshGraphNet:
     def step(self, params, opt_state, batch):
         loss_value, grads = jax.value_and_grad(
             self.loss_fn)(params, batch)
+        grads = safe_clip_grads(grads, self.clip_val)
         updates, opt_state = self.optimizer.update(
             grads, opt_state, params)
         params = optax.apply_updates(params, updates)
@@ -394,20 +408,52 @@ class MeshGraphNet:
             self.params = params
 
     def init(self, seed, datamodule):
+        # def model(n_cells, n_nodes, velocity, cells, mesh_pos, node_type, target_velocity, pressure):
+        #     processor = GraphProcessor(name='processor')
+        #     node_normalizer = Normalizer(
+        #         [self.node_dim], self.max_accumulations, name='node_normalizer')
+        #     edge_normalizer = Normalizer(
+        #         [self.edge_dim], self.max_accumulations, name='edge_normalizer')
+        #     output_normalizer = Normalizer(
+        #         [self.output_dim], self.max_accumulations, name='output_normalizer')
+        #     graph = self._build_graph(n_cells, n_nodes, velocity, cells, mesh_pos,
+        #                               node_type, target_velocity, pressure,
+        #                               node_normalizer, edge_normalizer)
+
+        #     preds = processor(graph)
+
+        #     targets = target_velocity - velocity
+        #     targets = output_normalizer(targets)
+
+        #     return preds, targets
+
+        # model = hk.without_apply_rng(
+        #     hk.transform_with_state(jax.vmap(model)))
+
         rng = PRNGKey(seed)
         train_batches = iter(datamodule.train_dataloader())
+
+        # step = jax.jit(self.model.apply)
 
         with tqdm(train_batches, unit="batch") as tepoch:
             for i, batch in enumerate(tepoch):
                 if i == 0:
                     params, self.state = self.model.init(rng, **batch)
-                    break
+                # predict(params, **batch)
+                # (preds, targets), self.state = step(
+                #     params, self.state, **batch)
 
-                if i >= 2000:
+                if i >= 20:
                     break
 
         self.params = params
+        # print('State', self.state)
         return params
+
+    def predict(self, params, **batch):
+        (preds, targets), self.state = self.model.apply(
+            params, self.state, **batch)
+        return preds
 
     def loss_fn(self, params, batch):
         (preds, targets), self.state = self.model.apply(

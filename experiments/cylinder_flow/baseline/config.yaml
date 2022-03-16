@@ -28,6 +28,7 @@ routine:
     weight_decay: 1e-4
     b1: 0.9
     b2: 0.99
+  clip_val: 0.1
 trainer:
   _target_: fourierflow.trainers.JAXTrainer
   max_epochs: 10
