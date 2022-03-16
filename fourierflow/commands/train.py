@@ -45,6 +45,7 @@ def main(config_path: Path,
         # ptvsd doesn't play well with multiple processes.
         config.builder.num_workers = 0
         jax.config.update('jax_disable_jit', True)
+        # jax.config.update("jax_debug_nans", True)
 
     # Set up directories to save experimental outputs.
     delete_old_results(config_dir, force, trial, resume)
