@@ -151,6 +151,8 @@ class GraphNetBlock(hk.Module):
         feats_list = [sender_feats, receiver_feats, edge_set.features]
 
         feats = jnp.concatenate(feats_list, axis=-1)
+        feats_nan_mask = jnp.isnan(feats)
+        feats = jnp.where(feats_nan_mask, 0, feats)
         return self.edge_updaters[i](feats)
 
     def _update_nodes(self, node_features, edge_sets):
@@ -167,6 +169,8 @@ class GraphNetBlock(hk.Module):
             feats_list.append(feats)
 
         feats = jnp.concatenate(feats_list, axis=-1)
+        feats_nan_mask = jnp.isnan(feats)
+        feats = jnp.where(feats_nan_mask, 0, feats)
         return self.node_updater(feats)
 
     def __call__(self, graph):
@@ -350,6 +354,9 @@ class MeshGraphNet:
 
             targets = target_velocity - velocity
             targets = output_normalizer(targets)
+            targets_nan_mask = jnp.isnan(targets)
+            targets = jnp.where(targets_nan_mask, 0, targets)
+            preds = jnp.where(targets_nan_mask, 0, preds)
 
             return preds, targets
 
@@ -391,12 +398,16 @@ class MeshGraphNet:
         # edge_features.shape == [n_edges, 3] nan padded
 
         edge_features = edge_normalizer(edge_features)
+        edge_nan_mask = jnp.isnan(edge_features)
+        edge_features = jnp.where(edge_nan_mask, 0, edge_features)
         mesh_edges = EdgeSet(name='mesh_edges',
                              features=edge_features,
                              receivers=receivers,
                              senders=senders)
 
         node_features = node_normalizer(node_features)
+        node_nan_mask = jnp.isnan(node_features)
+        node_features = jnp.where(node_nan_mask, 0, node_features)
         graph = MultiGraph(node_features=node_features,
                            edge_sets=[mesh_edges])
 
