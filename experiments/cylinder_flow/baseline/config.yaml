@@ -23,7 +23,7 @@ routine:
       init_value: 0.0
       peak_value: 1e-3
       warmup_steps: 500
-      decay_steps: 40000
+      decay_steps: 150000
       end_value: 0.0
     weight_decay: 1e-4
     b1: 0.9
@@ -32,7 +32,7 @@ routine:
 trainer:
   _target_: fourierflow.trainers.JAXTrainer
   max_epochs: 10
-  # limit_train_batches: 20
+  limit_train_batches: 15000
   seed: null # placeholder - will be overridden
 callbacks:
   - _target_: fourierflow.callbacks.JAXModelCheckpoint
