@@ -16,7 +16,7 @@ import xarray as xr
 from dask.delayed import Delayed
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client
-# from dask_cuda import LocalCUDACluster # doesn't support 3.10 yet
+from dask_cuda import LocalCUDACluster
 from hydra.utils import instantiate
 from jax_cfd.base.grids import Grid
 from omegaconf import OmegaConf
@@ -45,9 +45,9 @@ def kolmogorov(
         jax.config.update('jax_disable_jit', True)
 
     device_list = [int(d) for d in devices.split(',')]
-    # if len(device_list) > 1:
-    #     cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=device_list)
-    #     client = Client(cluster)
+    if len(device_list) > 1:
+        cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=device_list)
+        client = Client(cluster)
 
     config_dir = config_path.parent
     stem = config_path.stem
