@@ -5,7 +5,8 @@
 from typing import Union
 
 import wandb
-from elegy.callbacks.callback import Callback
+
+from .callback import Callback
 
 
 class WandbLogger(Callback):
