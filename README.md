@@ -45,8 +45,8 @@ curl https://pyenv.run | bash
 pyenv install 3.10.3
 pyenv local 3.10.3
 
-# Set up poetry (we're currently v1.2.0b1)
-curl -sSL https://install.python-poetry.org | python3 - --preview
+# Set up poetry
+curl -sSL https://install.python-poetry.org | python3 - --version 1.2.0b1
 export PATH="$HOME/.local/bin:$PATH"
 
 # Install all python dependencies
