@@ -1008,7 +1008,7 @@ scipy = "*"
 
 [package.source]
 type = "url"
-url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.3.2-cp310-none-macosx_11_0_arm64.whl"
+url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.3.2-cp310-none-macosx_10_9_x86_64.whl"
 [[package]]
 name = "jaxlib"
 version = "0.3.2+cuda11.cudnn82"
@@ -2580,7 +2580,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "torch"
-version = "1.11.0+cu115"
+version = "1.11.0"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
 category = "main"
 optional = false
@@ -2590,13 +2590,11 @@ python-versions = ">=3.7.0"
 typing-extensions = "*"
 
 [package.source]
-type = "legacy"
-url = "https://eternalphane.github.io/pytorch-pypi"
-reference = "torch"
-
+type = "url"
+url = "https://download.pytorch.org/whl/cpu/torch-1.11.0-cp310-none-macosx_10_9_x86_64.whl"
 [[package]]
 name = "torch"
-version = "1.11.0+rocm4.5.2"
+version = "1.11.0+cu115"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
 category = "main"
 optional = false
@@ -2940,7 +2938,7 @@ heapdict = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.10.3"
-content-hash = "3e7ee3270a2f0d4a692b59fa1ce438022609740b62d178b3a9a39499461fe51a"
+content-hash = "8a3089bcf7bdbd648aaff859b26cd1307bd608906e3e47e81726328d4aeb695c"
 
 [metadata.files]
 absl-py = [
@@ -4747,12 +4745,7 @@ toolz = [
     {file = "toolz-0.11.2-py3-none-any.whl", hash = "sha256:a5700ce83414c64514d82d60bcda8aabfde092d1c1a8663f9200c07fdcc6da8f"},
     {file = "toolz-0.11.2.tar.gz", hash = "sha256:6b312d5e15138552f1bda8a4e66c30e236c831b612b2bf0005f8a1df10a4bc33"},
 ]
-torch = [
-    {file = "torch-1.11.0+rocm4.5.2-cp310-cp310-linux_x86_64.whl", hash = "sha256:43511bafbd4b865c55ad844e294060dc7d6873acd40f3a7f66acd127c56cc046"},
-    {file = "torch-1.11.0+rocm4.5.2-cp37-cp37m-linux_x86_64.whl", hash = "sha256:a9699850b26a46b275cd490a6b79dbfc77836593ecdb8f0643015b0a0b64e86f"},
-    {file = "torch-1.11.0+rocm4.5.2-cp38-cp38-linux_x86_64.whl", hash = "sha256:bfb5045cbb7f48e9f1cd5319fa50b9ab85cc15ce9c3000f8f7a7c4c319ae248c"},
-    {file = "torch-1.11.0+rocm4.5.2-cp39-cp39-linux_x86_64.whl", hash = "sha256:40ed5e50ed18fde3688b035b2a62d0c0d1bd37b01ab99053165a513baeadade8"},
-]
+torch = []
 torchdiffeq = [
     {file = "torchdiffeq-0.2.2-py3-none-any.whl", hash = "sha256:cd8cb409f5de02403087fc9dcf41da16fd2ef7366fba5e3449d96837d38309fe"},
     {file = "torchdiffeq-0.2.2.tar.gz", hash = "sha256:02486c8efb005d5dca99a0bd4905c9d13d945f6e33bc23a99b2b008ccb824fa1"},
