@@ -338,7 +338,7 @@ class MeshGraphNet:
         self.max_accumulations = max_accumulations
         self.clip_val = clip_val
 
-        def model(n_cells, n_nodes, velocity, cells, mesh_pos, node_type, target_velocity, pressure):
+        def model(batch):
             processor = GraphProcessor(name='processor')
             node_normalizer = Normalizer(
                 [node_dim], max_accumulations, name='node_normalizer')
@@ -346,19 +346,17 @@ class MeshGraphNet:
                 [edge_dim], max_accumulations, name='edge_normalizer')
             output_normalizer = Normalizer(
                 [output_dim], max_accumulations, name='output_normalizer')
-            graph = self._build_graph(n_cells, n_nodes, velocity, cells, mesh_pos,
-                                      node_type, target_velocity, pressure,
-                                      node_normalizer, edge_normalizer)
+            graph = self._build_graph(batch, node_normalizer, edge_normalizer)
 
             preds = processor(graph)
 
-            targets = target_velocity - velocity
+            targets = batch['target_velocity'] - batch['velocity']
             targets = output_normalizer(targets)
             targets_nan_mask = jnp.isnan(targets)
             targets = jnp.where(targets_nan_mask, 0, targets)
             preds = jnp.where(targets_nan_mask, 0, preds)
 
-            return preds, targets
+            return {'preds': preds, 'targets': targets}
 
         self.model = hk.without_apply_rng(
             hk.transform_with_state(jax.vmap(model)))
@@ -372,20 +370,21 @@ class MeshGraphNet:
         params = optax.apply_updates(params, updates)
         return params, opt_state, loss_value
 
-    def _build_graph(self, n_cells, n_nodes, velocity, cells, mesh_pos, node_type, target_velocity, pressure, node_normalizer, edge_normalizer):
+    def _build_graph(self, batch, node_normalizer, edge_normalizer):
         # Each node has a type: 0 (normal), 4 (inflow), 5 (outflow), 6 (wall)
 
-        node_types = jax.nn.one_hot(node_type, 9)
+        node_types = jax.nn.one_hot(batch['node_type'], 9)
         # node_types.shape == [n_nodes, 9]
 
-        node_features = jnp.concatenate([velocity, node_types], axis=-1)
+        node_features = jnp.concatenate(
+            [batch['velocity'], node_types], axis=-1)
         # node_features.shape == [n_nodes, 11] nan padded
 
-        senders, receivers = triangles_to_edges(cells)
+        senders, receivers = triangles_to_edges(batch['cells'])
         # senders.shape == receivers.shape == [n_edges]
 
-        sender_pos = jnp.take(mesh_pos, senders, axis=0)
-        receiver_pos = jnp.take(mesh_pos, receivers, axis=0)
+        sender_pos = jnp.take(batch['mesh_pos'], senders, axis=0)
+        receiver_pos = jnp.take(batch['mesh_pos'], receivers, axis=0)
         # sender_pos.shape == receiver_pos.shape == [n_edges, 2] nan padded
 
         rel_pos = sender_pos - receiver_pos
@@ -419,7 +418,7 @@ class MeshGraphNet:
             self.params = params
 
     def init(self, seed, datamodule):
-        # def model(n_cells, n_nodes, velocity, cells, mesh_pos, node_type, target_velocity, pressure):
+        # def model(batch):
         #     processor = GraphProcessor(name='processor')
         #     node_normalizer = Normalizer(
         #         [self.node_dim], self.max_accumulations, name='node_normalizer')
@@ -427,14 +426,15 @@ class MeshGraphNet:
         #         [self.edge_dim], self.max_accumulations, name='edge_normalizer')
         #     output_normalizer = Normalizer(
         #         [self.output_dim], self.max_accumulations, name='output_normalizer')
-        #     graph = self._build_graph(n_cells, n_nodes, velocity, cells, mesh_pos,
-        #                               node_type, target_velocity, pressure,
-        #                               node_normalizer, edge_normalizer)
+        #     graph = self._build_graph(batch, node_normalizer, edge_normalizer)
 
         #     preds = processor(graph)
 
-        #     targets = target_velocity - velocity
-        #     targets = output_normalizer(targets)
+        #     targets = batch['target_velocity'] - batch['velocity']
+        #     # targets = output_normalizer(targets)
+        #     targets_nan_mask = jnp.isnan(targets)
+        #     targets = jnp.where(targets_nan_mask, 0, targets)
+        #     preds = jnp.where(targets_nan_mask, 0, preds)
 
         #     return preds, targets
 
@@ -444,15 +444,20 @@ class MeshGraphNet:
         rng = PRNGKey(seed)
         train_batches = iter(datamodule.train_dataloader())
 
-        # step = jax.jit(self.model.apply)
+        def predict(params, batch):
+            out, self.state = model.apply(
+                params, self.state, batch)
+            preds = out[0]
+            return preds
+        step = jax.jit(predict)
 
         with tqdm(train_batches, unit="batch") as tepoch:
             for i, batch in enumerate(tepoch):
                 if i == 0:
-                    params, self.state = self.model.init(rng, **batch)
+                    params, self.state = self.model.init(rng, batch)
+                    # params2, _ = model.init(rng, batch)
                 # predict(params, **batch)
-                # (preds, targets), self.state = step(
-                #     params, self.state, **batch)
+                # step(params2, **batch)
 
                 if i >= 20:
                     break
@@ -461,23 +466,18 @@ class MeshGraphNet:
         # print('State', self.state)
         return params
 
-    def predict(self, params, **batch):
-        (preds, targets), self.state = self.model.apply(
-            params, self.state, **batch)
-        return preds
-
     def loss_fn(self, params, batch):
-        (preds, targets), self.state = self.model.apply(
-            params, self.state, **batch)
-        loss = optax.l2_loss(targets, preds).sum(axis=-1)
+        out, self.state = self.model.apply(
+            params, self.state, batch)
+        loss = optax.l2_loss(out['targets'], out['preds']).sum(axis=-1)
         loss = jnp.nanmean(loss)
         return loss
 
     def valid_step(self, params, **batch):
-        (preds, targets), self.state = self.model.apply(
-            params, self.state, **batch)
-        batch_size = targets.shape[0]
-        loss = optax.l2_loss(targets, preds).sum(axis=-1)
+        out, self.state = self.model.apply(
+            params, self.state, batch)
+        batch_size = out['targets'].shape[0]
+        loss = optax.l2_loss(out['targets'], out['preds']).sum(axis=-1)
         loss = jnp.nanmean(loss)
 
         logs = {
