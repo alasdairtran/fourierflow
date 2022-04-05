@@ -85,7 +85,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
 
             for i, batch in tqdm(enumerate(validate_batches)):
                 self.on_validation_batch_start(batch, i, 0)
-                outputs = routine.valid_step(params, **batch)
+                outputs = routine.valid_step(params, batch)
                 valid_outs.append(outputs)
                 self.on_validation_batch_end(outputs, batch, i, 0)
 

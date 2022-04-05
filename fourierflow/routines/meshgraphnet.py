@@ -8,9 +8,9 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-from einops import rearrange, repeat
+from einops import rearrange
 from jax.example_libraries.optimizers import l2_norm
-from jax.random import PRNGKey, split, uniform
+from jax.random import PRNGKey
 from jax.tree_util import tree_map
 from tqdm import tqdm
 
@@ -19,8 +19,11 @@ def safe_clip_grads(grad_tree, max_norm):
     """Clip gradients stored as a pytree of arrays to maximum norm `max_norm`."""
     norm = l2_norm(grad_tree)
     eps = 1e-9
-    def normalize(g): return jnp.where(
-        norm < max_norm, g, g * max_norm / (norm + eps))
+
+    def normalize(g):
+        return jnp.where(
+            norm < max_norm, g, g * max_norm / (norm + eps))
+
     return tree_map(normalize, grad_tree)
 
 
@@ -258,6 +261,8 @@ class Normalizer(hk.Module):
         hk.set_state("count", self.count + x_count)
         hk.set_state("n_accumulations", self.n_accumulations + 1)
 
+        return x
+
     def _pool_dims(self, x):
         _, *dim_sizes, _ = x.shape
         self.dim_sizes = dim_sizes
@@ -279,6 +284,9 @@ class Normalizer(hk.Module):
         # x.shape == [batch_size, latent_dim]
 
         self._accumulate(x)
+
+        # hk.cond(self.n_accumulations < self.max_accumulations,
+        #         lambda x: self._accumulate(x), lambda x: x, x)
 
         x = (x - self.mean) / self.std
         x = self._unpool_dims(x)
@@ -351,7 +359,7 @@ class MeshGraphNet:
             preds = processor(graph)
 
             targets = batch['target_velocity'] - batch['velocity']
-            targets = output_normalizer(targets)
+            # targets = output_normalizer(targets)
             targets_nan_mask = jnp.isnan(targets)
             targets = jnp.where(targets_nan_mask, 0, targets)
             preds = jnp.where(targets_nan_mask, 0, preds)
@@ -396,7 +404,7 @@ class MeshGraphNet:
         edge_features = jnp.concatenate([rel_pos, norms], axis=-1)
         # edge_features.shape == [n_edges, 3] nan padded
 
-        edge_features = edge_normalizer(edge_features)
+        # edge_features = edge_normalizer(edge_features)
         edge_nan_mask = jnp.isnan(edge_features)
         edge_features = jnp.where(edge_nan_mask, 0, edge_features)
         mesh_edges = EdgeSet(name='mesh_edges',
@@ -404,7 +412,7 @@ class MeshGraphNet:
                              receivers=receivers,
                              senders=senders)
 
-        node_features = node_normalizer(node_features)
+        # node_features = node_normalizer(node_features)
         node_nan_mask = jnp.isnan(node_features)
         node_features = jnp.where(node_nan_mask, 0, node_features)
         graph = MultiGraph(node_features=node_features,
@@ -418,52 +426,17 @@ class MeshGraphNet:
             self.params = params
 
     def init(self, seed, datamodule):
-        # def model(batch):
-        #     processor = GraphProcessor(name='processor')
-        #     node_normalizer = Normalizer(
-        #         [self.node_dim], self.max_accumulations, name='node_normalizer')
-        #     edge_normalizer = Normalizer(
-        #         [self.edge_dim], self.max_accumulations, name='edge_normalizer')
-        #     output_normalizer = Normalizer(
-        #         [self.output_dim], self.max_accumulations, name='output_normalizer')
-        #     graph = self._build_graph(batch, node_normalizer, edge_normalizer)
-
-        #     preds = processor(graph)
-
-        #     targets = batch['target_velocity'] - batch['velocity']
-        #     # targets = output_normalizer(targets)
-        #     targets_nan_mask = jnp.isnan(targets)
-        #     targets = jnp.where(targets_nan_mask, 0, targets)
-        #     preds = jnp.where(targets_nan_mask, 0, preds)
-
-        #     return preds, targets
-
-        # model = hk.without_apply_rng(
-        #     hk.transform_with_state(jax.vmap(model)))
-
         rng = PRNGKey(seed)
         train_batches = iter(datamodule.train_dataloader())
-
-        def predict(params, batch):
-            out, self.state = model.apply(
-                params, self.state, batch)
-            preds = out[0]
-            return preds
-        step = jax.jit(predict)
 
         with tqdm(train_batches, unit="batch") as tepoch:
             for i, batch in enumerate(tepoch):
                 if i == 0:
                     params, self.state = self.model.init(rng, batch)
-                    # params2, _ = model.init(rng, batch)
-                # predict(params, **batch)
-                # step(params2, **batch)
-
-                if i >= 20:
-                    break
+                _, self.state = self.model.apply(params, self.state, batch)
+                break
 
         self.params = params
-        # print('State', self.state)
         return params
 
     def loss_fn(self, params, batch):
@@ -473,7 +446,7 @@ class MeshGraphNet:
         loss = jnp.nanmean(loss)
         return loss
 
-    def valid_step(self, params, **batch):
+    def valid_step(self, params, batch):
         out, self.state = self.model.apply(
             params, self.state, batch)
         batch_size = out['targets'].shape[0]
