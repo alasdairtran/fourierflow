@@ -18,7 +18,6 @@ from typing import Any, Callable, Optional
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks.base import Callback
-from pytorch_lightning.trainer.optimizers import _get_default_scheduler_config
 from pytorch_lightning.utilities import rank_zero_info, rank_zero_warn
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from torch import nn
