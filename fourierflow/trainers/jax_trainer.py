@@ -25,6 +25,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
         enable_model_summary: bool = False,
         resume_from_checkpoint=None,
         limit_train_batches=None,
+        limit_val_batches=None,
         callbacks: Optional[List[Callback]] = None,
         logger: Optional[WandbLogger] = None,
         seed: Optional[int] = None,
@@ -36,6 +37,7 @@ class JAXTrainer(TrainerCallbackHookMixin):
         if weights_save_path:
             self.weights_save_path = Path(weights_save_path)
         self.limit_train_batches = limit_train_batches
+        self.limit_val_batches = limit_val_batches
         self.callbacks = callbacks or []
         self.current_epoch = -1
         self.routine = None
@@ -83,11 +85,14 @@ class JAXTrainer(TrainerCallbackHookMixin):
             validate_batches = iter(datamodule.val_dataloader())
             valid_outs = []
 
-            for i, batch in tqdm(enumerate(validate_batches)):
+            for i, batch in tqdm(enumerate(validate_batches), total=self.limit_val_batches):
                 self.on_validation_batch_start(batch, i, 0)
                 outputs = routine.valid_step(params, batch)
                 valid_outs.append(outputs)
                 self.on_validation_batch_end(outputs, batch, i, 0)
+
+                if self.limit_val_batches and i >= self.limit_val_batches:
+                    break
 
             valid_logs = routine.validation_epoch_end(valid_outs)
             valid_scalars = {k: v for k, v in valid_logs.items()
