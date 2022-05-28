@@ -880,7 +880,7 @@ traitlets = "<6"
 
 [[package]]
 name = "ipython"
-version = "8.3.0"
+version = "8.4.0"
 description = "IPython: Productive Interactive Computing"
 category = "main"
 optional = false
@@ -3580,8 +3580,8 @@ ipympl = [
     {file = "ipympl-0.8.8.tar.gz", hash = "sha256:5bf5d780b07fafe7924922ac6b2f3abd22721f341e5e196b3b82737dfbd0e1c9"},
 ]
 ipython = [
-    {file = "ipython-8.3.0-py3-none-any.whl", hash = "sha256:341456643a764c28f670409bbd5d2518f9b82c013441084ff2c2fc999698f83b"},
-    {file = "ipython-8.3.0.tar.gz", hash = "sha256:807ae3cf43b84693c9272f70368440a9a7eaa2e7e6882dad943c32fbf7e51402"},
+    {file = "ipython-8.4.0-py3-none-any.whl", hash = "sha256:7ca74052a38fa25fe9bedf52da0be7d3fdd2fb027c3b778ea78dfe8c212937d1"},
+    {file = "ipython-8.4.0.tar.gz", hash = "sha256:f2db3a10254241d9b447232cec8b424847f338d9d36f9a577a6192c332a46abd"},
 ]
 ipython-genutils = [
     {file = "ipython_genutils-0.2.0-py2.py3-none-any.whl", hash = "sha256:72dd37233799e619666c9f639a9da83c34013a73e8bbc79a7a6348d93c61fab8"},
@@ -4823,6 +4823,14 @@ toolz = [
     {file = "toolz-0.11.2.tar.gz", hash = "sha256:6b312d5e15138552f1bda8a4e66c30e236c831b612b2bf0005f8a1df10a4bc33"},
 ]
 torch = [
+    {file = "torch-1.11.0+cu115-cp310-cp310-linux_x86_64.whl", hash = "sha256:4f287b35e4ac25589b1d86dc94cbf038048cea7aed547a6e7ba979915fa79d11"},
+    {file = "torch-1.11.0+cu115-cp310-cp310-win_amd64.whl", hash = "sha256:6c66502d4e30464abd8ede9b00ef85ac7eaf569bdf53663375a0ed3f49c4f1e5"},
+    {file = "torch-1.11.0+cu115-cp37-cp37m-linux_x86_64.whl", hash = "sha256:5dce0019d9e5ebca9abae69ef4f298c625b96175237e55e50c6eb33f2e6501a9"},
+    {file = "torch-1.11.0+cu115-cp37-cp37m-win_amd64.whl", hash = "sha256:84039bdc88d5aeb682338134c39bcf45cd3719ad0bc6f84ba69dc99d97765072"},
+    {file = "torch-1.11.0+cu115-cp38-cp38-linux_x86_64.whl", hash = "sha256:02779dc7c0cd188416496adb233ae9e3988a9aa73d9ebba3624507d0f2111f3c"},
+    {file = "torch-1.11.0+cu115-cp38-cp38-win_amd64.whl", hash = "sha256:b143f8a9a54c1e09e389e04f76fe9c4dd0c64c511eb784ce16ffee3c110e7131"},
+    {file = "torch-1.11.0+cu115-cp39-cp39-linux_x86_64.whl", hash = "sha256:eb81d067bbcfe844c95c5d27e26c97a96a893427cc468b2259eaf0ed93da1c7d"},
+    {file = "torch-1.11.0+cu115-cp39-cp39-win_amd64.whl", hash = "sha256:f67fbe8aa4e720077f0d34349228ecad58afd84395be437eedaa7b53d1baa3da"},
     {file = "torch-1.11.0+rocm4.5.2-cp310-cp310-linux_x86_64.whl", hash = "sha256:43511bafbd4b865c55ad844e294060dc7d6873acd40f3a7f66acd127c56cc046"},
     {file = "torch-1.11.0+rocm4.5.2-cp37-cp37m-linux_x86_64.whl", hash = "sha256:a9699850b26a46b275cd490a6b79dbfc77836593ecdb8f0643015b0a0b64e86f"},
     {file = "torch-1.11.0+rocm4.5.2-cp38-cp38-linux_x86_64.whl", hash = "sha256:bfb5045cbb7f48e9f1cd5319fa50b9ab85cc15ce9c3000f8f7a7c4c319ae248c"},
