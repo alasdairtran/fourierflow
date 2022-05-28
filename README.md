@@ -42,15 +42,17 @@ git checkout v0.2.0
 # Set up pyenv and pin python version to 3.9.9
 curl https://pyenv.run | bash
 # Configure our shell's environment for pyenv
-pyenv install 3.10.3
-pyenv local 3.10.3
-
-# Set up poetry
-curl -sSL https://install.python-poetry.org | python3 - --version 1.2.0b1
-export PATH="$HOME/.local/bin:$PATH"
+pyenv install 3.10.4
+pyenv local 3.10.4
+# pipx is used to install poetry
+python -m pip install --user pipx
+python -m pipx ensurepath
+# We install an unreleased dev version of poetry to make installing jax easier.
+# See https://github.com/python-poetry/poetry/issues/5516
+pipx install --suffix=@dev 'poetry @ git+https://github.com/python-poetry/poetry.git@refs/pull/5517/head'
 
 # Install all python dependencies
-poetry install
+poetry@dev install
 source .venv/bin/activate # or: poetry shell
 # If we need to use Jupyter notebooks
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
