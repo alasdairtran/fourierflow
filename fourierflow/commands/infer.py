@@ -30,7 +30,8 @@ def main(config_path: Path,
     logger.info(f'Loading config from {config_path}...')
     config_dir = config_path.parent
     config_name = config_path.stem
-    hydra.initialize(config_path=Path('../..') / config_dir)
+    hydra.initialize(config_path=Path('../..') /
+                     config_dir, version_base='1.2')
     config = hydra.compose(config_name, overrides=[])
     routine = instantiate(config.routine)
     routine.load_lightning_model_state(str(checkpoint_path), map_location=None)

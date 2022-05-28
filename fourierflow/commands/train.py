@@ -34,7 +34,8 @@ def main(config_path: Path,
     """Train a Pytorch Lightning experiment."""
     config_dir = config_path.parent
     config_name = config_path.stem
-    hydra.initialize(config_path=Path('../..') / config_dir)
+    hydra.initialize(config_path=Path('../..') /
+                     config_dir, version_base='1.2')
     config = hydra.compose(config_name, overrides=overrides)
     OmegaConf.set_struct(config, False)
 

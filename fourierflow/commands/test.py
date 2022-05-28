@@ -1,10 +1,10 @@
-import jax
 import os
 from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional, cast
 
 import hydra
+import jax
 import numpy as np
 import ptvsd
 import pytorch_lightning as pl
@@ -31,7 +31,8 @@ def main(config_path: Path,
     """Test a Pytorch Lightning experiment."""
     config_dir = config_path.parent
     config_name = config_path.stem
-    hydra.initialize(config_path=Path('../..') / config_dir)
+    hydra.initialize(config_path=Path('../..') /
+                     config_dir, version_base='1.2')
     config = hydra.compose(config_name, overrides=overrides)
     OmegaConf.set_struct(config, False)
 

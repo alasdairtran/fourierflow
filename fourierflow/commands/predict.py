@@ -46,7 +46,8 @@ def main(config_path: Optional[Path] = Argument(None),
 
     config_dir = config_path.parent
     config_name = config_path.stem
-    hydra.initialize(config_path=Path('../..') / config_dir)
+    hydra.initialize(config_path=Path('../..') /
+                     config_dir, version_base='1.2')
     config = hydra.compose(config_name, overrides=overrides)
     OmegaConf.set_struct(config, False)
 

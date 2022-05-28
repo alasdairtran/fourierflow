@@ -51,7 +51,7 @@ def kolmogorov(
 
     config_dir = config_path.parent
     stem = config_path.stem
-    hydra.initialize(config_path=str('../..' / config_dir))
+    hydra.initialize(config_path=str('../..' / config_dir), version_base='1.2')
     c = hydra.compose(config_name=stem, overrides=overrides or [])
     OmegaConf.set_struct(c, False)
     out_vorticity = c.get('out_vorticity', True)
