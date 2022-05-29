@@ -29,7 +29,8 @@ jax-cfd = {git = "https://github.com/google/jax-cfd.git", rev = "3bf2905f3c68ba9
 # https://github.com/google/jax/issues/5410
 jaxlib = [
     {version = "^0.3.10+cuda11.cudnn82", source = "jax", markers = "sys_platform == 'linux'"},
-    {version = "^0.3.10", source = "jax", markers = "sys_platform == 'darwin'"},
+    {url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.3.10-cp310-none-macosx_10_9_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" },
+    {url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.3.10-cp310-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
 ]
 jupyterlab = "^3.4.2"
 matplotlib = "^3.5.2"
@@ -53,7 +54,8 @@ tfrecord = "^1.14.1"
 # torch-1.11.0+rocm will be installed instead :-/
 torch = [
     {version = "1.11.0+cu115", source = "torch", markers = "sys_platform == 'linux' or sys_platform == 'win32'"},
-    {version = "1.11.0", source = "torch", markers = "sys_platform == 'darwin'"},
+    {url = "https://download.pytorch.org/whl/cpu/torch-1.11.0-cp310-none-macosx_10_9_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'"},
+    {url = "https://download.pytorch.org/whl/cpu/torch-1.11.0-cp310-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
 ]
 torchdiffeq = "^0.2.3"
 torchtyping = "^0.1.4"

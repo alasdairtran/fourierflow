@@ -47,9 +47,9 @@ pyenv local 3.10.4
 # pipx is used to install poetry
 python -m pip install --user pipx
 python -m pipx ensurepath
-# We install an unreleased dev version of poetry to make installing jax easier.
-# See https://github.com/python-poetry/poetry/issues/5516
-pipx install --suffix=@dev 'poetry @ git+https://github.com/python-poetry/poetry.git@refs/pull/5517/head'
+# We install an unreleased dev version of poetry to support multi-platform
+# installation of jax and pytorch: https://github.com/python-poetry/poetry/issues/5714
+pipx install --suffix=@dev 'poetry@git+https://github.com/python-poetry/poetry.git@refs/pull/5715/head'
 
 # Install all python dependencies
 poetry@dev install
