@@ -1,10 +1,13 @@
 import os
 import pickle
-import shutil
 from pathlib import Path
+from typing import Optional
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.utilities.logger import _name, _version
+from pytorch_lightning.utilities.rank_zero import rank_zero_warn
+from pytorch_lightning.utilities.types import _PATH
 
 from .callback import Callback
 
@@ -61,16 +64,17 @@ class JAXModelCheckpoint(Callback):
 
 
 class CustomModelCheckpoint(ModelCheckpoint):
-    def on_pretrain_routine_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        """
-        When pretrain routine starts we build the ckpt dir on the fly
-        """
+    def setup(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", stage: Optional[str] = None) -> None:
         self.__resolve_ckpt_dir(trainer)
-        self._save_function = trainer.save_checkpoint
+        if trainer.is_global_zero and stage == "fit":
+            self.__warn_if_dir_not_empty(self.dirpath)
+
+        # NOTE: setting these attributes needs to happen as early as possible BEFORE reloading callback states,
+        # because the attributes are part of the state_key which needs to be fully defined before reloading.
         if self._save_on_train_epoch_end is None:
-            # if the user runs validation multiple times per training epoch, we try to save checkpoint after
-            # validation instead of on train epoch end
-            self._save_on_train_epoch_end = trainer.val_check_interval == 1.0
+            # if the user runs validation multiple times per training epoch or multiple training epochs without
+            # validation, then we run after validation instead of on train epoch end
+            self._save_on_train_epoch_end = trainer.val_check_interval == 1.0 and trainer.check_val_every_n_epoch == 1
 
     def __resolve_ckpt_dir(self, trainer: "pl.Trainer") -> None:
         """
@@ -86,29 +90,33 @@ class CustomModelCheckpoint(ModelCheckpoint):
         The base path gets extended with logger name and version (if these are available)
         and subfolder "checkpoints".
         """
-        # Todo: required argument `pl_module` is not used
         if self.dirpath is not None:
             return  # short circuit
 
-        if trainer.logger is not None:
-            if trainer.weights_save_path != trainer.default_root_dir:
+        # TODO: Remove weights_save_path logic here in v1.8
+        if trainer.loggers:
+            if trainer._weights_save_path_internal != trainer.default_root_dir:
                 # the user has changed weights_save_path, it overrides anything
-                save_dir = trainer.weights_save_path
-            else:
+                save_dir = trainer._weights_save_path_internal
+            elif len(trainer.loggers) == 1:
                 save_dir = trainer.logger.save_dir or trainer.default_root_dir
+            else:
+                save_dir = trainer.default_root_dir
 
-            version = (
-                trainer.logger.version
-                if isinstance(trainer.logger.version, str)
-                else f"version_{trainer.logger.version}"
-            )
+            name = _name(trainer.loggers)
+            version = _version(trainer.loggers)
+            version = version if isinstance(
+                version, str) else f"version_{version}"
             ckpt_path = os.path.join(save_dir, "checkpoints", version)
         else:
-            ckpt_path = os.path.join(trainer.weights_save_path, "checkpoints")
+            ckpt_path = os.path.join(
+                trainer._weights_save_path_internal, "checkpoints")
 
-        ckpt_path = trainer.training_type_plugin.broadcast(ckpt_path)
+        ckpt_path = trainer.strategy.broadcast(ckpt_path)
 
         self.dirpath = ckpt_path
 
-        if not trainer.fast_dev_run and trainer.should_rank_save_checkpoint:
-            self._fs.makedirs(self.dirpath, exist_ok=True)
+    def __warn_if_dir_not_empty(self, dirpath: _PATH) -> None:
+        if self.save_top_k != 0 and self._fs.isdir(dirpath) and len(self._fs.ls(dirpath)) > 0:
+            rank_zero_warn(
+                f"Checkpoint directory {dirpath} exists and is not empty.")
