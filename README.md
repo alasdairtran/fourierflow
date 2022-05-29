@@ -56,8 +56,6 @@ poetry@dev install
 source .venv/bin/activate # or: poetry shell
 # If we need to use Jupyter notebooks
 python -m ipykernel install --user --name fourierflow --display-name "fourierflow"
-# Provide a more meaningful prompt when inside the virtual environment
-python -m venv .venv --prompt fourierflow
 
 # set default paths
 cp example.env .env
