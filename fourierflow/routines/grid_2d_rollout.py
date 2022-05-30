@@ -38,7 +38,7 @@ class Grid2DRolloutExperiment(Routine):
             self.in_proj = nn.Linear(n_steps, 34)
 
     def forward(self, data):
-        xx = data[..., :10]
+        xx = data['data'][..., :10]
         B, X, Y, T = xx.shape
 
         # Add positional information to inputs
@@ -47,8 +47,8 @@ class Grid2DRolloutExperiment(Routine):
         grid_y = repeat(ticks, 'y -> b x y 1', b=B, x=X)
         xx = torch.cat([xx, grid_x, grid_y], dim=-1)
 
-        yy = data[..., 10:]
-        return self._learning_step([xx, yy])
+        yy = data['data'][..., 10:]
+        return self._learning_step({'x': xx, 'y': yy})
 
     def encode_fourier_positions(self, dim_sizes, device):
         # dim_sizes is a list of dimensions in all positional dimensions
