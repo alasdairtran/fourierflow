@@ -32,7 +32,8 @@ routine:
 trainer:
   _target_: fourierflow.trainers.JAXTrainer
   max_epochs: 10
-  limit_train_batches: 15000
+  limit_train_batches: 150
+  limit_val_batches: 20
   seed: null # placeholder - will be overridden
 callbacks:
   - _target_: fourierflow.callbacks.JAXModelCheckpoint

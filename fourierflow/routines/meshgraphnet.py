@@ -447,15 +447,36 @@ class MeshGraphNet:
         return loss
 
     def valid_step(self, params, batch):
-        out, self.state = self.model.apply(
-            params, self.state, batch)
-        batch_size = out['targets'].shape[0]
-        loss = optax.l2_loss(out['targets'], out['preds']).sum(axis=-1)
+        # Roll out for 50 steps
+        keys = ['velocity']
+        inputs = {k: v[:, 0] if k in keys else v for k, v in batch.items()}
+
+        @jax.jit
+        def rollout(params, state, inputs):
+            preds = []
+            targets = []
+            for i in range(50):
+                inputs['target_velocity'] = batch['target_velocity'][:, i]
+                out, state = self.model.apply(
+                    params, state, inputs)
+                inputs['velocity'] = out['preds']
+                preds.append(out['preds'])
+                targets.append(out['targets'])
+
+            targets = jnp.stack(targets, axis=0)
+            preds = jnp.stack(preds, axis=0)
+            return preds, targets
+
+        preds, targets = rollout(params, self.state, inputs)
+
+        batch_size = batch['velocity'].shape[0]
+        loss = optax.l2_loss(targets, preds).sum(axis=-1)
         loss = jnp.nanmean(loss)
 
         logs = {
             'loss': loss.item(),
             'weight': batch_size,
+            'preds': preds,
         }
 
         return logs

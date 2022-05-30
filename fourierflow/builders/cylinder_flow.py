@@ -34,8 +34,8 @@ class CylinderFlowBuilder(Builder):
         h5f = h5py.File(data_path)
 
         self.train_dataset = CylinderFlowTrainingDataset(h5f['train'])
-        self.valid_dataset = CylinderFlowTrainingDataset(h5f['valid'])
-        self.test_dataset = CylinderFlowTrainingDataset(h5f['test'])
+        self.valid_dataset = CylinderFlowDataset(h5f['valid'])
+        self.test_dataset = CylinderFlowDataset(h5f['test'])
 
     def train_dataloader(self) -> DataLoader:
         loader = DataLoader(self.train_dataset,
@@ -84,7 +84,7 @@ class CylinderFlowTrainingDataset(Dataset):
             'node_type': self.node_type[b],  # [n] padded with -1
             'velocity': self.velocity[b, t],  # [n, 2] nan padded
             'target_velocity': self.target_velocity[b, t],  # [n, 2] nan padded
-            'pressure': self.pressure[b, t],  # [n] nan padded
+            # 'pressure': self.pressure[b, t],  # [n] nan padded
         }
 
 
@@ -98,7 +98,7 @@ class CylinderFlowDataset(Dataset):
         self.pressure = data['pressure']
         self.n_cells = data['n_cells']
         self.n_nodes = data['n_nodes']
-        self.B = self.cells[0]
+        self.B = self.velocity.shape[0]
 
     def __len__(self):
         return self.B
@@ -114,5 +114,5 @@ class CylinderFlowDataset(Dataset):
             'node_type': self.node_type[b],  # [n]
             'velocity': self.velocity[b],  # [t, n, 2]
             'target_velocity': self.target_velocity[b],  # [t, n, 2]
-            'pressure': self.pressure[b],  # [t, n]
+            # 'pressure': self.pressure[b],  # [t, n]
         }
