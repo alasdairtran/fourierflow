@@ -1024,7 +1024,7 @@ tpu = ["jaxlib (==0.3.15)", "libtpu-nightly (==0.1.dev20220722)", "requests"]
 
 [[package]]
 name = "jax-cfd"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 category = "main"
 optional = false
@@ -1038,7 +1038,6 @@ scipy = "*"
 tree-math = "*"
 
 [package.extras]
-complete = ["matplotlib", "seaborn", "pillow", "xarray", "dm-haiku", "einops", "gin-config", "absl-py", "pytest", "pytest-xdist", "scikit-image"]
 data = ["matplotlib", "seaborn", "pillow", "xarray"]
 ml = ["dm-haiku", "einops", "gin-config"]
 tests = ["absl-py", "pytest", "pytest-xdist", "scikit-image"]
@@ -1046,12 +1045,12 @@ tests = ["absl-py", "pytest", "pytest-xdist", "scikit-image"]
 [package.source]
 type = "git"
 url = "https://github.com/google/jax-cfd.git"
-reference = "3bf2905f3c68ba9a572b287e96de41d531dd56d6"
-resolved_reference = "3bf2905f3c68ba9a572b287e96de41d531dd56d6"
+reference = "eb4d723e10a11dd2bc3449932a549262e19d5972"
+resolved_reference = "eb4d723e10a11dd2bc3449932a549262e19d5972"
 
 [[package]]
 name = "jaxlib"
-version = "0.3.10"
+version = "0.3.15"
 description = "XLA library for JAX"
 category = "main"
 optional = false
@@ -1059,16 +1058,15 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 absl-py = "*"
-flatbuffers = ">=1.12,<3.0"
 numpy = ">=1.19"
-scipy = "*"
+scipy = ">=1.5"
 
 [package.source]
 type = "url"
-url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.3.10-cp310-none-macosx_10_9_x86_64.whl"
+url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.3.15-cp310-none-macosx_10_14_x86_64.whl"
 [[package]]
 name = "jaxlib"
-version = "0.3.10"
+version = "0.3.15"
 description = "XLA library for JAX"
 category = "main"
 optional = false
@@ -1076,16 +1074,15 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 absl-py = "*"
-flatbuffers = ">=1.12,<3.0"
 numpy = ">=1.19"
-scipy = "*"
+scipy = ">=1.5"
 
 [package.source]
 type = "url"
-url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.3.10-cp310-none-macosx_11_0_arm64.whl"
+url = "https://storage.googleapis.com/jax-releases/mac/jaxlib-0.3.15-cp310-none-macosx_11_0_arm64.whl"
 [[package]]
 name = "jaxlib"
-version = "0.3.10+cuda11.cudnn805"
+version = "0.3.15+cuda11.cudnn805"
 description = "XLA library for JAX"
 category = "main"
 optional = false
@@ -1093,13 +1090,12 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 absl-py = "*"
-flatbuffers = ">=1.12,<3.0"
 numpy = ">=1.19"
-scipy = "*"
+scipy = ">=1.5"
 
 [package.source]
 type = "url"
-url = "https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.3.10+cuda11.cudnn805-cp310-none-manylinux2014_x86_64.whl"
+url = "https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.3.15+cuda11.cudnn805-cp310-none-manylinux2014_x86_64.whl"
 [[package]]
 name = "jedi"
 version = "0.18.1"
@@ -2700,7 +2696,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "torch"
-version = "1.11.0"
+version = "1.12.1"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
 category = "main"
 optional = false
@@ -2711,10 +2707,10 @@ typing-extensions = "*"
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cpu/torch-1.11.0-cp310-none-macosx_10_9_x86_64.whl"
+url = "https://download.pytorch.org/whl/cpu/torch-1.12.1-cp310-none-macosx_10_9_x86_64.whl"
 [[package]]
 name = "torch"
-version = "1.11.0"
+version = "1.12.1"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
 category = "main"
 optional = false
@@ -2725,10 +2721,10 @@ typing-extensions = "*"
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cpu/torch-1.11.0-cp310-none-macosx_11_0_arm64.whl"
+url = "https://download.pytorch.org/whl/cpu/torch-1.12.1-cp310-none-macosx_11_0_arm64.whl"
 [[package]]
 name = "torch"
-version = "1.11.0+cu115"
+version = "1.12.1+cu116"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
 category = "main"
 optional = false
@@ -2911,7 +2907,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "wandb"
-version = "0.12.21"
+version = "0.13.1"
 description = "A CLI and library for interacting with the Weights and Biases API."
 category = "main"
 optional = false
@@ -2939,7 +2935,7 @@ azure = ["azure-storage-blob"]
 gcp = ["google-cloud-storage"]
 grpc = ["grpcio (>=1.27.2)"]
 kubeflow = ["kubernetes", "minio", "google-cloud-storage", "sh"]
-launch = ["nbconvert", "nbformat", "chardet", "iso8601", "typing-extensions", "boto3", "google-cloud-storage", "kubernetes"]
+launch = ["nbconvert", "nbformat", "chardet", "iso8601", "typing-extensions", "boto3", "botocore", "google-cloud-storage", "kubernetes"]
 media = ["numpy", "moviepy", "pillow", "bokeh", "soundfile", "plotly", "rdkit-pypi"]
 models = ["cloudpickle"]
 sweeps = ["sweeps (>=0.1.0)"]
@@ -3076,7 +3072,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.10.6"
-content-hash = "9e36222d405b3a9deb10960907dad70c7c3d8fd55ddafe9d3275a12d21f46ab6"
+content-hash = "7d649a60dbe34e50e5f250fc7223bafe5756d8f8ce6c9a8976459543e0769404"
 
 [metadata.files]
 absl-py = [
@@ -5010,14 +5006,14 @@ toolz = [
     {file = "toolz-0.12.0.tar.gz", hash = "sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194"},
 ]
 torch = [
-    {file = "torch-1.11.0+cu115-cp310-cp310-linux_x86_64.whl", hash = "sha256:4f287b35e4ac25589b1d86dc94cbf038048cea7aed547a6e7ba979915fa79d11"},
-    {file = "torch-1.11.0+cu115-cp310-cp310-win_amd64.whl", hash = "sha256:6c66502d4e30464abd8ede9b00ef85ac7eaf569bdf53663375a0ed3f49c4f1e5"},
-    {file = "torch-1.11.0+cu115-cp37-cp37m-linux_x86_64.whl", hash = "sha256:5dce0019d9e5ebca9abae69ef4f298c625b96175237e55e50c6eb33f2e6501a9"},
-    {file = "torch-1.11.0+cu115-cp37-cp37m-win_amd64.whl", hash = "sha256:84039bdc88d5aeb682338134c39bcf45cd3719ad0bc6f84ba69dc99d97765072"},
-    {file = "torch-1.11.0+cu115-cp38-cp38-linux_x86_64.whl", hash = "sha256:02779dc7c0cd188416496adb233ae9e3988a9aa73d9ebba3624507d0f2111f3c"},
-    {file = "torch-1.11.0+cu115-cp38-cp38-win_amd64.whl", hash = "sha256:b143f8a9a54c1e09e389e04f76fe9c4dd0c64c511eb784ce16ffee3c110e7131"},
-    {file = "torch-1.11.0+cu115-cp39-cp39-linux_x86_64.whl", hash = "sha256:eb81d067bbcfe844c95c5d27e26c97a96a893427cc468b2259eaf0ed93da1c7d"},
-    {file = "torch-1.11.0+cu115-cp39-cp39-win_amd64.whl", hash = "sha256:f67fbe8aa4e720077f0d34349228ecad58afd84395be437eedaa7b53d1baa3da"},
+    {file = "torch-1.12.1+cu116-cp310-cp310-linux_x86_64.whl", hash = "sha256:b6bc31244aa2818929fbb30c483c221df471e9d856e805c5a1ff72b131ae9e7b"},
+    {file = "torch-1.12.1+cu116-cp310-cp310-win_amd64.whl", hash = "sha256:832effad8b21109700323a5aa137a2e4bdea711dac3d8491ff542f798dab0101"},
+    {file = "torch-1.12.1+cu116-cp37-cp37m-linux_x86_64.whl", hash = "sha256:fc9b4786ec54be67eaa8b0c7c9999e2f4ae2b89a1c18e41de1515a190440c691"},
+    {file = "torch-1.12.1+cu116-cp37-cp37m-win_amd64.whl", hash = "sha256:bca5a77071d7eb901beb775648b125e6d9279f231d1f23e56530b5a189df8975"},
+    {file = "torch-1.12.1+cu116-cp38-cp38-linux_x86_64.whl", hash = "sha256:dda312901220895087cc83d3665464a3dc171d04460c61c31af463efbfb54896"},
+    {file = "torch-1.12.1+cu116-cp38-cp38-win_amd64.whl", hash = "sha256:b8e8906e770bcad12e67c269e1bcdd7661a8abd96519a4ba643e86440bbcc1bf"},
+    {file = "torch-1.12.1+cu116-cp39-cp39-linux_x86_64.whl", hash = "sha256:7725420dabebfcaf44984edce3283eea91f98f0f7d5874bc68c7a164bd8126e3"},
+    {file = "torch-1.12.1+cu116-cp39-cp39-win_amd64.whl", hash = "sha256:84f031e4ee25d95368d7531aa58e79da9808d3fa53b4b363ea03a2450b6fd0af"},
 ]
 torchdiffeq = [
     {file = "torchdiffeq-0.2.3-py3-none-any.whl", hash = "sha256:b5b01ec1294a2d8d5f77e567bf17c5de1237c0573cb94deefa88326f0e18c338"},
@@ -5081,8 +5077,8 @@ urllib3 = [
     {file = "urllib3-1.26.11.tar.gz", hash = "sha256:ea6e8fb210b19d950fab93b60c9009226c63a28808bc8386e05301e25883ac0a"},
 ]
 wandb = [
-    {file = "wandb-0.12.21-py2.py3-none-any.whl", hash = "sha256:150842447d355d90dc7f368b824951a625e5b2d1be355a00e99b11b73728bc1f"},
-    {file = "wandb-0.12.21.tar.gz", hash = "sha256:1975ff88c5024923c3321c93cfefb8d9b871543c0b009f34001bf0f31e444b04"},
+    {file = "wandb-0.13.1-py2.py3-none-any.whl", hash = "sha256:a616993129678399def983a43ee24af8ed28bdef25fdb8a89692c6f3c9059519"},
+    {file = "wandb-0.13.1.tar.gz", hash = "sha256:d362c408c9214722c43678aed3b807e0ba80d4752c70a32854179d926b8ff2ac"},
 ]
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
