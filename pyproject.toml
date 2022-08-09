@@ -6,7 +6,7 @@ authors = ["Alasdair Tran <alasdair.tran@anu.edu.au>"]
 repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
-python = "~3.10.4"
+python = "~3.10.6"
 # poetry add bokeh dask-cuda dm-haiku einops gdown gin-config \
 #   graphviz h5netcdf hydra-core hyperopt ipykernel jupyterlab \
 #   matplotlib numpy optax pandas plotly poethepoet ptvsd pydocstyle \
