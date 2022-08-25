@@ -1,0 +1,58 @@
+wandb:
+  project: elasticity
+  group: geo_fno_learned/24_layers
+  tags:
+    - pde
+    - elasticity
+    - fourier
+  notes: Reproduced experiment of Li et al (2022)
+builder:
+  _target_: fourierflow.builders.ElasticityBuilder
+  sigma_path: ${oc.env:DATA_ROOT}/elasticity/Random_UnitCell_sigma_10.npy
+  xy_path: ${oc.env:DATA_ROOT}/elasticity/Random_UnitCell_XY_10.npy
+  rr_path: ${oc.env:DATA_ROOT}/elasticity/Random_UnitCell_rr_10.npy
+  train_size: 1000
+  valid_size: 200
+  test_size: 200
+  batch_size: 20
+  num_workers: 4
+  pin_memory: true
+routine:
+  _target_: fourierflow.routines.Geo2DExperiment
+  model:
+    _target_: fourierflow.modules.FNOMesh2D
+    modes1: 12
+    modes2: 12
+    width: 32
+    in_channels: 2
+    out_channels: 1
+    n_layers: 24
+  iphi:
+    _target_: fourierflow.modules.IPhi
+  N: 1000
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.Adam}"]
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: torch.optim.lr_scheduler.StepLR}"]
+      step_size: 50
+      gamma: 0.5
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: null
+trainer:
+  gpus: 1
+  precision: 32
+  max_epochs: 501
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4
