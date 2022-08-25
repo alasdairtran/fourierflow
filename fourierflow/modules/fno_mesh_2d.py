@@ -144,44 +144,35 @@ class SpectralConv2d(nn.Module):
 
 
 class FNOMesh2D(nn.Module):
-    def __init__(self, modes1, modes2, width, in_channels, out_channels, is_mesh=True, s1=40, s2=40):
+    def __init__(self, modes1, modes2, width, in_channels, out_channels, n_layers=4, is_mesh=True, s1=40, s2=40):
         super().__init__()
-
-        """
-        The overall network. It contains 4 layers of the Fourier layer.
-        1. Lift the input to the desire channel dimension by self.fc0 .
-        2. 4 layers of the integral operators u' = (W + K)(u).
-            W defined by self.w; K defined by self.conv .
-        3. Project from the channel space to the output space by self.fc1 and self.fc2 .
-
-        input: the solution of the coefficient function and locations (a(x, y), x, y)
-        input shape: (batchsize, x=s, y=s, c=3)
-        output: the solution
-        output shape: (batchsize, x=s, y=s, c=1)
-        """
-
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
         self.is_mesh = is_mesh
         self.s1 = s1
         self.s2 = s2
+        self.n_layers = n_layers
 
         self.fc0 = nn.Linear(in_channels, self.width)  # input channel is 3: (a(x, y), x, y)
 
-        self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2, s1, s2)
-        self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv2 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv3 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv4 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2, s1, s2)
-        self.w1 = nn.Conv2d(self.width, self.width, 1)
-        self.w2 = nn.Conv2d(self.width, self.width, 1)
-        self.w3 = nn.Conv2d(self.width, self.width, 1)
-        self.b0 = nn.Conv2d(2, self.width, 1)
-        self.b1 = nn.Conv2d(2, self.width, 1)
-        self.b2 = nn.Conv2d(2, self.width, 1)
-        self.b3 = nn.Conv2d(2, self.width, 1)
-        self.b4 = nn.Conv1d(2, self.width, 1)
+        self.convs = nn.ModuleList([])
+        self.ws = nn.ModuleList([])
+        self.bs = nn.ModuleList([])
+
+        for i in range(self.n_layers + 1):
+            if i in [0, self.n_layers]:
+                conv = SpectralConv2d(self.width, self.width, self.modes1, self.modes2, s1, s2)
+            else:
+                conv = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+            self.convs.append(conv)
+
+            b = nn.Conv2d(2, self.width, 1)
+            self.bs.append(b)
+
+        for i in range(self.n_layers - 1):
+            w = nn.Conv2d(self.width, self.width, 1)
+            self.ws.append(w)
 
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, out_channels)
@@ -193,40 +184,32 @@ class FNOMesh2D(nn.Module):
         # xi (batch, xi1, xi2, 2) the computational mesh (uniform)
         # x_in (batch, Nx, 2) the input mesh (query mesh)
 
-        if self.is_mesh and x_in == None:
+        if self.is_mesh and x_in is None:
             x_in = u
-        if self.is_mesh and x_out == None:
+        if self.is_mesh and x_out is None:
             x_out = u
         grid = self.get_grid([u.shape[0], self.s1, self.s2], u.device).permute(0, 3, 1, 2)
 
+        # Projection to higher dimension
         u = self.fc0(u)
         u = u.permute(0, 2, 1)
 
-        uc1 = self.conv0(u, x_in=x_in, iphi=iphi, code=code)
-        uc3 = self.b0(grid)
+
+        uc1 = self.convs[0](u, x_in=x_in, iphi=iphi, code=code)
+        uc3 = self.bs[0](grid)
         uc = uc1 + uc3
         uc = F.gelu(uc)
 
-        uc1 = self.conv1(uc)
-        uc2 = self.w1(uc)
-        uc3 = self.b1(grid)
-        uc = uc1 + uc2 + uc3
-        uc = F.gelu(uc)
+        for i in range(1, self.n_layers):
+            uc1 = self.convs[i](uc)
+            uc2 = self.ws[i-1](uc)
+            uc3 = self.bs[i](grid)
+            uc = uc1 + uc2 + uc3
+            uc = F.gelu(uc)
 
-        uc1 = self.conv2(uc)
-        uc2 = self.w2(uc)
-        uc3 = self.b2(grid)
-        uc = uc1 + uc2 + uc3
-        uc = F.gelu(uc)
-
-        uc1 = self.conv3(uc)
-        uc2 = self.w3(uc)
-        uc3 = self.b3(grid)
-        uc = uc1 + uc2 + uc3
-        uc = F.gelu(uc)
-
-        u = self.conv4(uc, x_out=x_out, iphi=iphi, code=code)
-        u3 = self.b4(x_out.permute(0, 2, 1))
+        L = self.n_layers
+        u = self.convs[L](uc, x_out=x_out, iphi=iphi, code=code)
+        u3 = self.bs[L](x_out.permute(0, 2, 1))
         u = u + u3
 
         u = u.permute(0, 2, 1)
