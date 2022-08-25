@@ -61,3 +61,4 @@ dask-worker-space
 *.tfrecord
 *.index
 meta.json
+*.npy
