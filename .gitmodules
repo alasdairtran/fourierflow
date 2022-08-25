@@ -4,3 +4,6 @@
 [submodule "icml2022"]
 	path = icml2022
 	url = https://git.overleaf.com/61a5a2ece2d294c0c75e2d4f
+[submodule "iclr2023"]
+	path = iclr2023
+	url = https://git.overleaf.com/62fc478d06de8ecaac892307
