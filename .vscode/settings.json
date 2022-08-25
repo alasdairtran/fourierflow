@@ -27,6 +27,12 @@
     "**/*.h5": true,
     "**/*.pkl": true,
     "**/*.pickle": true,
-  }
-
+  },
+  "[python]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    "editor.semanticHighlighting.enabled": false,
+    "editor.defaultFormatter": "ms-python.python"
+  },
 }
