@@ -1,4 +1,5 @@
 from .cylinder_flow import CylinderFlowBuilder
+from .elasticity import ElasticityBuilder
 from .kolmogorov import (KolmogorovBuilder, KolmogorovJAXDataset,
                          KolmogorovJAXTrajectoryDataset,
                          KolmogorovMultiTorchDataset, KolmogorovTorchDataset,
