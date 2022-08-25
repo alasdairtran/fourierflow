@@ -92,19 +92,20 @@ def main(config_path: Optional[Path] = Argument(None),
         str(checkpoint_path), map_location, remove_keys=remove_keys)
 
     batch = builder.inference_data()
-    T = batch['data'].shape[-1]
-    n_steps = routine.n_steps or (T - 1)
-    routine = routine.cuda()
-    batch = routine.convert_data(batch)
-    routine.warmup()
+    if batch is not None:
+        T = batch['data'].shape[-1]
+        n_steps = routine.n_steps or (T - 1)
+        routine = routine.cuda()
+        batch = routine.convert_data(batch)
+        routine.warmup()
 
-    start = time.time()
-    routine.infer(batch)
-    elapsed = time.time() - start
+        start = time.time()
+        routine.infer(batch)
+        elapsed = time.time() - start
 
-    elapsed /= len(batch['data'])
-    elapsed /= routine.step_size * n_steps
-    wandb_logger.experiment.log({'inference_time': elapsed})
+        elapsed /= len(batch['data'])
+        elapsed /= routine.step_size * n_steps
+        wandb_logger.experiment.log({'inference_time': elapsed})
 
 
 if __name__ == "__main__":

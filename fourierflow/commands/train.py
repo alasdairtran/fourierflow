@@ -124,8 +124,8 @@ def main(config_path: Path,
     trainer.test(routine, datamodule=builder)
 
     # Compute inference time
-    if logger:
-        batch = builder.inference_data()
+    batch = builder.inference_data()
+    if logger and batch is not None:
         T = batch['data'].shape[-1]
         n_steps = routine.n_steps or (T - 1)
         routine = routine.cuda()
