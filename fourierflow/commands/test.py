@@ -3,10 +3,10 @@ from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional, cast
 
+import debugpy
 import hydra
 import jax
 import numpy as np
-import ptvsd
 import pytorch_lightning as pl
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
@@ -38,9 +38,9 @@ def main(config_path: Path,
 
     # This debug mode is for those who use VS Code's internal debugger.
     if debug:
-        ptvsd.enable_attach(address=('0.0.0.0', 5678))
-        ptvsd.wait_for_attach()
-        # ptvsd doesn't play well with multiple processes.
+        debugpy.listen(5678)
+        debugpy.wait_for_client()
+        # debugger doesn't play well with multiple processes.
         config.builder.num_workers = 0
         jax.config.update('jax_disable_jit', True)
 

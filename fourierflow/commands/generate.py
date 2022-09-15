@@ -5,12 +5,12 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import dask
 import dask.array as da
+import debugpy
 import h5py
 import hydra
 import jax
 import numpy as np
 import pandas as pd
-import ptvsd
 import torch
 import xarray as xr
 from dask.delayed import Delayed
@@ -40,8 +40,8 @@ def kolmogorov(
         debug: bool = Option(False, help='Enable debugging mode with ptvsd')):
     # This debug mode is for those who use VS Code's internal debugger.
     if debug:
-        ptvsd.enable_attach(address=('0.0.0.0', 5678))
-        ptvsd.wait_for_attach()
+        debugpy.listen(5678)
+        debugpy.wait_for_client()
         jax.config.update('jax_disable_jit', True)
 
     device_list = [int(d) for d in devices.split(',')]
@@ -250,8 +250,8 @@ def navier_stokes(
 ):
     # This debug mode is for those who use VS Code's internal debugger.
     if debug:
-        ptvsd.enable_attach(address=('0.0.0.0', 5678))
-        ptvsd.wait_for_attach()
+        debugpy.listen(5678)
+        debugpy.wait_for_client()
 
     device = torch.device('cuda')
     torch.manual_seed(seed)

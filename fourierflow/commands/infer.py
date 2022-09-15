@@ -2,11 +2,11 @@ import logging
 import time
 from pathlib import Path
 
+import debugpy
 import hydra
 import jax
 import jax.numpy as jnp
 import numpy as np
-import ptvsd
 import xarray as xr
 from einops import repeat
 from hydra.utils import instantiate
@@ -24,8 +24,8 @@ def main(config_path: Path,
     """Re-implement F-FNO in JAX."""
     # This debug mode is for those who use VS Code's internal debugger.
     if debug:
-        ptvsd.enable_attach(address=('0.0.0.0', 5678))
-        ptvsd.wait_for_attach()
+        debugpy.listen(5678)
+        debugpy.wait_for_client()
 
     logger.info(f'Loading config from {config_path}...')
     config_dir = config_path.parent

@@ -7,13 +7,14 @@ repository = "https://github.com/alasdairtran/fourierflow"
 
 [tool.poetry.dependencies]
 python = "~3.10.7"
-# poetry add bokeh dask-cuda dm-haiku einops gdown gin-config \
+# poetry add bokeh dask-cuda debugpy dm-haiku einops gdown gin-config \
 #   graphviz h5netcdf hydra-core hyperopt ipykernel jupyterlab \
-#   matplotlib numpy optax pandas plotly poethepoet ptvsd pydocstyle \
+#   matplotlib numpy optax pandas plotly poethepoet pydocstyle \
 #   python-dotenv pytorch-lightning requests rich seaborn termcolor \
 #   tfrecord torchdiffeq torchtyping typer wandb xarray
 bokeh = "^2.4.3"
 dask-cuda = "^22.4.0"
+debugpy = "^1.6.3"
 dm-haiku = "^0.0.6"
 einops = "^0.4.1"
 gdown = "^4.4.0"
@@ -40,7 +41,6 @@ optax = "^0.1.2"
 pandas = "^1.4.2"
 plotly = "^5.8.0"
 poethepoet = "^0.13.1"
-ptvsd = "^4.3.2"
 pydocstyle = "^6.1.1"
 python-dotenv = "^0.20.0"
 pytorch-lightning = "^1.7.6"
