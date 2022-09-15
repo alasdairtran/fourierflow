@@ -19,7 +19,7 @@ class ElasticityBuilder(Builder):
         super().__init__()
         self.kwargs = kwargs
 
-        # rr is some mysterious feature vector.
+        # rr is probably the geometry parameters.
         rr = np.load(rr_path)
         rr = torch.tensor(rr, dtype=torch.float).permute(1, 0)
         # rr.shape == [2000, 42]
