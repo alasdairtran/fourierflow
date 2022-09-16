@@ -76,10 +76,10 @@ class SpectralConv2d(nn.Module):
 
     def fft2d(self, u, x_in, iphi=None, code=None):
         # u (batch, channels, n)
-        # x_in (batch, n, 2) locations in [0,1]*[0,1]
+        # x_in (batch, n_points, 2) locations in [0,1]*[0,1]
         # iphi: function: x_in -> x_c
 
-        batchsize = x_in.shape[0]
+        B = x_in.shape[0]
         N = x_in.shape[1]
         device = x_in.device
         m1 = 2 * self.modes1
@@ -97,12 +97,12 @@ class SpectralConv2d(nn.Module):
         else:
             x = iphi(x_in, code)
 
-        # print(x.shape)
+        # x.shape == [B, N, 2]
         # K = <y, k_x>,  (batch, N, m1, m2)
         K1 = torch.outer(x[..., 0].view(-1), k_x1.view(-1)
-                         ).reshape(batchsize, N, m1, m2)
+                         ).reshape(B, N, m1, m2)
         K2 = torch.outer(x[..., 1].view(-1), k_x2.view(-1)
-                         ).reshape(batchsize, N, m1, m2)
+                         ).reshape(B, N, m1, m2)
         K = K1 + K2
 
         # basis (batch, N, m1, m2)
@@ -221,8 +221,8 @@ class FNOMesh2D(nn.Module):
         self.fc2 = nn.Linear(128, out_channels)
 
     def forward(self, u, code=None, x_in=None, x_out=None, iphi=None):
-        # u (batch, Nx, d) the input value
-        # code (batch, Nx, d) the input features
+        # u.shape == [batch_size, n_points, 2] are the coords.
+        # code.shape == [batch_size, 42] are the input features
         # x_in (batch, Nx, 2) the input mesh (sampling mesh)
         # xi (batch, xi1, xi2, 2) the computational mesh (uniform)
         # x_in (batch, Nx, 2) the input mesh (query mesh)
@@ -235,14 +235,16 @@ class FNOMesh2D(nn.Module):
         # grid is like the (x, y) coordinates of a unit square [0, 1]^2
         grid = self.get_grid([u.shape[0], self.s1, self.s2],
                              u.device).permute(0, 3, 1, 2)
-        # grid.shape == [batch_size, 2, size_x, size_y]
+        # grid.shape == [batch_size, 2, size_x, size_y] == [20, 2, 40, 40]
+        # grid[:, 0, :, :] is the row index (y-coordinate)
+        # grid[:, 1, :, :] is the column index (x-coordinate)
 
         # Projection to higher dimension
         u = self.fc0(u)
         u = u.permute(0, 2, 1)
         # u.shape == [batch_size, hidden_size, n_points]
 
-        uc1 = self.convs[0](u, x_in=x_in, iphi=iphi, code=code)
+        uc1 = self.convs[0](u, x_in=x_in, iphi=iphi, code=code) # [20, 32, 40, 40]
         uc3 = self.bs[0](grid)
         uc = uc1 + uc3
         uc = F.gelu(uc)
@@ -253,12 +255,14 @@ class FNOMesh2D(nn.Module):
                 uc1 = rearrange(uc, 'b c h w -> b h w c')
                 uc1 = self.convs[i](uc1)[0]
                 uc1 = rearrange(uc1, 'b h w c -> b c h w')
+                # uc2 = self.ws[i-1](uc)
+                uc3 = self.bs[i](grid)
+                uc = uc + uc1 + uc3
             else:
                 uc1 = self.convs[i](uc)
-            uc2 = self.ws[i-1](uc)
-            uc3 = self.bs[i](grid)
-            uc = uc1 + uc2 + uc3
-            if not self.factorized:
+                uc2 = self.ws[i-1](uc)
+                uc3 = self.bs[i](grid)
+                uc = uc1 + uc2 + uc3
                 uc = F.gelu(uc)
 
         L = self.n_layers

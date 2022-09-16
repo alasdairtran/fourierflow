@@ -46,7 +46,8 @@ class IPhi(nn.Module):
             xd = torch.cat([cd,xd],dim=-1)
         else:
             xd = self.fc_no_code(xd)
-
+        # For every sampling point, we append many kinds of features, e.g.
+        # position, angle, radius, sin, cos, geo features.
         xd = self.fc1(xd)
         xd = self.activation(xd)
         xd = self.fc2(xd)
