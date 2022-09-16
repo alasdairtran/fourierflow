@@ -62,6 +62,19 @@ def fno():
     finally:
         os.chdir(startdir)
 
+@app.command()
+def geo_fno():
+    """Download Geo-FNO datasets."""
+    startdir = os.getcwd()
+    workdir = os.path.expandvars('$DATA_ROOT')
+    os.makedirs(workdir, exist_ok=True)
+    try:
+        os.chdir(workdir)
+        gdown.download_folder('https://drive.google.com/drive/folders/1YBuaoTdOSr_qzaow-G-iwvbUI7fiUzu8')
+        os.rename('Geo-FNO', 'geo-fno')
+    finally:
+        os.chdir(startdir)
+
 
 @app.command()
 def meshgraphnets():

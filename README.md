@@ -155,6 +155,13 @@ fourierflow plot correlation
 gsutil -m cp -r gs://gresearch/jax-cfd data/
 ```
 
+## Geo-FNO experiments
+
+```sh
+# Download the Geo-FNO datasets
+fourierflow download geo-fno
+```
+
 ## Mesh Experiments
 
 ```sh
