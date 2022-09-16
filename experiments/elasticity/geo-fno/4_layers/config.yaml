@@ -1,6 +1,6 @@
 wandb:
   project: elasticity
-  group: geo_fno_learned/8_layers
+  group: adam/fno-4-no-gelu
   tags:
     - pde
     - elasticity
@@ -21,14 +21,18 @@ routine:
   _target_: fourierflow.routines.Geo2DExperiment
   model:
     _target_: fourierflow.modules.FNOMesh2D
-    modes1: 12
-    modes2: 12
-    width: 32
+    modes1: 16
+    modes2: 16
+    s1: 64
+    s2: 64
+    width: 64
     in_channels: 2
     out_channels: 1
-    n_layers: 8
+    n_layers: 4
+    factorized: false
   iphi:
     _target_: fourierflow.modules.IPhi
+    width: 64
   N: 1000
   optimizer:
     _target_: functools.partial
