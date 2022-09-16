@@ -8,9 +8,9 @@ wandb:
   notes: Reproduced experiment of Li et al (2022)
 builder:
   _target_: fourierflow.builders.ElasticityBuilder
-  sigma_path: ${oc.env:DATA_ROOT}/elasticity/Random_UnitCell_sigma_10.npy
-  xy_path: ${oc.env:DATA_ROOT}/elasticity/Random_UnitCell_XY_10.npy
-  rr_path: ${oc.env:DATA_ROOT}/elasticity/Random_UnitCell_rr_10.npy
+  sigma_path: ${oc.env:DATA_ROOT}/geo-fno/elasticity/Meshes/Random_UnitCell_sigma_10.npy
+  xy_path: ${oc.env:DATA_ROOT}/geo-fno/elasticity/Meshes/Random_UnitCell_XY_10.npy
+  rr_path: ${oc.env:DATA_ROOT}/geo-fno/elasticity/Meshes/Random_UnitCell_rr_10.npy
   train_size: 1000
   valid_size: 200
   test_size: 200
