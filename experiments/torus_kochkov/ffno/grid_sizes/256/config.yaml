@@ -66,7 +66,8 @@ routine:
       num_cycles: 0.5
     name: learning_rate
 trainer:
-  gpus: 1
+  accelerator: gpu
+  devices: 1
   precision: 32
   max_epochs: 21 # 1 accumulation epoch + 10 training epochs
   log_every_n_steps: 100

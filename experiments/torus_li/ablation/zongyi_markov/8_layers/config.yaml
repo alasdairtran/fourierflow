@@ -45,7 +45,8 @@ routine:
     monitor: null
   automatic_optimization: true
 trainer:
-  gpus: 1
+  accelerator: gpu
+  devices: 1
   precision: 32
   max_epochs: 500
 callbacks:

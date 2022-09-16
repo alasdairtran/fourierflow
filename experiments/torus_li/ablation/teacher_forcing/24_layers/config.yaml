@@ -43,7 +43,8 @@ routine:
     frequency: 1
     monitor: null
 trainer:
-  gpus: 1
+  accelerator: gpu
+  devices: 1
   precision: 32
   max_epochs: 500
 callbacks:
