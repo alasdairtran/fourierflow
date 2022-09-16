@@ -51,7 +51,6 @@ trainer:
   gpus: 1
   precision: 32
   max_epochs: 11 # 1 accumulation epoch + 10 training epochs
-  stochastic_weight_avg: false
   log_every_n_steps: 100
   val_check_interval: 1000
   # Debugging parameters

@@ -69,7 +69,6 @@ trainer:
   gpus: 1
   precision: 32
   max_epochs: 11 # 1 accumulation epoch + 10 training epochs
-  stochastic_weight_avg: false
   log_every_n_steps: 100
   # Debugging parameters
   track_grad_norm: -1 # 2
