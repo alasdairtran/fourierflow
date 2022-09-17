@@ -1,6 +1,6 @@
 wandb:
   project: elasticity
-  group: adamw/ffno-24-no-gelu
+  group: efno/24_layers
   tags:
     - pde
     - elasticity
