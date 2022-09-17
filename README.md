@@ -42,8 +42,8 @@ git checkout v0.2.0
 # Set up pyenv and pin python version to 3.9.9
 curl https://pyenv.run | bash
 # Configure our shell's environment for pyenv
-pyenv install 3.10.6
-pyenv local 3.10.6
+pyenv install 3.10.7
+pyenv local 3.10.7
 curl -sSL https://install.python-poetry.org | python3 - --version 1.2.0b3
 
 # Install all python dependencies
