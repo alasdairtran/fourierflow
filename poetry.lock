@@ -468,7 +468,7 @@ zict = ">=0.1.3"
 
 [[package]]
 name = "dm-haiku"
-version = "0.0.6"
+version = "0.0.7"
 description = "Haiku is a library for building neural networks in JAX."
 category = "main"
 optional = false
@@ -481,7 +481,7 @@ numpy = ">=1.18.0"
 tabulate = ">=0.8.9"
 
 [package.extras]
-jax = ["jax (==0.2.28)", "jaxlib (==0.1.76)"]
+jax = ["jax (==0.3.5)", "jaxlib (==0.3.5)"]
 
 [[package]]
 name = "dm-tree"
@@ -1048,7 +1048,6 @@ scipy = "*"
 tree-math = "*"
 
 [package.extras]
-complete = ["Pillow", "absl-py", "dm-haiku", "einops", "gin-config", "matplotlib", "pytest", "pytest-xdist", "scikit-image", "seaborn", "xarray"]
 data = ["Pillow", "matplotlib", "seaborn", "xarray"]
 ml = ["dm-haiku", "einops", "gin-config"]
 tests = ["absl-py", "pytest", "pytest-xdist", "scikit-image"]
@@ -3091,7 +3090,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.10.7"
-content-hash = "52a47482ed8c4f817787825a6e4742f6d9f9ebca2a6032972c1057675811b159"
+content-hash = "2b74e70ab24b557e359ddf60562890bbaef85c5ef950c02eda28a7d5330a1fa6"
 
 [metadata.files]
 absl-py = [
@@ -3545,8 +3544,8 @@ distributed = [
     {file = "distributed-2022.5.2.tar.gz", hash = "sha256:044aac51fa64fd9e16b1a2c4315220d281f0e5cc1b05f4d3d37852426f1e7cb6"},
 ]
 dm-haiku = [
-    {file = "dm-haiku-0.0.6.tar.gz", hash = "sha256:f95a9dac0aa002b5c5089c8090399f3ea276f93b3072892616c87175b2e65298"},
-    {file = "dm_haiku-0.0.6-py3-none-any.whl", hash = "sha256:a1c2d3d7ece05a33bc1c2233f0ffe72d5f714b7e1ec6264fb677b3ad1bc332ef"},
+    {file = "dm-haiku-0.0.7.tar.gz", hash = "sha256:86c34af6952a305a4bbfda6b9925998577acc4aa2ad9333da3d6047f4f8ed7c1"},
+    {file = "dm_haiku-0.0.7-py3-none-any.whl", hash = "sha256:d06a2fededd436837f69c686511eddc9b887b0eaf76a921316289a7d7e9d80e3"},
 ]
 dm-tree = [
     {file = "dm-tree-0.1.7.tar.gz", hash = "sha256:30fec8aca5b92823c0e796a2f33b875b4dccd470b57e91e6c542405c5f77fd2a"},
