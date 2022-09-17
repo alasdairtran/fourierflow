@@ -1,6 +1,6 @@
 import math
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import jax
 import jax.numpy as jnp
@@ -77,6 +77,7 @@ class Grid2DMarkovExperiment(Routine):
         self.domain = domain
         self.pred_path = pred_path
         if self.shuffle_grid:
+            assert len(grid_size) == 1, 'shuffle_grid only supports one size'
             self.x_idx = torch.randperm(grid_size[0])
             self.x_inv = torch.argsort(self.x_idx)
             self.y_idx = torch.randperm(grid_size[0])
@@ -84,15 +85,16 @@ class Grid2DMarkovExperiment(Routine):
 
         if self.use_velocity:
             jax.config.update('jax_platform_name', 'cpu')
-            grid = Grid(shape=(grid_size[0], grid_size[0]), domain=self.domain)
-            kx, ky = grid.rfft_mesh()
-            two_pi_i = 2 * jnp.pi * 1j
-            lap = two_pi_i ** 2 * (abs(kx)**2 + abs(ky)**2)
-            lap = lap.at[0, 0].set(1)
+            for size in grid_size:
+                grid = Grid(shape=(size, size), domain=self.domain)
+                kx, ky = grid.rfft_mesh()
+                two_pi_i = 2 * jnp.pi * 1j
+                lap = two_pi_i ** 2 * (abs(kx)**2 + abs(ky)**2)
+                lap = lap.at[0, 0].set(1)
 
-            self.register_buffer('kx', torch.from_numpy(np.array(kx)))
-            self.register_buffer('ky', torch.from_numpy(np.array(ky)))
-            self.register_buffer('lap', torch.from_numpy(np.array(lap)))
+                self.register_buffer(f'kx_{size}', torch.from_numpy(np.array(kx)))
+                self.register_buffer(f'ky_{size}', torch.from_numpy(np.array(ky)))
+                self.register_buffer(f'lap_{size}', torch.from_numpy(np.array(lap)))
 
     def forward(self, data):
         return self._valid_step(data)
@@ -131,9 +133,9 @@ class Grid2DMarkovExperiment(Routine):
 
         if self.use_velocity:
             omega_hat = torch.fft.rfftn(x, dim=[1, 2], norm='backward')
-            psi_hat = -omega_hat / repeat(self.lap, 'm n -> b m n 1', b=B)
-            ky = repeat(self.ky, 'm n -> b m n 1', b=B)
-            kx = repeat(self.kx, 'm n -> b m n 1', b=B)
+            psi_hat = -omega_hat / repeat(self.get_buffer(f'lap_{X}'), 'm n -> b m n 1', b=B)
+            ky = repeat(self.get_buffer(f'ky_{X}'), 'm n -> b m n 1', b=B)
+            kx = repeat(self.get_buffer(f'kx_{X}'), 'm n -> b m n 1', b=B)
 
             # Velocity field in x-direction = psi_y
             q = 2 * math.pi * 1j * ky * psi_hat
@@ -207,9 +209,9 @@ class Grid2DMarkovExperiment(Routine):
 
         if self.use_velocity:
             w_hat = torch.fft.rfftn(inputs, dim=[1, 2], norm='backward')
-            psi_hat = -w_hat / repeat(self.lap, 'm n -> b m n t 1', b=B, t=T)
-            ky = repeat(self.ky, 'm n -> b m n t 1', b=B, t=T)
-            kx = repeat(self.kx, 'm n -> b m n t 1', b=B, t=T)
+            psi_hat = -w_hat / repeat(self.get_buffer(f'lap_{X}'), 'm n -> b m n t 1', b=B, t=T)
+            ky = repeat(self.get_buffer(f'ky_{X}'), 'm n -> b m n t 1', b=B, t=T)
+            kx = repeat(self.get_buffer(f'kx_{X}'), 'm n -> b m n t 1', b=B, t=T)
 
             # Velocity field in x-direction = psi_y
             q = 2 * math.pi * 1j * ky * psi_hat
@@ -270,10 +272,10 @@ class Grid2DMarkovExperiment(Routine):
                 if self.use_velocity:
                     w_hat = torch.fft.rfftn(im, dim=[1, 2], norm='backward')
                     psi_hat = -w_hat / \
-                        repeat(self.lap, 'm n -> b m n t', b=B, t=im.shape[-1])
-                    ky = repeat(self.ky, 'm n -> b m n t',
+                        repeat(self.get_buffer(f'lap_{X}'), 'm n -> b m n t', b=B, t=im.shape[-1])
+                    ky = repeat(self.get_buffer(f'ky_{X}'), 'm n -> b m n t',
                                 b=B, t=im.shape[-1])
-                    kx = repeat(self.kx, 'm n -> b m n t',
+                    kx = repeat(self.get_buffer(f'kx_{X}'), 'm n -> b m n t',
                                 b=B, t=im.shape[-1])
 
                     # Velocity field in x-direction = psi_y

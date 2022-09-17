@@ -1,6 +1,6 @@
 wandb:
   project: torus_kochkov
-  group: ffno/multi_resolution/x32_x64
+  group: ffno/multi_resolution/x64_x128
   tags:
     - pde
     - navier-stokes
@@ -12,8 +12,8 @@ builder:
   train_dataset:
     _target_: fourierflow.builders.KolmogorovMultiTorchDataset
     paths:
+      - ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_128_4.nc
       - ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_64_4.nc
-      - ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_32_4.nc
     k: 20
     batch_size: 32
   valid_dataset:
@@ -51,7 +51,7 @@ routine:
   heatmap_scale: 10
   noise_std: 0.01
   use_velocity: true
-  grid_size: [32, 64]
+  grid_size: [64, 128]
   domain:
     - [0, "${eval:2 * ${import:numpy.pi}}"]
     - [0, "${eval:2 * ${import:numpy.pi}}"]
