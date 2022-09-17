@@ -48,7 +48,7 @@ routine:
   heatmap_scale: 10
   noise_std: 0.01
   use_velocity: true
-  grid_size: 128
+  grid_size: [128]
   domain:
     - [0, '${eval:2 * ${import:numpy.pi}}']
     - [0, '${eval:2 * ${import:numpy.pi}}']

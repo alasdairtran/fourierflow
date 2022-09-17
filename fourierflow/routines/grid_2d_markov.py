@@ -1,6 +1,6 @@
 import math
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Union
 
 import jax
 import jax.numpy as jnp
@@ -46,7 +46,7 @@ class Grid2DMarkovExperiment(Routine):
                  domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)),
                  heatmap_scale: int = 1,
                  pred_path: Optional[Path] = None,
-                 grid_size: int = 64,
+                 grid_size: List[int] = [64],
                  **kwargs):
         super().__init__(**kwargs)
         self.conv = conv
@@ -77,14 +77,14 @@ class Grid2DMarkovExperiment(Routine):
         self.domain = domain
         self.pred_path = pred_path
         if self.shuffle_grid:
-            self.x_idx = torch.randperm(grid_size)
+            self.x_idx = torch.randperm(grid_size[0])
             self.x_inv = torch.argsort(self.x_idx)
-            self.y_idx = torch.randperm(grid_size)
+            self.y_idx = torch.randperm(grid_size[0])
             self.y_inv = torch.argsort(self.y_idx)
 
         if self.use_velocity:
             jax.config.update('jax_platform_name', 'cpu')
-            grid = Grid(shape=(grid_size, grid_size), domain=self.domain)
+            grid = Grid(shape=(grid_size[0], grid_size[0]), domain=self.domain)
             kx, ky = grid.rfft_mesh()
             two_pi_i = 2 * jnp.pi * 1j
             lap = two_pi_i ** 2 * (abs(kx)**2 + abs(ky)**2)
