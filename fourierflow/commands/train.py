@@ -9,6 +9,7 @@ import hydra
 import jax
 import numpy as np
 import pytorch_lightning as pl
+import torch
 import wandb
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
@@ -44,9 +45,9 @@ def main(config_path: Path,
         debugpy.listen(5678)
         debugpy.wait_for_client()
         # debugger doesn't play well with multiple processes.
-        config.builder.num_workers = 0
-        jax.config.update('jax_disable_jit', True)
-        # jax.config.update("jax_debug_nans", True)
+    config.builder.num_workers = 0
+    jax.config.update('jax_disable_jit', True)
+    # jax.config.update("jax_debug_nans", True)
 
     # Set up directories to save experimental outputs.
     delete_old_results(config_dir, force, trial, resume)
@@ -81,6 +82,11 @@ def main(config_path: Path,
     callbacks = [instantiate(p) for p in config.get('callbacks', [])]
     multi_gpus = config.trainer.get('gpus', 0) > 1
     plugins = DDPPlugin(find_unused_parameters=False) if multi_gpus else None
+
+    # Strange bug: We need to check if cuda is availabe first; otherwise,
+    # sometimes lightning's CUDAAccelerator.is_available() returns false :-/
+    torch.cuda.is_available()
+
     if no_logging:
         logger = False
         enable_checkpointing = False
