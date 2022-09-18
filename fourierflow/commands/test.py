@@ -8,6 +8,7 @@ import hydra
 import jax
 import numpy as np
 import pytorch_lightning as pl
+import torch
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
@@ -43,6 +44,10 @@ def main(config_path: Path,
         # debugger doesn't play well with multiple processes.
         config.builder.num_workers = 0
         jax.config.update('jax_disable_jit', True)
+
+    # Strange bug: We need to check if cuda is availabe first; otherwise,
+    # sometimes lightning's CUDAAccelerator.is_available() returns false :-/
+    torch.cuda.is_available()
 
     # We use Weights & Biases to track our experiments.
     checkpoint_path = config.get('checkpoint_path', None)
