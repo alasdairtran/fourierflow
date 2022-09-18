@@ -15,7 +15,7 @@ builder:
       - ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_128_4.nc
       - ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/train_64_4.nc
     k: 20
-    batch_size: 32
+    batch_size: 8
   valid_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
     init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/valid_64.nc
@@ -28,7 +28,7 @@ builder:
     path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_64_4.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32_4.nc
     k: 20
-  batch_size: 32
+  batch_size: 8
   num_workers: 4
   pin_memory: true
 routine:
@@ -66,7 +66,7 @@ routine:
       _args_:
         ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
       num_warmup_steps: 500
-      num_training_steps: 24210 # 2421 batches per epoch
+      num_training_steps: 96840 # 9684 batches per epoch
       num_cycles: 0.5
     name: learning_rate
 trainer:

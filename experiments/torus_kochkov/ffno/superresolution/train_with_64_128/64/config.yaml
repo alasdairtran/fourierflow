@@ -1,13 +1,13 @@
 wandb:
   project: torus_kochkov
-  group: ffno/superresolution/train_with_64/256
+  group: ffno/superresolution/train_with_64_128/64
   tags:
     - pde
     - navier-stokes
     - fourier
   notes: ""
   log_model: all
-checkpoint_path: experiments/torus_kochkov/ffno/step_sizes/64/20/checkpoints/trial-0-20220215-005621-653405/epoch=10-step=26630-valid_loss=1.19430.ckpt
+checkpoint_path: experiments/torus_kochkov/ffno/multi_resolution/x64_x128/checkpoints/trial-0-20220917-154210-908089/epoch=9-step=87156-valid_time_until=3.927.ckpt
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
@@ -22,8 +22,8 @@ builder:
     k: 20
   test_dataset:
     _target_: fourierflow.builders.KolmogorovTrajectoryDataset
-    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_256.nc
-    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_256_4.nc
+    init_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/initial_conditions/test_64.nc
+    path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_64_4.nc
     corr_path: ${oc.env:DATA_ROOT}/kolmogorov/re_1000/trajectories/test_32_4.nc
     k: 20
     end: 800
@@ -50,7 +50,7 @@ routine:
   heatmap_scale: 10
   noise_std: 0.01
   use_velocity: true
-  grid_size: [256]
+  grid_size: [64]
   domain:
     - [0, '${eval:2 * ${import:numpy.pi}}']
     - [0, '${eval:2 * ${import:numpy.pi}}']
