@@ -46,8 +46,7 @@ class Routine(LightningModule):
     def load_lightning_model_state(self,
                                    checkpoint_path: Union[str, IO],
                                    map_location: Optional[Union[Dict[str, str],
-                                                                str, torch.device, int, Callable]] = None,
-                                   remove_keys: Optional[List[str]] = None):
+                                                                str, torch.device, int, Callable]] = None):
         if map_location is not None:
             checkpoint = pl_load(checkpoint_path, map_location=map_location)
         else:
@@ -55,10 +54,16 @@ class Routine(LightningModule):
                                  map_location=lambda storage, loc: storage)
 
         # Allow us to run super-resolution evaluations
+        REMOVE_KEYS = ['kx', 'ky', 'lap',
+                       'kx_32', 'ky_32', 'lap_32',
+                       'kx_64', 'ky_64', 'lap_64',
+                       'kx_128', 'ky_128', 'lap_128',
+                       'kx_256', 'ky_256', 'lap_256']
         state_dict = checkpoint['state_dict']
-        remove_keys = remove_keys or []
-        strict = len(remove_keys) == 0
-        for key in remove_keys:
-            del state_dict[key]
+        strict = True
+        for key in REMOVE_KEYS:
+            if key in state_dict:
+                del state_dict[key]
+                strict = False
 
         self.load_state_dict(state_dict, strict=strict)

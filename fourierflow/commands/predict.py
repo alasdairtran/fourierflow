@@ -26,7 +26,6 @@ def main(config_path: Optional[Path] = Argument(None),
          overrides: Optional[List[str]] = Argument(None),
          trial: Optional[int] = None,
          map_location: Optional[str] = None,
-         remove_keys: Optional[str] = None,
          debug: bool = False):
     """Test a Pytorch Lightning experiment."""
 
@@ -87,9 +86,7 @@ def main(config_path: Optional[Path] = Argument(None),
 
     builder = instantiate(config.builder)
     routine = instantiate(config.routine)
-    remove_keys = remove_keys.split(',') if remove_keys else []
-    routine.load_lightning_model_state(
-        str(checkpoint_path), map_location, remove_keys=remove_keys)
+    routine.load_lightning_model_state(str(checkpoint_path), map_location)
 
     batch = builder.inference_data()
     if batch is not None:
