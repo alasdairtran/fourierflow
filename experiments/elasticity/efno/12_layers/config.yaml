@@ -1,6 +1,6 @@
 wandb:
   project: elasticity
-  group: efno/24_layers
+  group: efno/12_layers
   tags:
     - pde
     - elasticity
@@ -28,7 +28,7 @@ routine:
     width: 64
     in_channels: 2
     out_channels: 1
-    n_layers: 24
+    n_layers: 12
     factorized: true
   iphi:
     _target_: fourierflow.modules.IPhi

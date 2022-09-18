@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 
+from fourierflow.modules.fno_factorized_2d import \
+    SpectralConv2d as FactorizedSpectralConv2d
+
 
 ################################################################
 # fourier layer
@@ -152,7 +155,7 @@ class SpectralConv2d(nn.Module):
         return Y
 
 
-class FNOMesh2D(nn.Module):
+class FNOFactorizedMesh2D(nn.Module):
     def __init__(self, modes1, modes2, width, in_channels, out_channels,
                  n_layers=4, is_mesh=True, s1=40, s2=40):
         super().__init__()
@@ -171,21 +174,36 @@ class FNOMesh2D(nn.Module):
         self.ws = nn.ModuleList([])
         self.bs = nn.ModuleList([])
 
+        # if factorized:
+        #     self.fourier_weight = nn.ParameterList([])
+        #     for _ in range(2):
+        #         weight = torch.FloatTensor(width, width, modes1, 2)
+        #         param = nn.Parameter(weight)
+        #         nn.init.xavier_normal_(param, gain=1)
+        #         self.fourier_weight.append(param)
+
         for i in range(self.n_layers + 1):
             if i in [0, self.n_layers]:
                 conv = SpectralConv2d(
                     self.width, self.width, self.modes1, self.modes2, s1, s2)
             else:
-                conv = SpectralConv2d(
-                    self.width, self.width, self.modes1, self.modes2)
+                conv = FactorizedSpectralConv2d(in_dim=width,
+                                                out_dim=width,
+                                                n_modes=modes1,
+                                                forecast_ff=None,
+                                                backcast_ff=None,
+                                                fourier_weight=None,
+                                                factor=2,
+                                                ff_weight_norm=True,
+                                                n_ff_layers=2,
+                                                layer_norm=False,
+                                                use_fork=False,
+                                                dropout=0.0,
+                                                mode='full')
             self.convs.append(conv)
 
-        for i in range(self.n_layers + 1):
-            if i < self.n_layers:
-                b = nn.Conv2d(2, self.width, 1)
-            else:
-                b = nn.Conv1d(2, self.width, 1)
-            self.bs.append(b)
+        self.bs.append(nn.Conv2d(2, self.width, 1))
+        self.bs.append(nn.Conv1d(2, self.width, 1))
 
         for i in range(self.n_layers - 1):
             w = nn.Conv2d(self.width, self.width, 1)
@@ -221,19 +239,19 @@ class FNOMesh2D(nn.Module):
         uc1 = self.convs[0](u, x_in=x_in, iphi=iphi, code=code) # [20, 32, 40, 40]
         uc3 = self.bs[0](grid)
         uc = uc1 + uc3
-        uc = F.gelu(uc)
 
         # uc.shape == [20, 32, 40, 40]
         for i in range(1, self.n_layers):
-            uc1 = self.convs[i](uc)
-            uc2 = self.ws[i-1](uc)
-            uc3 = self.bs[i](grid)
-            uc = uc1 + uc2 + uc3
-            uc = F.gelu(uc)
+            uc1 = rearrange(uc, 'b c h w -> b h w c')
+            uc1 = self.convs[i](uc1)[0]
+            uc1 = rearrange(uc1, 'b h w c -> b c h w')
+            # uc2 = self.ws[i-1](uc)
+            uc3 = self.bs[0](grid)
+            uc = uc + uc1 + uc3
 
         L = self.n_layers
         u = self.convs[L](uc, x_out=x_out, iphi=iphi, code=code)
-        u3 = self.bs[L](x_out.permute(0, 2, 1))
+        u3 = self.bs[-1](x_out.permute(0, 2, 1))
         u = u + u3
 
         u = u.permute(0, 2, 1)
