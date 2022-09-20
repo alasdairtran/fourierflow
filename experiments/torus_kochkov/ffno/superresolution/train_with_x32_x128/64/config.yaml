@@ -1,13 +1,13 @@
 wandb:
   project: torus_kochkov
-  group: ffno/superresolution/train_with_64_128/64
+  group: ffno/superresolution/train_with_x32_x128/64
   tags:
     - pde
     - navier-stokes
     - fourier
   notes: ""
   log_model: all
-checkpoint_path: experiments/torus_kochkov/ffno/multi_resolution/x64_x128/checkpoints/trial-0-20220917-154210-908089/epoch=9-step=87156-valid_time_until=3.927.ckpt
+checkpoint_path: experiments/torus_kochkov/ffno/multi_resolution/x32_x128/checkpoints/trial-0-20220918-024100-542166/last.ckpt
 builder:
   _target_: fourierflow.builders.KolmogorovBuilder
   train_dataset:
