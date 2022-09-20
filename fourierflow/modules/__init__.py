@@ -1,5 +1,6 @@
 from .fno_factorized_2d import FNOFactorized2DBlock
 from .fno_factorized_mesh_2d import FNOFactorizedMesh2D
+from .fno_factorized_mesh_full_2d import FNOFactorizedMeshFull2D
 from .fno_mesh_2d import FNOMesh2D
 from .fno_plus_2d import FNOPlus2DBlock
 from .fno_zongyi_2d import FNOZongyi2DBlock
