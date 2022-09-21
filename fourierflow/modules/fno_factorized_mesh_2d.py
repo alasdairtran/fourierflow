@@ -41,7 +41,7 @@ class SpectralConv2d(nn.Module):
         # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
         return torch.einsum("bixy,ioxy->boxy", input, weights)
 
-    def forward(self, u, x_in=None, x_out=None, iphi=None, code=None):
+    def forward(self, u, x_in=None, x_out=None, iphi=None, code=None, transform=True):
         batchsize = u.shape[0]
 
         # Compute Fourier coefficients up to factor of e^(- something constant)
@@ -56,10 +56,14 @@ class SpectralConv2d(nn.Module):
 
         # Multiply relevant Fourier modes
         # print(u.shape, u_ft.shape)
-        factor1 = self.compl_mul2d(
-            u_ft[:, :, :self.modes1, :self.modes2], self.weights1)
-        factor2 = self.compl_mul2d(
-            u_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+        if transform:
+            factor1 = self.compl_mul2d(
+                u_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+            factor2 = self.compl_mul2d(
+                u_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+        else:
+            factor1 = u_ft[:, :, :self.modes1, :self.modes2]
+            factor2 = u_ft[:, :, -self.modes1:, :self.modes2]
 
         # Return to physical space
         if x_out == None:
@@ -236,7 +240,8 @@ class FNOFactorizedMesh2D(nn.Module):
         u = u.permute(0, 2, 1)
         # u.shape == [batch_size, hidden_size, n_points]
 
-        uc1 = self.convs[0](u, x_in=x_in, iphi=iphi, code=code) # [20, 32, 40, 40]
+        uc1 = self.convs[0](u, x_in=x_in, iphi=iphi,
+                            code=code, transform=False)  # [20, 32, 40, 40]
         uc3 = self.bs[0](grid)
         uc = uc1 + uc3
 
