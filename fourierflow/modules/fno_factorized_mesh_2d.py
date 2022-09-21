@@ -15,7 +15,7 @@ from fourierflow.modules.fno_factorized_2d import \
 # fourier layer
 ################################################################
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, modes1, modes2, s1=32, s2=32):
+    def __init__(self, in_channels, out_channels, modes1, modes2, s1=32, s2=32, transform=True):
         super().__init__()
 
         """
@@ -30,11 +30,12 @@ class SpectralConv2d(nn.Module):
         self.s1 = s1
         self.s2 = s2
 
-        self.scale = (1 / (in_channels * out_channels))
-        self.weights1 = nn.Parameter(
-            self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-        self.weights2 = nn.Parameter(
-            self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
+        if transform:
+            self.scale = (1 / (in_channels * out_channels))
+            self.weights1 = nn.Parameter(
+                self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
+            self.weights2 = nn.Parameter(
+                self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
 
     # Complex multiplication
     def compl_mul2d(self, input, weights):
@@ -187,7 +188,10 @@ class FNOFactorizedMesh2D(nn.Module):
         #         self.fourier_weight.append(param)
 
         for i in range(self.n_layers + 1):
-            if i in [0, self.n_layers]:
+            if i == 0:
+                conv = SpectralConv2d(
+                    self.width, self.width, self.modes1, self.modes2, s1, s2, transform=False)
+            elif i == self.n_layers:
                 conv = SpectralConv2d(
                     self.width, self.width, self.modes1, self.modes2, s1, s2)
             else:
