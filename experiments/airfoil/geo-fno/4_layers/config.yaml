@@ -33,12 +33,13 @@ routine:
     scheduler:
       _target_: functools.partial
       _args_: ["${get_method: torch.optim.lr_scheduler.StepLR}"]
-      step_size: 50
+      step_size: 100
       gamma: 0.5
     name: learning_rate
     interval: epoch
     frequency: 1
     monitor: null
+  loss_scale: 20 # original paper multiply loss by batch size
 trainer:
   accelerator: gpu
   devices: 1

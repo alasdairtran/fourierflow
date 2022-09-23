@@ -14,6 +14,7 @@ class Geo2DAirfoilExperiment(Routine):
                  automatic_optimization: bool = True,
                  accumulate_grad_batches: int = 1,
                  clip_val: Optional[float] = None,
+                 loss_scale: float = 1.0,
                  **kwargs):
         super().__init__(**kwargs)
         self.model = model
@@ -21,6 +22,7 @@ class Geo2DAirfoilExperiment(Routine):
         self.automatic_optimization = automatic_optimization
         self.accumulate_grad_batches = accumulate_grad_batches
         self.clip_val = clip_val
+        self.loss_scale = loss_scale
 
     def forward(self, data):
         return
@@ -59,7 +61,7 @@ class Geo2DAirfoilExperiment(Routine):
             sch = self.lr_schedulers()
             sch.step()
 
-        return loss
+        return loss * self.loss_scale
 
     def validation_step(self, batch, batch_idx):
         x, y = batch['x'], batch['y']

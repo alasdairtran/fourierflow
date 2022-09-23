@@ -31,6 +31,7 @@ class AirfoilBuilder(Builder):
         # x.shape == [2490, 221, 51, 2]
 
         y = np.load(sigma_path)[:, 4]
+        y = torch.tensor(y, dtype=torch.float)
         # y.shape == [2490, 221, 51]
 
         # The following split ensures that the test set is the same as
