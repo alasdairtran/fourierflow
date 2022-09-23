@@ -1,6 +1,6 @@
 wandb:
   project: airfoil
-  group: geo-fno/4_layers
+  group: geo-fno/24_layers
   tags:
     - pde
     - airfoil
@@ -24,7 +24,7 @@ routine:
     modes1: 24
     modes2: 12
     width: 32
-    n_layers: 4
+    n_layers: 24
   optimizer:
     _target_: functools.partial
     _args_: ["${get_method: torch.optim.Adam}"]

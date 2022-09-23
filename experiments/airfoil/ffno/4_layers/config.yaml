@@ -1,11 +1,11 @@
 wandb:
   project: airfoil
-  group: geo-fno/4_layers
+  group: ffno/4_layers
   tags:
     - pde
     - airfoil
     - fourier
-  notes: Reproduced experiment of Li et al (2022)
+  notes: Improved model with F-FNO
 builder:
   _target_: fourierflow.builders.AirfoilBuilder
   x1_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_X.npy
@@ -14,38 +14,42 @@ builder:
   train_size: 1000
   valid_size: 200
   test_size: 200
-  batch_size: 20
+  batch_size: 10
   num_workers: 8
   pin_memory: true
 routine:
   _target_: fourierflow.routines.Geo2DAirfoilExperiment
   model:
-    _target_: fourierflow.modules.FNOMesh2DAirfoil
-    modes1: 24
-    modes2: 12
-    width: 32
+    _target_: fourierflow.modules.FNOFactorizedMesh2DAirfoil
+    modes_x: 32
+    modes_y: 16
+    width: 64
+    input_dim: 4
     n_layers: 4
+    share_weight: false
+    factor: 4
+    ff_weight_norm: true
+    n_ff_layers: 2
+    layer_norm: false
   optimizer:
     _target_: functools.partial
-    _args_: ["${get_method: torch.optim.Adam}"]
+    _args_: ["${get_method: torch.optim.AdamW}"]
     lr: 0.001
     weight_decay: 0.0001
   scheduler:
     scheduler:
       _target_: functools.partial
-      _args_: ["${get_method: torch.optim.lr_scheduler.StepLR}"]
-      step_size: 100
-      gamma: 0.5
+      _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
+      num_warmup_steps: 500
+      num_training_steps: 20000 # 100 batches per epoch
+      num_cycles: 0.5
     name: learning_rate
-    interval: epoch
-    frequency: 1
-    monitor: null
-  loss_scale: 20 # original paper multiply loss by batch size
+  automatic_optimization: false
 trainer:
   accelerator: gpu
   devices: 1
   precision: 32
-  max_epochs: 501
+  max_epochs: 200
 callbacks:
   - _target_: fourierflow.callbacks.CustomModelCheckpoint
     filename: "{epoch}-{step}-{valid_loss:.5f}"

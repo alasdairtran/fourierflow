@@ -54,22 +54,23 @@ class SpectralConv2d(nn.Module):
 
 
 class FNOMesh2DAirfoil(nn.Module):
-    def __init__(self, modes1, modes2, width):
+    def __init__(self, modes1, modes2, width, n_layers):
         super().__init__()
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
         self.padding = 8  # pad the domain if input is non-periodic
         self.fc0 = nn.Linear(4, self.width)  # input channel is 3: (a(x, y), x, y)
+        self.n_layers = n_layers
 
-        self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv2 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv3 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.w0 = nn.Conv2d(self.width, self.width, 1)
-        self.w1 = nn.Conv2d(self.width, self.width, 1)
-        self.w2 = nn.Conv2d(self.width, self.width, 1)
-        self.w3 = nn.Conv2d(self.width, self.width, 1)
+        self.convs = nn.ModuleList([])
+        self.ws = nn.ModuleList([])
+        for _ in range(n_layers):
+            conv = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+            self.convs.append(conv)
+
+            w = nn.Conv2d(self.width, self.width, 1)
+            self.ws.append(w)
 
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, 1)
@@ -82,24 +83,12 @@ class FNOMesh2DAirfoil(nn.Module):
 
         x = F.pad(x, [0, self.padding, 0, self.padding])
 
-        x1 = self.conv0(x)
-        x2 = self.w0(x)
-        x = x1 + x2
-        x = F.gelu(x)
-
-        x1 = self.conv1(x)
-        x2 = self.w1(x)
-        x = x1 + x2
-        x = F.gelu(x)
-
-        x1 = self.conv2(x)
-        x2 = self.w2(x)
-        x = x1 + x2
-        x = F.gelu(x)
-
-        x1 = self.conv3(x)
-        x2 = self.w3(x)
-        x = x1 + x2
+        for i in range(self.n_layers):
+            x1 = self.convs[i](x)
+            x2 = self.ws[i](x)
+            x = x1 + x2
+            if i < self.n_layers - 1:
+                x = F.gelu(x)
 
         x = x[..., :-self.padding, :-self.padding]
         x = x.permute(0, 2, 3, 1)
