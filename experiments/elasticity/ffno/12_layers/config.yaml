@@ -1,6 +1,6 @@
 wandb:
   project: elasticity
-  group: efno/12_layers
+  group: ffno/12_layers
   tags:
     - pde
     - elasticity
