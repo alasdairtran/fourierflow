@@ -8,7 +8,7 @@ from fourierflow.modules.loss import LpLoss
 from .base import Routine
 
 
-class Geo2DAirfoilExperiment(Routine):
+class StructuredMeshExperiment(Routine):
     def __init__(self,
                  model: nn.Module,
                  automatic_optimization: bool = True,
