@@ -8,7 +8,7 @@ wandb:
   notes: F-FNO experiment on plasticity.
 builder:
   _target_: fourierflow.builders.PlasticityBuilder
-  data_path: ${oc.env:DATA_ROOT}/geo-fno/plasticity/buri_plas_N987_time.mat
+  data_path: ${oc.env:DATA_ROOT}/geo-fno/plasticity/plas_N987_T20.mat
   s1: 101
   s2: 31
   t: 20
