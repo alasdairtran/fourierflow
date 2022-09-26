@@ -53,7 +53,7 @@ class SpectralConv2d(nn.Module):
         return x
 
 
-class FNOMesh2DAirfoil(nn.Module):
+class FNOMesh2D(nn.Module):
     def __init__(self, modes1, modes2, width, n_layers):
         super().__init__()
         self.modes1 = modes1

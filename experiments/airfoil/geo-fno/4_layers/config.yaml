@@ -20,7 +20,7 @@ builder:
 routine:
   _target_: fourierflow.routines.Geo2DAirfoilExperiment
   model:
-    _target_: fourierflow.modules.FNOMesh2DAirfoil
+    _target_: fourierflow.modules.FNOMesh2D
     modes1: 24
     modes2: 12
     width: 32
