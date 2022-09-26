@@ -1,0 +1,57 @@
+wandb:
+  project: plasticity
+  group: geo-fno/20_layers
+  tags:
+    - pde
+    - plasticity
+    - fourier
+  notes: Reproduced experiment of Li et al (2022)
+builder:
+  _target_: fourierflow.builders.PlasticityBuilder
+  data_path: ${oc.env:DATA_ROOT}/geo-fno/plasticity/buri_plas_N987_time.mat
+  s1: 101
+  s2: 31
+  t: 20
+  train_size: 827
+  valid_size: 80
+  test_size: 80
+  batch_size: 20
+  num_workers: 4
+  pin_memory: true
+routine:
+  _target_: fourierflow.routines.StructuredMeshExperiment
+  model:
+    _target_: fourierflow.modules.FNOMesh3D
+    modes1: 12
+    modes2: 12
+    modes3: 8
+    width: 32
+    n_layers: 20
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.Adam}"]
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: torch.optim.lr_scheduler.StepLR}"]
+      step_size: 100
+      gamma: 0.5
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: null
+  loss_scale: 20
+trainer:
+  accelerator: gpu
+  devices: 1
+  precision: 32
+  max_epochs: 501
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4

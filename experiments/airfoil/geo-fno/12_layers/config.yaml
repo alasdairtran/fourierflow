@@ -1,0 +1,55 @@
+wandb:
+  project: airfoil
+  group: geo-fno/12_layers
+  tags:
+    - pde
+    - airfoil
+    - fourier
+  notes: Reproduced experiment of Li et al (2022)
+builder:
+  _target_: fourierflow.builders.StructuredMesh2DBuilder
+  x1_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_X.npy
+  x2_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_Y.npy
+  sigma_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_Q.npy
+  train_size: 1000
+  valid_size: 200
+  test_size: 200
+  batch_size: 20
+  num_workers: 8
+  pin_memory: true
+routine:
+  _target_: fourierflow.routines.StructuredMeshExperiment
+  model:
+    _target_: fourierflow.modules.FNOMesh2D
+    modes1: 24
+    modes2: 12
+    width: 32
+    n_layers: 12
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.Adam}"]
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: torch.optim.lr_scheduler.StepLR}"]
+      step_size: 100
+      gamma: 0.5
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: null
+  loss_scale: 20 # original paper multiply loss by batch size
+trainer:
+  accelerator: gpu
+  devices: 1
+  precision: 32
+  max_epochs: 501
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4

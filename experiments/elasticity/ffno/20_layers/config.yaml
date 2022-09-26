@@ -1,0 +1,66 @@
+wandb:
+  project: elasticity
+  group: ffno/20_layers
+  tags:
+    - pde
+    - elasticity
+    - fourier
+  notes: Reproduced experiment of Li et al (2022)
+builder:
+  _target_: fourierflow.builders.ElasticityBuilder
+  sigma_path: ${oc.env:DATA_ROOT}/geo-fno/elasticity/Meshes/Random_UnitCell_sigma_10.npy
+  xy_path: ${oc.env:DATA_ROOT}/geo-fno/elasticity/Meshes/Random_UnitCell_XY_10.npy
+  rr_path: ${oc.env:DATA_ROOT}/geo-fno/elasticity/Meshes/Random_UnitCell_rr_10.npy
+  train_size: 1000
+  valid_size: 200
+  test_size: 200
+  batch_size: 20
+  num_workers: 4
+  pin_memory: true
+routine:
+  _target_: fourierflow.routines.PointCloudExperiment
+  model:
+    _target_: fourierflow.modules.FNOFactorizedPointCloud2D
+    modes1: 16
+    modes2: 16
+    s1: 64
+    s2: 64
+    width: 64
+    in_channels: 2
+    out_channels: 1
+    n_layers: 20
+  iphi:
+    _target_: fourierflow.modules.IPhi
+    width: 64
+  N: 1000
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.AdamW}"]
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
+      num_warmup_steps: 500
+      num_training_steps: 10000 # 50 batches per epoch
+      num_cycles: 0.5
+    name: learning_rate
+  automatic_optimization: false
+trainer:
+  accelerator: gpu
+  devices: 1
+  precision: 32
+  max_epochs: 200
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+    save_top_k: 1
+    save_last: true
+    monitor: valid_loss
+    mode: min
+    auto_insert_metric_name: true
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4

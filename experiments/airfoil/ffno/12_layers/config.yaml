@@ -1,0 +1,64 @@
+wandb:
+  project: airfoil
+  group: ffno/12_layers
+  tags:
+    - pde
+    - airfoil
+    - fourier
+  notes: Improved model with F-FNO
+builder:
+  _target_: fourierflow.builders.StructuredMesh2DBuilder
+  x1_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_X.npy
+  x2_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_Y.npy
+  sigma_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_Q.npy
+  train_size: 1000
+  valid_size: 200
+  test_size: 200
+  batch_size: 10
+  num_workers: 8
+  pin_memory: true
+routine:
+  _target_: fourierflow.routines.StructuredMeshExperiment
+  model:
+    _target_: fourierflow.modules.FNOFactorizedMesh2D
+    modes_x: 32
+    modes_y: 16
+    width: 64
+    input_dim: 4
+    n_layers: 12
+    share_weight: false
+    factor: 4
+    ff_weight_norm: true
+    n_ff_layers: 2
+    layer_norm: false
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.AdamW}"]
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
+      num_warmup_steps: 500
+      num_training_steps: 20000 # 100 batches per epoch
+      num_cycles: 0.5
+    name: learning_rate
+  automatic_optimization: false
+trainer:
+  accelerator: gpu
+  devices: 1
+  precision: 32
+  max_epochs: 200
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+    save_top_k: 1
+    save_last: true
+    monitor: valid_loss
+    mode: min
+    auto_insert_metric_name: true
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4
