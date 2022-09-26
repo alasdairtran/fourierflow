@@ -8,4 +8,5 @@ from .kolmogorov import (KolmogorovBuilder, KolmogorovJAXDataset,
 from .ns_contextual import NSContextualBuilder
 from .ns_markov import NSMarkovBuilder
 from .ns_zongyi import NSZongyiBuilder
+from .plasticity import PlasticityBuilder
 from .utils import collate_jax
