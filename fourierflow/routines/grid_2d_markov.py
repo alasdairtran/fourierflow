@@ -34,9 +34,6 @@ class Grid2DMarkovExperiment(Routine):
                  max_accumulations: float = 1e6,
                  should_normalize: bool = True,
                  use_fourier_position: bool = False,
-                 clip_val: Optional[float] = 0.1,
-                 automatic_optimization: bool = False,
-                 accumulate_grad_batches: int = 1,
                  noise_std: float = 0.0,
                  shuffle_grid: bool = False,
                  use_velocity: bool = False,
@@ -64,9 +61,6 @@ class Grid2DMarkovExperiment(Routine):
         self.should_normalize = should_normalize
         self.normalizer = Normalizer([conv.input_dim], max_accumulations)
         self.register_buffer('_float', torch.FloatTensor([0.1]))
-        self.automatic_optimization = automatic_optimization
-        self.accumulate_grad_batches = accumulate_grad_batches
-        self.clip_val = clip_val
         self.noise_std = noise_std
         self.shuffle_grid = shuffle_grid
         self.use_velocity = use_velocity
@@ -390,32 +384,7 @@ class Grid2DMarkovExperiment(Routine):
             loss = self._training_step(batch)
             self.log('train_loss', loss, prog_bar=True)
 
-            if not self.automatic_optimization:
-                if self.accumulate_grad_batches == 1:
-                    opt = self.optimizers()
-                    opt.zero_grad()
-                    self.manual_backward(loss)
-                    if self.clip_val:
-                        for group in opt.param_groups:
-                            torch.nn.utils.clip_grad_value_(group["params"],
-                                                            self.clip_val)
-                    opt.step()
-
-                else:
-                    opt = self.optimizers()
-                    loss /= self.accumulate_grad_batches
-                    self.manual_backward(loss)
-                    if (batch_idx + 1) % self.accumulate_grad_batches == 0:
-                        if self.clip_val:
-                            for group in opt.param_groups:
-                                torch.nn.utils.clip_grad_value_(group["params"],
-                                                                self.clip_val)
-                        opt.step()
-                        opt.zero_grad()
-
-                sch = self.lr_schedulers()
-                sch.step()
-
+            self.optimize_manually(loss, batch_idx)
             return loss
 
     def validation_step(self, batch, batch_idx):
