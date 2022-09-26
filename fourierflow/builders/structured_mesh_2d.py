@@ -5,8 +5,8 @@ from torch.utils.data import DataLoader, Dataset
 from .base import Builder
 
 
-class AirfoilBuilder(Builder):
-    name = 'airfoil'
+class StructuredMesh2DBuilder(Builder):
+    name = 'structured_mesh_2d'
 
     def __init__(self,
                  x1_path: str,

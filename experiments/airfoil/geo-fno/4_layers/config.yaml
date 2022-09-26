@@ -7,7 +7,7 @@ wandb:
     - fourier
   notes: Reproduced experiment of Li et al (2022)
 builder:
-  _target_: fourierflow.builders.AirfoilBuilder
+  _target_: fourierflow.builders.StructuredMesh2DBuilder
   x1_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_X.npy
   x2_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_Y.npy
   sigma_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_Q.npy
