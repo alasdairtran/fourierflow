@@ -15,7 +15,7 @@ builder:
   valid_size: 200
   test_size: 200
   batch_size: 20
-  num_workers: 8
+  num_workers: 4
   pin_memory: true
 routine:
   _target_: fourierflow.routines.StructuredMeshExperiment
