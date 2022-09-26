@@ -27,6 +27,7 @@ routine:
     modes_z: 8
     width: 64
     input_dim: 4
+    output_dim: 4
     n_layers: 4
     share_weight: false
     factor: 4
