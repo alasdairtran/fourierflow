@@ -8,7 +8,7 @@ from fourierflow.modules.loss import LpLoss
 from .base import Routine
 
 
-class Geo2DExperiment(Routine):
+class PointCloudExperiment(Routine):
     def __init__(self,
                  model: nn.Module,
                  iphi: nn.Module,

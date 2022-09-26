@@ -18,7 +18,7 @@ builder:
   num_workers: 4
   pin_memory: true
 routine:
-  _target_: fourierflow.routines.Geo2DExperiment
+  _target_: fourierflow.routines.PointCloudExperiment
   model:
     _target_: fourierflow.modules.FNOPointCloud2D
     modes1: 12
