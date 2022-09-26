@@ -70,16 +70,13 @@ class FNOMesh3D(nn.Module):
         self.n_layers = n_layers
         self.convs = nn.ModuleList([])
         self.ws = nn.ModuleList([])
-        self.bns = nn.ModuleList([])
 
         for _ in range(n_layers):
             conv = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
             w = nn.Conv3d(self.width, self.width, 1)
-            bn = torch.nn.BatchNorm3d(self.width)
 
             self.convs.append(conv)
             self.ws.append(w)
-            self.bns.append(bn)
 
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, 4)
@@ -92,8 +89,8 @@ class FNOMesh3D(nn.Module):
         x = F.pad(x, [0, self.padding, 0, self.padding, 0, self.padding])  # pad the domain if input is non-periodic
 
         for i in range(self.n_layers):
-            x1 = self.conv0(x)
-            x2 = self.w0(x)
+            x1 = self.convs[i](x)
+            x2 = self.ws[i](x)
             x = x1 + x2
             if i < self.n_layers - 1:
                 x = F.gelu(x)
