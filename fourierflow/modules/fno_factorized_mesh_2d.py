@@ -124,7 +124,7 @@ class SpectralConv2d(nn.Module):
         return x
 
 
-class FNOFactorizedMesh2DAirfoil(nn.Module):
+class FNOFactorizedMesh2D(nn.Module):
     def __init__(self, modes_x, modes_y, width, input_dim, n_layers, share_weight, factor,
                  ff_weight_norm, n_ff_layers, layer_norm):
         super().__init__()
