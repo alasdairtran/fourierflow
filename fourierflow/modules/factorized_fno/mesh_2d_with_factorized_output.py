@@ -188,7 +188,7 @@ class SpectralConv2d(nn.Module):
         return basis_x, basis_y
 
 
-class FNOFactorizedMeshFull2D(nn.Module):
+class FNOFullyFactorizedMesh2D(nn.Module):
     def __init__(self, modes1, modes2, width, in_channels, out_channels,
                  n_layers=4, is_mesh=True, s1=40, s2=40):
         super().__init__()

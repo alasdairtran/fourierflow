@@ -1,6 +1,6 @@
-from .fno_factorized_2d import FNOFactorized2DBlock
-from .fno_factorized_mesh_2d import FNOFactorizedMesh2D
-from .fno_factorized_point_cloud_2d import FNOFactorizedPointCloud2D
+from .factorized_fno import (FNOFactorized2DBlock, FNOFactorizedMesh2D,
+                             FNOFactorizedPointCloud2D,
+                             FNOFullyFactorizedMesh2D)
 from .fno_mesh_2d import FNOMesh2D
 from .fno_mesh_3d import FNOMesh3D
 from .fno_plus_2d import FNOPlus2DBlock

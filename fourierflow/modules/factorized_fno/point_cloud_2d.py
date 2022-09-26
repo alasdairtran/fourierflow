@@ -7,8 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 
-from fourierflow.modules.fno_factorized_2d import \
-    SpectralConv2d as FactorizedSpectralConv2d
+from .grid_2d import SpectralConv2d as FactorizedSpectralConv2d
 
 
 ################################################################
