@@ -15,7 +15,7 @@ builder:
   train_size: 827
   valid_size: 80
   test_size: 80
-  batch_size: 10
+  batch_size: 5
   num_workers: 4
   pin_memory: true
 routine:
@@ -44,7 +44,7 @@ routine:
       _target_: functools.partial
       _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
       num_warmup_steps: 500
-      num_training_steps: 16600 # 83 batches per epoch
+      num_training_steps: 33200 # 166 batches per epoch
       num_cycles: 0.5
     name: learning_rate
   automatic_optimization: false
