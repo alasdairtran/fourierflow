@@ -67,6 +67,7 @@ class FNOMesh3D(nn.Module):
         self.fc0 = nn.Linear(4, self.width)
         # input channel is 12: the solution of the first 10 timesteps + 3 locations (u(1, x, y), ..., u(10, x, y),  x, y, t)
 
+        self.n_layers = n_layers
         self.convs = nn.ModuleList([])
         self.ws = nn.ModuleList([])
         self.bns = nn.ModuleList([])
