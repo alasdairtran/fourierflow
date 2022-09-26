@@ -46,8 +46,7 @@ class SpectralConv2d(nn.Module):
 
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
-        if self.mode != 'no-fourier':
-            x = self.forward_fourier(x)
+        x = self.forward_fourier(x)
 
         b = self.backcast_ff(x)
         f = self.forecast_ff(x) if self.use_fork else None
