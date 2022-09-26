@@ -1,7 +1,6 @@
 from .factorized_fno import (FNOFactorized2DBlock, FNOFactorizedMesh2D,
                              FNOFactorizedPointCloud2D,
-                             FNOFullyFactorizedMesh2D)
-from .fno_plus_2d import FNOPlus2DBlock
+                             FNOFullyFactorizedMesh2D, FNOPlus2DBlock)
 from .iphi import IPhi
 from .linear import GehringLinear, WNLinear
 from .normalizer import Normalizer
