@@ -20,7 +20,7 @@ builder:
 routine:
   _target_: fourierflow.routines.Geo2DExperiment
   model:
-    _target_: fourierflow.modules.FNOFactorizedMesh2D
+    _target_: fourierflow.modules.FNOFactorizedPointCloud2D
     modes1: 16
     modes2: 16
     s1: 64
