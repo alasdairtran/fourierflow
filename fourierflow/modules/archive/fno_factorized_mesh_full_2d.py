@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, repeat
 
-from .linear import WNLinear
+from ..linear import WNLinear
 
 
 class FeedForward(nn.Module):
