@@ -22,7 +22,7 @@ routine:
   _target_: fourierflow.routines.StructuredMeshExperiment
   model:
     _target_: fourierflow.modules.FNOFactorizedMesh3D
-    modes_x: 12
+    modes_x: 32
     modes_y: 12
     modes_z: 8
     width: 64
