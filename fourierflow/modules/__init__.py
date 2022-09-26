@@ -1,5 +1,5 @@
 from .factorized_fno import (FNOFactorized2DBlock, FNOFactorizedMesh2D,
-                             FNOFactorizedPointCloud2D,
+                             FNOFactorizedMesh3D, FNOFactorizedPointCloud2D,
                              FNOFullyFactorizedMesh2D)
 from .iphi import IPhi
 from .linear import GehringLinear, WNLinear
