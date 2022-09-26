@@ -11,6 +11,7 @@ builder:
   x1_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_X.npy
   x2_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_Y.npy
   sigma_path: ${oc.env:DATA_ROOT}/geo-fno/airfoil/naca/NACA_Cylinder_Q.npy
+  output_dim: 4
   train_size: 1000
   valid_size: 200
   test_size: 200

@@ -11,6 +11,7 @@ builder:
   x1_path: ${oc.env:DATA_ROOT}/geo-fno/pipe/Pipe_X.npy
   x2_path: ${oc.env:DATA_ROOT}/geo-fno/pipe/Pipe_Y.npy
   sigma_path: ${oc.env:DATA_ROOT}/geo-fno/pipe/Pipe_Q.npy
+  output_dim: 0
   train_size: 1000
   valid_size: 200
   test_size: 200

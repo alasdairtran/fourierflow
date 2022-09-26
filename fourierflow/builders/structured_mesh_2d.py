@@ -12,6 +12,7 @@ class StructuredMesh2DBuilder(Builder):
                  x1_path: str,
                  x2_path: str,
                  sigma_path: str,
+                 output_dim: int,
                  train_size: int,
                  valid_size: int,
                  test_size: int,
@@ -30,7 +31,7 @@ class StructuredMesh2DBuilder(Builder):
         x = torch.stack([x1, x2], dim=-1)
         # x.shape == [2490, 221, 51, 2]
 
-        y = np.load(sigma_path)[:, 4]
+        y = np.load(sigma_path)[:, output_dim]
         y = torch.tensor(y, dtype=torch.float)
         # y.shape == [2490, 221, 51]
 
