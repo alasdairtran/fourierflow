@@ -15,7 +15,7 @@ builder:
   valid_size: 200
   test_size: 200
   batch_size: 20
-  num_workers: 2
+  num_workers: 1
   pin_memory: true
 routine:
   _target_: fourierflow.routines.PointCloudExperiment
