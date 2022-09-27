@@ -161,7 +161,7 @@ class SpectralConv2d(nn.Module):
 
 class FNOFactorizedPointCloud2D(nn.Module):
     def __init__(self, modes1, modes2, width, in_channels, out_channels,
-                 n_layers=4, is_mesh=True, s1=40, s2=40):
+                 n_layers=4, is_mesh=True, s1=40, s2=40, share_weight=False):
         super().__init__()
         self.modes1 = modes1
         self.modes2 = modes2
@@ -178,13 +178,14 @@ class FNOFactorizedPointCloud2D(nn.Module):
         self.ws = nn.ModuleList([])
         self.bs = nn.ModuleList([])
 
-        # if factorized:
-        #     self.fourier_weight = nn.ParameterList([])
-        #     for _ in range(2):
-        #         weight = torch.FloatTensor(width, width, modes1, 2)
-        #         param = nn.Parameter(weight)
-        #         nn.init.xavier_normal_(param, gain=1)
-        #         self.fourier_weight.append(param)
+        self.fourier_weight = None
+        if share_weight:
+            self.fourier_weight = nn.ParameterList([])
+            for _ in range(2):
+                weight = torch.FloatTensor(width, width, modes1, 2)
+                param = nn.Parameter(weight)
+                nn.init.xavier_normal_(param)
+                self.fourier_weight.append(param)
 
         for i in range(self.n_layers + 1):
             if i == 0:
@@ -199,7 +200,7 @@ class FNOFactorizedPointCloud2D(nn.Module):
                                                 n_modes=modes1,
                                                 forecast_ff=None,
                                                 backcast_ff=None,
-                                                fourier_weight=None,
+                                                fourier_weight=self.fourier_weight,
                                                 factor=2,
                                                 ff_weight_norm=True,
                                                 n_ff_layers=2,
