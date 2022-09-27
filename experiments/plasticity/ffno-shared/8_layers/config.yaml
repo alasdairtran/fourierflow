@@ -1,0 +1,67 @@
+wandb:
+  project: plasticity
+  group: ffno-shared/8_layers
+  tags:
+    - pde
+    - plasticity
+    - fourier
+  notes: F-FNO experiment on plasticity.
+builder:
+  _target_: fourierflow.builders.PlasticityBuilder
+  data_path: ${oc.env:DATA_ROOT}/geo-fno/plasticity/plas_N987_T20.mat
+  s1: 101
+  s2: 31
+  t: 20
+  train_size: 827
+  valid_size: 80
+  test_size: 80
+  batch_size: 2
+  num_workers: 1
+  pin_memory: true
+routine:
+  _target_: fourierflow.routines.StructuredMeshExperiment
+  model:
+    _target_: fourierflow.modules.FNOFactorizedMesh3D
+    modes_x: 32
+    modes_y: 12
+    modes_z: 8
+    width: 64
+    input_dim: 4
+    output_dim: 4
+    n_layers: 8
+    share_weight: true
+    factor: 4
+    ff_weight_norm: true
+    n_ff_layers: 2
+    layer_norm: false
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.AdamW}"]
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: fourierflow.schedulers.CosineWithWarmupScheduler}"]
+      num_warmup_steps: 500
+      num_training_steps: 82800 # 414 batches per epoch
+      num_cycles: 0.5
+    name: learning_rate
+  automatic_optimization: false
+trainer:
+  accelerator: gpu
+  devices: 1
+  precision: 32
+  max_epochs: 200
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+    save_top_k: 1
+    save_last: true
+    monitor: valid_loss
+    mode: min
+    auto_insert_metric_name: true
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4
