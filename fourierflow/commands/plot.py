@@ -6,6 +6,7 @@ import scipy.io
 import seaborn as sns
 import wandb
 import xarray as xr
+from einops import rearrange
 from jax_cfd.data.evaluation import compute_summary_dataset
 from matplotlib import gridspec
 from matplotlib.lines import Line2D
@@ -35,31 +36,30 @@ def resolution():
 
 
 @app.command()
-def correlation():
+def torus_kochkov_correlation():
+    """Figure 4 in ICLR."""
     fig = plt.figure(figsize=(8, 3))
     gs = gridspec.GridSpec(1, 2, width_ratios=[5, 5])
 
     ax = plt.subplot(gs[0])
     lines_1 = plot_correlation_vs_time_of_different_grid_sizes(ax)
 
-    ax = plt.subplot(gs[1])
-    lines_2 = plot_varying_step_size(ax)
+    # ax = plt.subplot(gs[1])
+    # lines_2 = plot_varying_step_size(ax)
 
-    lines = lines_1
+    # lines = lines_1
 
-    labels = ['DNS (Carpenter-Kennedy 4th-order)',
-              'F-FNO (our full model)']
+    # labels = ['DNS (Carpenter-Kennedy 4th-order)',
+    #           'F-FNO (our full model)']
 
-    lgd = fig.legend(handles=lines,
-                     labels=labels,
-                     loc="center",
-                     borderaxespad=0.1,
-                     bbox_to_anchor=[1.2, 0.55])
+    # lgd = fig.legend(handles=lines,
+    #                  labels=labels,
+    #                  loc="center",
+    #                  borderaxespad=0.1,
+    #                  bbox_to_anchor=[1.2, 0.55])
 
-    fig.tight_layout()
-    fig.savefig('figures/correlation.pdf',
-                bbox_extra_artists=(lgd,),
-                bbox_inches='tight')
+    # fig.tight_layout()
+    fig.savefig('figures/torus_kochkov_correlation.png')
 
 
 @app.command()
@@ -386,52 +386,55 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
 
     for group in groups:
         runs = api.runs(f'alasdairtran/{dataset}', {
-            'config.wandb.group': group,
+            'group': group,
             'state': 'finished',
         })
-        assert len(runs) == 1
+        assert len(runs) == 3, f'Got {len(runs)} runs for {group}'
         time = [run.summary['inference_time'] for run in runs]
-        times.append(np.array(time).mean())
+        times.append(np.array(time))
 
         until = [run.summary['test_reduced_time_until'] for run in runs]
-        untils.append(np.array(until).mean())
+        untils.append(np.array(until))
 
-    lines.append(ax.errorbar(times, untils, color=pal[3], marker='o'))
+
+    container = plot_xy_error_line(np.array(times), np.array(untils),
+                                   ax, color=pal[3], marker='o')
+    lines.append(container)
     print('F-FNO runtime:', times)
     print('F-FNO time until:', untils)
 
-    grids = [64, 128, 256]
-    for i, s in enumerate(grids):
-        xy = (times[i], untils[i])
-        if s == 64:
-            xytext = (xy[0] * 0.15, xy[1] - 0.25)
-        else:
-            xytext = (xy[0] * 0.085, xy[1])
-        ax.annotate(f'{s}x{s}', xy, xytext)
+    # grids = [64, 128, 256]
+    # for i, s in enumerate(grids):
+    #     xy = (times[i], untils[i])
+    #     if s == 64:
+    #         xytext = (xy[0] * 0.15, xy[1] - 0.25)
+    #     else:
+    #         xytext = (xy[0] * 0.085, xy[1])
+    #     ax.annotate(f'{s}x{s}', xy, xytext)
 
-    groups = [
-        # 'learned_interpolation/rollout/x32',
-        'learned_interpolation/rollout/x64',
-        'learned_interpolation/rollout/x128',
-    ]
-    times = []
-    untils = []
+    # groups = [
+    #     # 'learned_interpolation/rollout/x32',
+    #     'learned_interpolation/rollout/x64',
+    #     'learned_interpolation/rollout/x128',
+    # ]
+    # times = []
+    # untils = []
 
-    for group in groups:
-        runs = api.runs(f'alasdairtran/{dataset}', {
-            'config.wandb.group': group,
-            'state': 'finished',
-        })
-        assert len(runs) == 1
-        time = [run.summary['inference_time'] for run in runs]
-        times.append(np.array(time).mean())
+    # for group in groups:
+    #     runs = api.runs(f'alasdairtran/{dataset}', {
+    #         'group': group,
+    #         'state': 'finished',
+    #     })
+    #     assert len(runs) == 1
+    #     time = [run.summary['inference_time'] for run in runs]
+    #     times.append(np.array(time).mean())
 
-        until = [run.summary['test_reduced_time_until'] for run in runs]
-        untils.append(np.array(until).mean())
+    #     until = [run.summary['test_reduced_time_until'] for run in runs]
+    #     untils.append(np.array(until).mean())
 
-    lines.append(ax.errorbar(times, untils, color=pal[5], marker='o'))
-    print('LI runtime:', times)
-    print('LI time until:', untils)
+    # lines.append(ax.errorbar(times, untils, color=pal[5], marker='o'))
+    # print('LI runtime:', times)
+    # print('LI time until:', untils)
 
     # grids = [128]
     # for i, s in enumerate(grids):
@@ -447,7 +450,7 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
 
 def plot_varying_step_size(ax):
     api = wandb.Api()
-    dataset = 'kolmogorov_re_1000'
+    dataset = 'torus_kochkov'
     sizes = [0.25, 0.5, 1, 2, 5, 10, 20, 40, 80]
     step_sizes = [
         0.0035062418008814655,
@@ -463,24 +466,25 @@ def plot_varying_step_size(ax):
     untils = []
     for size in sizes:
         runs = api.runs(f'alasdairtran/{dataset}', {
-            'config.wandb.group': f'ffno/step_sizes/{size}',
+            'group': f'ffno/step_sizes/64/{size}',
             'state': 'finished'
         })
-        assert len(runs) == 1
+        assert len(runs) == 3, f'Got {len(runs)} runs for {size}'
         until = [run.summary['valid_time_until'] for run in runs]
-        untils.append(np.array(until).mean())
+        untils.append(np.array(until))
 
     lines = []
-    line = ax.errorbar(step_sizes, untils, color=pal[3], marker='o')
-    lines.append(line)
+    container = plot_line(step_sizes, np.array(untils),
+                          ax, color=pal[3], marker='o')
+    lines.append(container)
 
     # Line for numerical solver
     sims = {}
     sizes = [1, 2, 4, 8, 16, 32, 64, 128]
     for size in sizes:
-        path = f'../data/kolmogorov/re_1000/time_steps/x{size}_64.nc'
+        path = f'./data/kolmogorov/re_1000/time_steps/x{size}_64_1.nc'
         sims[size] = xr.open_dataset(path, engine='h5netcdf')
-    gt_path = '../data/kolmogorov/re_1000/trajectories/valid_64.nc'
+    gt_path = './data/kolmogorov/re_1000/trajectories/valid_64_1.nc'
     sims[999] = xr.open_dataset(
         gt_path, engine='h5netcdf').isel(time=slice(1, None, 2))  # key is arbitrary
 
@@ -513,25 +517,27 @@ def plot_varying_step_size(ax):
 
 
 @app.command()
-def layer():
-    fig = plt.figure(figsize=(8, 2.6))
+def torus_li_performance():
+    """Figure 3 in ICLR submission."""
+    fig = plt.figure(figsize=(8, 3))
+    gs = gridspec.GridSpec(1, 2, width_ratios=[5, 5])
 
-    ax = plt.subplot(1, 3, 1)
+    ax = plt.subplot(gs[0])
     lines_1 = plot_performance_vs_layer(ax)
 
-    ax = plt.subplot(1, 3, 2)
+    ax = plt.subplot(gs[1])
     lines_2 = plot_ablation(ax)
 
-    ax = plt.subplot(1, 3, 3)
-    plot_step_loss_curves(ax)
+    # ax = plt.subplot(1, 3, 3)
+    # plot_step_loss_curves(ax)
 
     lines = [lines_1[1], lines_1[0], lines_1[2]] + lines_2
     labels = ['FNO (proposed by Li et al. [2021a])',
               'FNO-TF (with teacher forcing)',
               'FNO-M (with Markov assumption)',
               'FNO++ (with a bag of tricks)',
-              'F-FNO-NW (without weight sharing)',
-              'F-FNO (our full model)']
+              'F-FNO (without weight sharing)',
+              'F-FNO (with weight sharing)']
     lgd = fig.legend(handles=lines,
                      labels=labels,
                      loc="center",
@@ -539,32 +545,33 @@ def layer():
                      bbox_to_anchor=[1.2, 0.55])
 
     fig.tight_layout()
-    fig.savefig('figures/performance.pdf',
+    fig.savefig('figures/torus_li_performance.pdf',
                 bbox_extra_artists=(lgd,),
                 bbox_inches='tight')
 
 
 @app.command()
 def complexity():
-    fig = plt.figure(figsize=(8, 2.6))
+    fig = plt.figure(figsize=(8, 3))
+    gs = gridspec.GridSpec(1, 2, width_ratios=[5, 5])
 
-    ax = plt.subplot(1, 3, 1)
+    ax = plt.subplot(gs[0])
     lines_1 = plot_parameters(ax)
 
-    ax = plt.subplot(1, 3, 2)
-    lines_2 = plot_pde_training_performance_tradeoff(ax)
+    # ax = plt.subplot(1, 3, 2)
+    # lines_2 = plot_pde_training_performance_tradeoff(ax)
 
-    ax = plt.subplot(1, 3, 3)
-    plot_pde_inference_performance_tradeoff(ax)
+    ax = plt.subplot(gs[1])
+    lines_3 = plot_pde_inference_performance_tradeoff(ax)
 
     sim_line = Line2D(range(1), range(1), color="white",
                       marker='o', markerfacecolor=pal[4])
-    lines = [sim_line] + lines_2[-1:] + lines_1
+    lines = [sim_line] + lines_3[-1:] + lines_1
     labels = ['DNS (Crank-Nicolson 2nd-order)',
               'FNO (proposed by Li et al. [2021a])',
               'FNO++ (with a bag of tricks)',
-              'F-FNO-NW (without weight sharing)',
-              'F-FNO (our full model)']
+              'F-FNO (without weight sharing)',
+              'F-FNO (with weight sharing)']
     lgd = fig.legend(handles=lines,
                      labels=labels,
                      loc="center",
@@ -599,33 +606,114 @@ def heatmaps():
 
 
 @app.command()
-def table_3():
-    dataset = 'ns_zongyi_4'
+def table_torus_li():
+    """Table A.2 in ICLR submission."""
+    dataset = 'torus_li'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
+    names = {
+        ('zongyi',): 'FNO (reproduced)',
+        ('ablation', 'no_factorization'): 'FNO++ (with bags of tricks)',
+        ('ablation', 'teacher_forcing'): 'FNO-TF (with teacher forcing)',
+        ('ablation', 'zongyi_markov'): 'FNO-M (with Markov assumption)',
+        ('ablation', 'no_sharing'): 'F-FNO (without weight sharing)',
+        ('markov',): 'F-FNO (with weight sharing)',
+    }
 
     groups = [f'zongyi/{i}_layers' for i in layers_1]
-    get_summary(dataset, groups)
+    get_summary(dataset, groups, names)
     print('\\midrule')
 
-    groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
-    get_summary(dataset, groups)
+    groups = [f'ablation/teacher_forcing/{i}_layers' for i in layers_1]
+    get_summary(dataset, groups, names)
     print('\\midrule')
 
     groups = [f'ablation/zongyi_markov/{i}_layers' for i in layers_1]
-    get_summary(dataset, groups)
+    get_summary(dataset, groups, names)
     print('\\midrule')
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
-    get_summary(dataset, groups)
+    get_summary(dataset, groups, names)
     print('\\midrule')
 
     groups = [f'ablation/no_sharing/{i}_layers' for i in layers_2]
-    get_summary(dataset, groups)
+    get_summary(dataset, groups, names)
     print('\\midrule')
 
     groups = [f'markov/{i}_layers' for i in layers_2]
-    get_summary(dataset, groups)
+    get_summary(dataset, groups, names)
+
+
+@app.command()
+def table_airfoil():
+    """Table A.3 in ICLR submission."""
+    dataset = 'airfoil'
+    layers_1 = [4, 8, 12]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    names = {
+        ('geo-fno',): 'geo-FNO (reproduced)',
+        ('ffno-shared',): 'F-FNO (with weight sharing)',
+        ('ffno',): 'F-FNO (without weight sharing)',
+    }
+
+    groups = [f'geo-fno/{i}_layers' for i in layers_1]
+    get_summary(dataset, groups, names)
+    print('\\midrule')
+
+    groups = [f'ffno-shared/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups, names)
+    print('\\midrule')
+
+    groups = [f'ffno/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups, names)
+
+
+@app.command()
+def table_elasticity():
+    """Table A.3 in ICLR submission."""
+    dataset = 'elasticity'
+    layers_1 = [4, 8, 12]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    names = {
+        ('geo-fno',): 'geo-FNO (reproduced)',
+        ('ffno-shared',): 'F-FNO (with weight sharing)',
+        ('ffno',): 'F-FNO (without weight sharing)',
+    }
+
+    groups = [f'geo-fno/{i}_layers' for i in layers_1]
+    get_summary(dataset, groups, names)
+    print('\\midrule')
+
+    groups = [f'ffno-shared/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups, names)
+    print('\\midrule')
+
+    groups = [f'ffno/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups, names)
+
+
+@app.command()
+def table_plasticity():
+    """Table A.3 in ICLR submission."""
+    dataset = 'plasticity'
+    layers_1 = [4, 8, 12]
+    layers_2 = [4, 8, 12, 16, 20, 24]
+    names = {
+        ('geo-fno',): 'geo-FNO (reproduced)',
+        ('ffno-shared',): 'F-FNO (with weight sharing)',
+        ('ffno',): 'F-FNO (without weight sharing)',
+    }
+
+    groups = [f'geo-fno/{i}_layers' for i in layers_1]
+    get_summary(dataset, groups, names)
+    print('\\midrule')
+
+    groups = [f'ffno-shared/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups, names)
+    print('\\midrule')
+
+    groups = [f'ffno/{i}_layers' for i in layers_2]
+    get_summary(dataset, groups, names)
 
 
 @app.command()
@@ -655,25 +743,16 @@ def poster():
     plot_poster_pde_inference()
 
 
-def get_summary(dataset, groups):
-    names = {
-        ('zongyi',): 'FNO (reproduced)',
-        ('ablation', 'no_factorization'): 'FNO++ (with bags of tricks)',
-        ('ablation', 'teaching_forcing'): 'FNO-TF (with teacher forcing)',
-        ('ablation', 'zongyi_markov'): 'FNO-M (with Markov assumption)',
-        ('ablation', 'no_sharing'): 'F-FNO-NW (without weight sharing)',
-        ('markov',): 'F-FNO (our full model)',
-
-    }
+def get_summary(dataset, groups, names):
     api = wandb.Api()
 
     parts = groups[0].split('/')
     g = names[tuple(parts[:-1])]
-    print(f'\multirow{{5}}{{*}}{{{g}}}')
+    print(f'\multirow{{{len(groups)}}}{{*}}{{{g}}}')
 
     for group in groups:
         runs = api.runs(f'alasdairtran/{dataset}', {
-            'config.wandb.group': group,
+            'group': group,
             'state': 'finished'
         })
         losses = [run.summary['test_loss'] for run in runs]
@@ -684,21 +763,29 @@ def get_summary(dataset, groups):
         train_times = np.array(train_times) / 3600
         assert len(train_times) == 3
 
-        test_times = [run.summary['inference_time']
-                      for run in runs if 'inference_time' in run.summary]
-        test_times = np.array(test_times)
-        assert len(test_times) == 3
+        # test_times = [run.summary['inference_time']
+        #               for run in runs if 'inference_time' in run.summary]
+        # test_times = np.array(test_times)
+        # assert len(test_times) == 3
 
-        params = [run.summary['n_params'] for run in runs]
+        params = [run.summary['n_params'] for run in runs
+                  if 'n_params' in run.summary]
+        param = params[0] if len(params) else 0
 
         mean = losses.mean()
-        std = losses.std()
+        minimum = losses.min()
+        maximum = losses.max()
+        # std = losses.std()
         train_t = train_times.mean()
-        test_t = test_times.mean()
+        if train_t < 1:
+            train_t = f'{train_t:.1f}'
+        else:
+            train_t = f'{train_t:.0f}'
+        # test_t = test_times.mean()
         parts = group.split('/')
         layers = int(parts[-1].split('_')[0])
-        print(f' & {layers} & {params[0]:,} & ${mean:.2f} \pm {std:.2f}$ & '
-              f'{train_t:.1f} & {test_t:.1f} \\\\')
+        print(f' & {layers} & {param:,} & {mean:.2f} & '
+              f'{minimum:.2f} & {maximum:.2f} &  {train_t} \\\\')
 
 
 def plot_heatmap(array,  cmap, vmin, vmax, out_path):
@@ -737,14 +824,28 @@ def plot_line(xs, losses, ax, axis=1, **kwargs):
     return ax.errorbar(xs[:len(means)], means, yerr=yerr, **kwargs)
 
 
+def plot_xy_error_line(xs, ys, ax, axis=1, **kwargs):
+    x_means = xs.mean(axis)
+    x_lower = x_means - xs.min(axis)
+    x_upper = xs.max(axis) - x_means
+    xerr = np.array([x_lower, x_upper])
+
+    y_means = ys.mean(axis)
+    y_lower = y_means - ys.min(axis)
+    y_upper = ys.max(axis) - y_means
+    yerr = np.array([y_lower, y_upper])
+
+    return ax.errorbar(x_means, y_means, xerr=xerr, yerr=yerr, **kwargs)
+
+
 def plot_performance_vs_layer(ax):
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-    dataset = 'navier-stokes-4'
+    dataset = 'torus_li'
     lines = []
 
-    groups = [f'ablation/teaching_forcing/{i}_layers' for i in layers_1]
+    groups = [f'ablation/teacher_forcing/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
     container = plot_line(xs, losses, ax, color=pal[1])
     lines.append(container.lines[0])
@@ -774,7 +875,7 @@ def plot_performance_vs_layer(ax):
 def plot_ablation(ax):
     layers_2 = [4, 8, 12, 16, 20, 24]
     xs = [4, 8, 12, 16, 20, 24]
-    dataset = 'navier-stokes-4'
+    dataset = 'torus_li'
     lines = []
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
@@ -848,7 +949,7 @@ def get_paramter_count(dataset, groups):
 
 
 def plot_parameters(ax):
-    dataset = 'navier-stokes-4'
+    dataset = 'torus_li'
     xs = [4, 8, 12, 16, 20, 24]
     lines = []
 
@@ -935,7 +1036,7 @@ def plot_pde_inference_performance_tradeoff(ax):
 
 
 def plot_pde_training_performance_tradeoff(ax):
-    dataset = 'navier-stokes-4'
+    dataset = 'torus_li'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
     lines = []
@@ -1077,6 +1178,112 @@ def plot_poster_pde_inference():
     fig.savefig('figures/inference.png',
                 bbox_inches='tight',
                 dpi=300)
+
+
+def table_point_cloud_mesh():
+    """Table 1 in ICLR submission."""
+    api = wandb.Api()
+    for layer in [4, 8, 12, 16, 20, 24]:
+        print(f'{layer} layer', end=' & ')
+        for dataset in ['elasticity', 'airfoil', 'plasticity']:
+            for model in ['geo-fno', 'ffno']:
+                group = f'{model}/{layer}_layers'
+                runs = api.runs(f'alasdairtran/{dataset}', {
+                    'config.wandb.group': group,
+                    'state': 'finished'
+                })
+                losses = [run.summary['test_loss'] for run in runs]
+
+                if dataset == 'plasticity' and model == 'ffno':
+                    end = r' \\'
+                else:
+                    end = ' & '
+
+                if len(losses) != 3:
+                    print(' - ', end=end)
+                else:
+                    losses = np.array(losses) * 100
+                    mean = losses.mean()
+                    std = losses.std()
+                    if model == 'ffno' or dataset == 'plasticity':
+                        print(f'${mean:.2f} \pm {std:.2f}$', end=end)
+                    else:
+                        print(f'${mean:.1f} \pm {std:.1f}$', end=end)
+        print('')
+
+
+def plot_data_snapshot():
+    """Figure 2 in ICLR submission."""
+    fig = plt.figure(figsize=(12, 8))
+
+    ax = plt.subplot(1, 4, 1)
+    path = '../data/kolmogorov/re_1000/trajectories/test_256_4.nc'
+    ds = xr.open_dataset(path).vorticity.isel(sample=1, time=1).to_numpy()
+    ax.imshow(ds, cmap=sns.cm.icefire)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+
+    ax = plt.subplot(1, 4, 2)
+    sigmat_path = '../data/geo-fno/elasticity/Meshes/Random_UnitCell_sigma_10.npy'
+    xy_path = '../data/geo-fno/elasticity/Meshes/Random_UnitCell_XY_10.npy'
+    s = np.load(sigmat_path)
+    s = rearrange(s, 'n b -> b n')
+    # input_s.shape == [2000, 972, 1]
+    xy = np.load(xy_path)
+    xy = rearrange(xy, 'n d b -> b n d')
+    # input_xy.shape == [2000, 972, 2]
+    b = 3
+    ax.scatter(xy[b, :, 0], xy[b, :, 1], s=80, c=s[b], cmap=sns.cm.icefire,
+               edgecolor='w', alpha=0.9, lw=0)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+
+    ax = plt.subplot(1, 4, 3)
+    x1_path = '../data/geo-fno/airfoil/naca/NACA_Cylinder_X.npy'
+    y2_path = '../data/geo-fno/airfoil/naca/NACA_Cylinder_Y.npy'
+    y_path = '../data/geo-fno/airfoil/naca/NACA_Cylinder_Q.npy'
+    x1 = np.load(x1_path)
+    x2 = np.load(y2_path)
+    out = np.load(y_path)[:, 4]
+    b = -1
+    X = x1[b]
+    Y = x2[b]
+    truth = out[b]
+    nx = 40//1
+    ny = 20//1
+    X_small = X[nx:-nx, :ny]
+    Y_small = Y[nx:-nx, :ny]
+    truth_small = truth[nx:-nx, :ny]
+    ax.pcolormesh(X_small, Y_small, truth_small,
+                  cmap=sns.cm.mako, shading='gouraud')
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+
+    ax = plt.subplot(1, 4, 4)
+    path = '../data/geo-fno/plasticity/plas_N987_T20.mat'
+    y = scipy.io.loadmat(path)['output'].astype(np.float32)[0]
+    du = np.linalg.norm(y[:, :, :, 2:], axis=-1)
+    ax.scatter(y[:, :, 19, 0], y[:, :, 19, 1], s=40, c=du[:, :, 19],
+               cmap=sns.cm.icefire, vmin=du.min(), vmax=du.max())
+    ax.set_xlim(-50, 0)
+    ax.set_ylim(0, 15)
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+
+    plt.tight_layout()
+    fig.savefig('figures/data-viz.png', dpi=300,
+                bbox_inches='tight')
 
 
 if __name__ == "__main__":
