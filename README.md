@@ -121,22 +121,25 @@ Training and test commands:
 
 ```sh
 # Reproducing SOA model on Navier Stokes from Li et al (2021).
-fourierflow train --trial 0 experiments/ns_zongyi_4/zongyi/4_layers/config.yaml
+fourierflow train --trial 0 experiments/torus_li/zongyi/4_layers/config.yaml
 
 # Train with our best model
-fourierflow train --trial 0 experiments/ns_zongyi_4/markov/24_layers/config.yaml
+fourierflow train --trial 0 experiments/torus_li/markov/24_layers/config.yaml
 
 # Get inference time on test set
-fourierflow predict --trial 0 experiments/ns_zongyi_4/markov/24_layers/config.yaml
+fourierflow predict --trial 0 experiments/torus_li/markov/24_layers/config.yaml
 ```
 
 Visualization commands:
 
 ```sh
-# Create all plots and tables for paper
-fourierflow plot layer
+# Some example commands to create plots and tables for paper
+fourierflow plot torus-li-performance
 fourierflow plot complexity
-fourierflow plot table-3
+fourierflow plot table-torus-li
+fourierflow plot table-airfoil
+fourierflow plot table-elasticity
+fourierflow plot table-plasticity
 
 # Create the flow animation for presentation
 fourierflow plot flow
@@ -160,21 +163,34 @@ gsutil -m cp -r gs://gresearch/jax-cfd data/
 ```sh
 # Download the Geo-FNO datasets
 fourierflow download geo-fno
+
+# Reproducing SOA model from Li et al (2022).
+fourierflow train --trial 0 experiments/airfoil/geo-fno/4_layers/config.yaml
+fourierflow train --trial 0 experiments/plasticity/geo-fno/4_layers/config.yaml
+fourierflow train --trial 0 experiments/elasticity/geo-fno/4_layers/config.yaml
+
+# Train with our best model
+fourierflow train --trial 0 experiments/airfoil/ffno/24_layers/config.yaml
+fourierflow train --trial 0 experiments/plasticity/ffno/24_layers/config.yaml
+fourierflow train --trial 0 experiments/elasticity/ffno/24_layers/config.yaml
 ```
 
-## Mesh Experiments
+<!-- ## Mesh Experiments
 
 ```sh
 # DeepMind meshgraphnets simulation data
 fourierflow download meshgraphnets
 # Convert cylinder-flow data from TFRecords to HDF5 format.
 fourierflow convert cylinder-flow --data-dir data/meshgraphnets/cylinder_flow --out data/meshgraphnets/cylinder_flow/cylinder_flow.h5
-```
+``` -->
 
 ## Acknowledgement
 
 Our model is based on the code of the original author of the Fourier Neural
-Operators paper: https://github.com/zongyi-li/fourier_neural_operator
+Operators paper:
+
+* https://github.com/zongyi-li/fourier_neural_operator
+* https://github.com/zongyi-li/Geo-FNO
 
 JAX-based models are adapted from JAX-CFD: https://github.com/google/jax-cfd
 
