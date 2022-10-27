@@ -1,3 +1,4 @@
+from .factorized_cno import CNOFactorizedMesh2D
 from .factorized_fno import (FNOFactorized2DBlock, FNOFactorizedMesh2D,
                              FNOFactorizedMesh3D, FNOFactorizedPointCloud2D,
                              FNOFullyFactorizedMesh2D)
