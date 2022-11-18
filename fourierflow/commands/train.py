@@ -93,6 +93,10 @@ def main(config_path: Path,
         callbacks = []
     else:
         # We use Weights & Biases to track our experiments.
+        # Clean cache before creating any new artifacts
+        c = wandb.wandb_sdk.wandb_artifacts.get_artifacts_cache()
+        c.cleanup(wandb.util.from_human_size("200GB"))
+
         config.wandb.name = f"{config.wandb.group}/{trial}"
         wandb_opts = cast(dict, OmegaConf.to_container(config.wandb))
         logger = WandbLogger(save_dir=str(config_dir),
@@ -102,8 +106,6 @@ def main(config_path: Path,
                              **wandb_opts)
         upload_code_to_wandb(Path(config_dir) / 'config.yaml', logger)
         enable_checkpointing = True
-        c = wandb.wandb_sdk.wandb_artifacts.get_artifacts_cache()
-        c.cleanup(wandb.util.from_human_size("100GB"))
 
     Trainer = import_string(config.trainer.pop(
         '_target_', 'pytorch_lightning.Trainer'))
