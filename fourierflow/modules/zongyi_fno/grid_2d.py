@@ -41,8 +41,9 @@ class SpectralConv2d(nn.Module):
     def forward(self, x):
         # x.shape == [batch_size, grid_size, grid_size, in_dim]
         B, M, N, I = x.shape
-        res = self.linear(x)
-        # res.shape == [batch_size, grid_size, grid_size, out_dim]
+        if self.residual:
+            res = self.linear(x)
+            # res.shape == [batch_size, grid_size, grid_size, out_dim]
 
         x = rearrange(x, 'b m n i -> b i m n')
         # x.shape == [batch_size, in_dim, grid_size, grid_size]
@@ -72,6 +73,8 @@ class SpectralConv2d(nn.Module):
 
         if self.residual:
             x = self.act(x + res)
+        else:
+            x = self.act(self.linear(x))
         return x
 
 

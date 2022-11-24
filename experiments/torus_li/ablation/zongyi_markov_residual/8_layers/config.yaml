@@ -1,0 +1,60 @@
+wandb:
+  project: torus_li
+  group: ablation/zongyi_markov_residual/8_layers
+  tags:
+    - pde
+    - navier-stokes
+    - fourier
+  notes: ""
+  log_model: all
+builder:
+  _target_: fourierflow.builders.NSMarkovBuilder
+  data_path: ${oc.env:DATA_ROOT}/zongyi/NavierStokes_V1e-5_N1200_T20.mat
+  train_size: 1000
+  test_size: 200
+  ssr: 1 # sub-sampling rate
+  batch_size: 190
+  num_workers: 4
+  pin_memory: true
+routine:
+  _target_: fourierflow.routines.Grid2DMarkovExperiment
+  conv:
+    _target_: fourierflow.modules.FNOZongyi2DBlock
+    modes1: 12
+    modes2: 12
+    width: 20
+    n_layers: 8
+    input_dim: 3
+    residual: true
+    conv_residual: false
+  n_steps: 10
+  should_normalize: false
+  clip_val: null
+  optimizer:
+    _target_: functools.partial
+    _args_: ["${get_method: torch.optim.AdamW}"]
+    lr: 0.0025
+    weight_decay: 0.0001
+  scheduler:
+    scheduler:
+      _target_: functools.partial
+      _args_: ["${get_method: torch.optim.lr_scheduler.StepLR}"]
+      step_size: 100
+      gamma: 0.5
+    name: learning_rate
+    interval: epoch
+    frequency: 1
+    monitor: null
+  automatic_optimization: true
+trainer:
+  accelerator: gpu
+  devices: 1
+  precision: 32
+  max_epochs: 500
+callbacks:
+  - _target_: fourierflow.callbacks.CustomModelCheckpoint
+    filename: "{epoch}-{step}-{valid_loss:.5f}"
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+  - _target_: pytorch_lightning.callbacks.ModelSummary
+    max_depth: 4
