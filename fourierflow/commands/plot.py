@@ -1,4 +1,5 @@
 import h5py
+import matplotlib as mpl
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,22 +45,22 @@ def torus_kochkov_correlation():
     ax = plt.subplot(gs[0])
     lines_1 = plot_correlation_vs_time_of_different_grid_sizes(ax)
 
-    # ax = plt.subplot(gs[1])
-    # lines_2 = plot_varying_step_size(ax)
+    ax = plt.subplot(gs[1])
+    lines_2 = plot_varying_step_size(ax)
 
-    # lines = lines_1
+    lines = lines_1
 
-    # labels = ['DNS (Carpenter-Kennedy 4th-order)',
-    #           'F-FNO (our full model)']
+    labels = ['DNS (Carpenter-Kennedy 4th-order)',
+              'F-FNO-WS (F-FNO with weight sharing)']
 
-    # lgd = fig.legend(handles=lines,
-    #                  labels=labels,
-    #                  loc="center",
-    #                  borderaxespad=0.1,
-    #                  bbox_to_anchor=[1.2, 0.55])
+    lgd = fig.legend(handles=lines,
+                     labels=labels,
+                     loc="center",
+                     borderaxespad=0.1,
+                     bbox_to_anchor=[1.2, 0.55])
 
-    # fig.tight_layout()
-    fig.savefig('figures/torus_kochkov_correlation.png')
+    fig.tight_layout()
+    fig.savefig('figures/torus_kochkov_correlation.pdf', bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 
 @app.command()
@@ -171,13 +172,13 @@ def flows():
 
 def plot_correlation_over_time(ax):
     groups = [
-        'ffno/superresolution/x32_x64/32',
-        'ffno/superresolution/x32_x64/64',
-        'ffno/superresolution/x32_x64/128',
-        'ffno/superresolution/x32_x64/256',
+        'ffno/superresolution/train_with_x32_x64/32',
+        'ffno/superresolution/train_with_x32_x64/64',
+        'ffno/superresolution/train_with_x32_x64/128',
+        'ffno/superresolution/train_with_x32_x64/256',
     ]
     api = wandb.Api()
-    dataset = 'kolmogorov_re_1000'
+    dataset = 'torus_kochkov'
 
     corrs = []
     times = []
@@ -207,35 +208,39 @@ def plot_correlation_over_time(ax):
     ax.set_ylabel('Vorticity correlation')
 
 
+
 def plot_ablation_correlation_over_time(ax):
     groups = [
-        'ffno/ablation/no_positional',
-        'ffno/step_sizes/20',
-        'ffno/ablation/use_velocity',
+        'ffno/ablation/no_velocity_positional',
+        'ffno/ablation/no_velocity',
+        'ffno/step_sizes/64/20',
     ]
     api = wandb.Api()
-    dataset = 'kolmogorov_re_1000'
+    dataset = 'torus_kochkov'
 
-    corrs = []
-    times = []
     lines = []
-    for group in groups:
+    colors = ['blue', 'orange', 'green']
+    for color, group in zip(colors, groups):
         runs = api.runs(f'alasdairtran/{dataset}', {
             'config.wandb.group': group,
             'state': 'finished',
         })
-        assert len(runs) == 1
+        assert len(runs) == 3
 
-        name = f'{dataset}/run-{runs[0].id}-test_correlations:latest'
-        artifact = api.artifact(name)
-        table = artifact.get('test_correlations')
-        time = table.get_column('time')
-        corr = table.get_column('corr')
-        corrs.append(np.array(corr))
-        times.append(np.array(time))
+        corrs = []
+        for i in range(3):
+            name = f'{dataset}/run-{runs[i].id}-test_correlations:latest'
+            artifact = api.artifact(name)
+            table = artifact.get('test_correlations')
+            time = table.get_column('time')
+            corr = table.get_column('corr')
+            corrs.append(corr)
 
-        line, = ax.plot(time, corr)
+        corrs = np.array(corrs)
+        line, = ax.plot(time, corrs.mean(axis=0))
         lines.append(line)
+        ax.fill_between(time, corrs.min(axis=0), corrs.max(axis=0),
+            color=mpl.colors.to_rgba(color, 0.1))
 
     labels = [
         'Vorticity',
@@ -251,13 +256,13 @@ def plot_ablation_correlation_over_time(ax):
 def plot_energy_spectrum(ax):
     sizes = [128, 256, 512, 1024]
     models = {}
-    path = f'../experiments/kolmogorov/re_1000/ffno/predictions/64/preds.nc'
+    path = f'../experiments/torus_kochkov/ffno/predictions/64/preds.nc'
     models['F-FNO (64x64)'] = xr.open_dataset(path)
 
-    path = f'../experiments/kolmogorov/re_1000/ffno/predictions/128/preds.nc'
+    path = f'../experiments/torus_kochkov/ffno/predictions/128/preds.nc'
     models['F-FNO (128x128)'] = xr.open_dataset(path)
 
-    path = f'../experiments/kolmogorov/re_1000/ffno/predictions/256/preds.nc'
+    path = f'../experiments/torus_kochkov/ffno/predictions/256/preds.nc'
     models['F-FNO (256x256)'] = xr.open_dataset(path)
 
     for size in sizes:
@@ -397,20 +402,22 @@ def plot_correlation_vs_time_of_different_grid_sizes(ax):
         untils.append(np.array(until))
 
 
-    container = plot_xy_error_line(np.array(times), np.array(untils),
+    times = np.array(times)
+    untils = np.array(untils)
+    container = plot_xy_error_line(times, untils,
                                    ax, color=pal[3], marker='o')
     lines.append(container)
     print('F-FNO runtime:', times)
     print('F-FNO time until:', untils)
 
-    # grids = [64, 128, 256]
-    # for i, s in enumerate(grids):
-    #     xy = (times[i], untils[i])
-    #     if s == 64:
-    #         xytext = (xy[0] * 0.15, xy[1] - 0.25)
-    #     else:
-    #         xytext = (xy[0] * 0.085, xy[1])
-    #     ax.annotate(f'{s}x{s}', xy, xytext)
+    grids = [64, 128, 256]
+    for i, s in enumerate(grids):
+        xy = (times[i][0], untils[i][0])
+        if s == 64:
+            xytext = (xy[0] * 0.15, xy[1] - 0.25)
+        else:
+            xytext = (xy[0] * 0.085, xy[1])
+        ax.annotate(f'{s}x{s}', xy, xytext)
 
     # groups = [
     #     # 'learned_interpolation/rollout/x32',
@@ -482,9 +489,9 @@ def plot_varying_step_size(ax):
     sims = {}
     sizes = [1, 2, 4, 8, 16, 32, 64, 128]
     for size in sizes:
-        path = f'./data/kolmogorov/re_1000/time_steps/x{size}_64_1.nc'
+        path = f'../data/kolmogorov/re_1000/time_steps/x{size}_64_1.nc'
         sims[size] = xr.open_dataset(path, engine='h5netcdf')
-    gt_path = './data/kolmogorov/re_1000/trajectories/valid_64_1.nc'
+    gt_path = '../data/kolmogorov/re_1000/trajectories/valid_64_4.nc'
     sims[999] = xr.open_dataset(
         gt_path, engine='h5netcdf').isel(time=slice(1, None, 2))  # key is arbitrary
 
@@ -531,13 +538,14 @@ def torus_li_performance():
     # ax = plt.subplot(1, 3, 3)
     # plot_step_loss_curves(ax)
 
-    lines = [lines_1[1], lines_1[0], lines_1[2]] + lines_2
+    lines = [lines_1[1], lines_1[0], lines_1[2], lines_1[3]] + lines_2
     labels = ['FNO (proposed by Li et al. [2021a])',
-              'FNO-TF (with teacher forcing)',
-              'FNO-M (with Markov assumption)',
-              'FNO++ (with a bag of tricks)',
-              'F-FNO (without weight sharing)',
-              'F-FNO (with weight sharing)']
+              'FNO-TF (FNO with teacher forcing)',
+              'FNO-M (FNO-TF with Markov assumption)',
+              'FNO-R (FNO-M with improved residuals)',
+              'FNO++ (FNO-R with a bag of tricks)',
+              'F-FNO (FNO++ with Fourier factorization)',
+              'F-FNO-WS (F-FNO with weight sharing)']
     lgd = fig.legend(handles=lines,
                      labels=labels,
                      loc="center",
@@ -569,9 +577,9 @@ def complexity():
     lines = [sim_line] + lines_3[-1:] + lines_1
     labels = ['DNS (Crank-Nicolson 2nd-order)',
               'FNO (proposed by Li et al. [2021a])',
-              'FNO++ (with a bag of tricks)',
-              'F-FNO (without weight sharing)',
-              'F-FNO (with weight sharing)']
+              'FNO++ (FNO-R with a bag of tricks)',
+              'F-FNO (FNO++ with Fourier factorization)',
+              'F-FNO-WS (F-FNO with weight sharing)']
     lgd = fig.legend(handles=lines,
                      labels=labels,
                      loc="center",
@@ -613,11 +621,12 @@ def table_torus_li():
     layers_2 = [4, 8, 12, 16, 20, 24]
     names = {
         ('zongyi',): 'FNO (reproduced)',
-        ('ablation', 'no_factorization'): 'FNO++ (with bags of tricks)',
-        ('ablation', 'teacher_forcing'): 'FNO-TF (with teacher forcing)',
-        ('ablation', 'zongyi_markov'): 'FNO-M (with Markov assumption)',
-        ('ablation', 'no_sharing'): 'F-FNO (without weight sharing)',
-        ('markov',): 'F-FNO (with weight sharing)',
+        ('ablation', 'teacher_forcing'): 'FNO-TF (FNO with teacher forcing)',
+        ('ablation', 'zongyi_markov'): 'FNO-M (FNO-TF with Markov assumption)',
+        ('ablation', 'zongyi_markov_residual'): 'FNO-R (FNO-M with improved residuals)',
+        ('ablation', 'no_factorization'): 'FNO++ (FNO-R with bags of tricks)',
+        ('ablation', 'no_sharing'): 'F-FNO (FNO++ with Fourier factorization)',
+        ('markov',): 'F-FNO-WS (F-FNO with weight sharing)',
     }
 
     groups = [f'zongyi/{i}_layers' for i in layers_1]
@@ -629,6 +638,10 @@ def table_torus_li():
     print('\\midrule')
 
     groups = [f'ablation/zongyi_markov/{i}_layers' for i in layers_1]
+    get_summary(dataset, groups, names)
+    print('\\midrule')
+
+    groups = [f'ablation/zongyi_markov_residual/{i}_layers' for i in layers_2]
     get_summary(dataset, groups, names)
     print('\\midrule')
 
@@ -809,7 +822,7 @@ def get_test_losses(dataset, groups):
             'config.wandb.group': group,
             'state': 'finished'
         })
-        losses = [run.summary['test_loss'] for run in runs]
+        losses = [run.summary['test_loss'] for run in runs if 'test_loss' in run.summary]
         if len(losses) != 3:
             print(f'fail {group}, {len(losses)}')
         outs.append(losses)
@@ -858,6 +871,11 @@ def plot_performance_vs_layer(ax):
     groups = [f'ablation/zongyi_markov/{i}_layers' for i in layers_1]
     losses = get_test_losses(dataset, groups)
     container = plot_line(xs, losses, ax, color=pal[2], linestyle=':')
+    lines.append(container.lines[0])
+
+    groups = [f'ablation/zongyi_markov_residual/{i}_layers' for i in layers_2]
+    losses = get_test_losses(dataset, groups)
+    container = plot_line(xs, losses, ax, color=pal[5], linestyle='--')
     lines.append(container.lines[0])
 
     groups = [f'ablation/no_factorization/{i}_layers' for i in layers_2]
@@ -1284,6 +1302,183 @@ def plot_data_snapshot():
     plt.tight_layout()
     fig.savefig('figures/data-viz.png', dpi=300,
                 bbox_inches='tight')
+
+
+def plot_input_output():
+    """Appendix Figure in ICLR submission."""
+    fig = plt.figure(figsize=(3, 3))
+
+    ax = plt.subplot(1, 1, 1, frameon=False)
+    path = '../data/kolmogorov/re_1000/trajectories/test_256_4.nc'
+    ds = xr.open_dataset(path).vorticity.isel(sample=1, time=1).to_numpy()
+    ax.imshow(ds, cmap=sns.cm.icefire)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    plt.tight_layout()
+    fig.savefig('figures/kochkov_0.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    ds = xr.open_dataset(path).vorticity.isel(sample=1, time=100).to_numpy()
+    ax.imshow(ds, cmap=sns.cm.icefire)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    plt.tight_layout()
+    fig.savefig('figures/kochkov_1.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    ds = xr.open_dataset(path).vorticity.isel(sample=1, time=200).to_numpy()
+    ax.imshow(ds, cmap=sns.cm.icefire)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    plt.tight_layout()
+    fig.savefig('figures/kochkov_2.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    ds = xr.open_dataset(path).vorticity.isel(sample=1, time=300).to_numpy()
+    ax.imshow(ds, cmap=sns.cm.icefire)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    plt.tight_layout()
+    fig.savefig('figures/kochkov_3.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    sigmat_path = '../data/geo-fno/elasticity/Meshes/Random_UnitCell_sigma_10.npy'
+    xy_path = '../data/geo-fno/elasticity/Meshes/Random_UnitCell_XY_10.npy'
+    s = np.load(sigmat_path)
+    s = rearrange(s, 'n b -> b n')
+    # input_s.shape == [2000, 972, 1]
+    xy = np.load(xy_path)
+    xy = rearrange(xy, 'n d b -> b n d')
+    # input_xy.shape == [2000, 972, 2]
+    b = 3
+    ax.scatter(xy[b, :, 0], xy[b, :, 1], s=60, c='white', cmap=sns.cm.icefire,
+               edgecolor='black', alpha=1, lw=0.5)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+    plt.tight_layout()
+    fig.savefig('figures/elasticity_0.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    ax.scatter(xy[b, :, 0], xy[b, :, 1], s=60, c=s[b], cmap=sns.cm.icefire,
+               edgecolor='black', alpha=1, lw=0.5)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+    plt.tight_layout()
+    fig.savefig('figures/elasticity_1.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    ax = plt.subplot(1, 1, 1, frameon=False)
+    x1_path = '../data/geo-fno/airfoil/naca/NACA_Cylinder_X.npy'
+    y2_path = '../data/geo-fno/airfoil/naca/NACA_Cylinder_Y.npy'
+    y_path = '../data/geo-fno/airfoil/naca/NACA_Cylinder_Q.npy'
+    x1 = np.load(x1_path)
+    x2 = np.load(y2_path)
+    out = np.load(y_path)[:, 4]
+    b = -1
+    X = x1[b]
+    Y = x2[b]
+    truth = np.full_like(out[b], 0)
+    nx = 40//1
+    ny = 20//1
+    X_small = X[nx:-nx, :ny]
+    Y_small = Y[nx:-nx, :ny]
+    truth_small = truth[nx:-nx, :ny]
+    ax.pcolormesh(X_small, Y_small, truth_small, edgecolors='black',
+                  cmap='Greys',
+                  facecolor='white', vmin=0, vmax=1, lw=0.1)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+    plt.tight_layout()
+    fig.savefig('figures/airfoil_0.png', dpi=600,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    truth = out[b]
+    truth_small = truth[nx:-nx, :ny]
+    ax.pcolormesh(X_small, Y_small, truth_small, edgecolors='black',
+                  cmap=sns.cm.mako, lw=0.1)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+    plt.tight_layout()
+    fig.savefig('figures/airfoil_1.png', dpi=600,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    path = '../data/geo-fno/plasticity/plas_N987_T20.mat'
+    y = scipy.io.loadmat(path)['output'].astype(np.float32)[0]
+    du = np.linalg.norm(y[:, :, :, 2:], axis=-1)
+    ax.scatter(y[:, :, 10, 0], y[:, :, 10, 1], s=40, c=du[:, :, 19],
+               cmap=sns.cm.icefire, vmin=du.min(), vmax=du.max())
+    ax.set_xlim(-50, 0)
+    ax.set_ylim(0, 15)
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+    plt.tight_layout()
+    fig.savefig('figures/plasticity_1.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    ax.scatter(y[:, :, 15, 0], y[:, :, 15, 1], s=40, c=du[:, :, 19],
+               cmap=sns.cm.icefire, vmin=du.min(), vmax=du.max())
+    ax.set_xlim(-50, 0)
+    ax.set_ylim(0, 15)
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+    plt.tight_layout()
+    fig.savefig('figures/plasticity_2.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    ax.scatter(y[:, :, 19, 0], y[:, :, 19, 1], s=40, c=du[:, :, 19],
+               cmap=sns.cm.icefire, vmin=du.min(), vmax=du.max())
+    ax.set_xlim(-50, 0)
+    ax.set_ylim(0, 15)
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+    plt.tight_layout()
+    fig.savefig('figures/plasticity_3.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    ax.clear()
+
+    ax.plot(scipy.io.loadmat(path)[0])
+    ax.set_ylim(0, 24)
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    plt.tight_layout()
+    fig.savefig('figures/plasticity_0.png', dpi=300,
+                bbox_inches='tight')
+    ax.clear()
 
 
 if __name__ == "__main__":
