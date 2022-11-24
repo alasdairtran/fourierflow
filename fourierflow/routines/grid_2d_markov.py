@@ -44,8 +44,10 @@ class Grid2DMarkovExperiment(Routine):
                  heatmap_scale: int = 1,
                  pred_path: Optional[Path] = None,
                  grid_size: List[int] = [64],
+                 automatic_optimization: bool = False,
                  **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(automatic_optimization=automatic_optimization,
+                         **kwargs)
         self.conv = conv
         self.n_steps = n_steps
         self.l2_loss = LpLoss(size_average=True)
