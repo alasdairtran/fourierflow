@@ -18,8 +18,13 @@ class PointCloudExperiment(Routine):
         self.N = N
         self.l2_loss = LpLoss(size_average=True)
 
-    def forward(self, data):
-        return
+    def forward(self, batch):
+        xy, rr = batch['xy'], batch['rr']
+        xy = xy.cuda()
+        rr = rr.cuda()
+
+        sigma_pred = self.model(xy, code=rr, iphi=self.iphi)
+        return sigma_pred
 
     def training_step(self, batch, batch_idx):
         xy, rr, sigma = batch['xy'], batch['rr'], batch['sigma']

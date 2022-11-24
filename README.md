@@ -173,6 +173,10 @@ fourierflow train --trial 0 experiments/elasticity/geo-fno/4_layers/config.yaml
 fourierflow train --trial 0 experiments/airfoil/ffno/24_layers/config.yaml
 fourierflow train --trial 0 experiments/plasticity/ffno/24_layers/config.yaml
 fourierflow train --trial 0 experiments/elasticity/ffno/24_layers/config.yaml
+
+# Plot samples
+fourierflow sample experiments/elasticity/geo-fno/4_layers/config.yaml
+fourierflow sample experiments/elasticity/ffno/24_layers/config.yaml
 ```
 
 <!-- ## Mesh Experiments

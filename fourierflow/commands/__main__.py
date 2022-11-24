@@ -1,7 +1,7 @@
 from typer import Typer
 
 from fourierflow.commands import (convert, download, generate, infer, plot,
-                                  predict, test, train)
+                                  predict, sample, test, train)
 from fourierflow.utils import setup_logger
 
 setup_logger()
@@ -15,6 +15,7 @@ app.add_typer(predict.app, name='predict')
 app.add_typer(test.app, name='test')
 app.add_typer(train.app, name='train')
 app.add_typer(infer.app, name='infer')
+app.add_typer(sample.app, name='sample')
 
 if __name__ == '__main__':
     app()
