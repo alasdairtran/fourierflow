@@ -62,3 +62,4 @@ dask-worker-space
 *.index
 meta.json
 *.npy
+artifacts
