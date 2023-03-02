@@ -2,32 +2,35 @@
 
 # Factorized Fourier Neural Operators
 
-This repository contains the code to reproduce the results in our [NeurIPS 2021
-ML4PS workshop](https://ml4physicalsciences.github.io/2021/) paper, [Factorized
-Fourier Neural Operators](https://arxiv.org/abs/2111.13802).
+This repository contains the code to reproduce the results in our [ICLR
+2023](https://iclr.cc/Conferences/2023) paper, [Factorized Fourier Neural
+Operators](https://arxiv.org/abs/2111.13802).
 
-The Fourier Neural Operator (FNO) is a learning-based method for efficiently
-simulating partial differential equations. We propose the Factorized Fourier
-Neural Operator (F-FNO) that allows much better generalization with deeper
-networks. With a careful combination of the Fourier factorization, weight
-sharing, the Markov property, and residual connections, F-FNOs achieve a
-six-fold reduction in error on the most turbulent setting of the Navier-Stokes
-benchmark dataset. We show that our model maintains an error rate of 2% while
-still running an order of magnitude faster than a numerical solver, even when
-the problem setting is extended to include additional contexts such as
-viscosity and time-varying forces. This enables the same pretrained neural
-network to model vastly different conditions.
+We propose the Factorized Fourier Neural Operator (F-FNO), a learning-based
+approach for simulating partial differential equations (PDEs). Starting from a
+recently proposed Fourier representation of flow fields, the F-FNO bridges the
+performance gap between pure machine learning approaches to that of the best
+numerical or hybrid solvers. This is achieved with new representations –
+separable spectral layers and improved residual connections – and a combination
+of training strategies such as the Markov assumption, Gaussian noise, and
+cosine learning rate decay. On several challenging benchmark PDEs on regular
+grids, structured meshes, and point clouds, the F-FNO can scale to deeper
+networks and outperform both the FNO and the geo-FNO, reducing the error by 83%
+on the Navier-Stokes problem, 31% on the elasticity problem, 57% on the airfoil
+flow problem, and 60% on the plastic forging problem. Compared to the
+state-of-the-art pseudo-spectral method, the F-FNO can take a step size that is
+an order of magnitude larger in time and achieve an order of magnitude speedup
+to produce the same solution quality.
 
 Please cite with the following BibTeX:
 
 ```raw
-@misc{Tran2021Factorized,
-  title         = {Factorized Fourier Neural Operators},
-  author        = {Alasdair Tran and Alexander Mathews and Lexing Xie and Cheng Soon Ong},
-  year          = {2021},
-  eprint        = {2111.13802},
-  archiveprefix = {arXiv},
-  primaryclass  = {cs.LG}
+@inproceedings{tran2023factorized,
+title={Factorized Fourier Neural Operators},
+author={Alasdair Tran and Alexander Mathews and Lexing Xie and Cheng Soon Ong},
+booktitle={The Eleventh International Conference on Learning Representations },
+year={2023},
+url={https://openreview.net/forum?id=tmIiMPl4IPa}
 }
 ```
 
@@ -158,6 +161,13 @@ fourierflow plot correlation
 gsutil -m cp -r gs://gresearch/jax-cfd data/
 ```
 
+## Plots
+
+```sh
+# Plot effect of coordinates and velocity as input channels (Figure 5b)
+fourierflow plot coordinates-velocity-ablation
+```
+
 ## Geo-FNO experiments
 
 ```sh
@@ -176,6 +186,8 @@ fourierflow train --trial 0 experiments/elasticity/ffno/24_layers/config.yaml
 
 # Plot samples
 fourierflow sample experiments/elasticity/geo-fno/4_layers/config.yaml
+fourierflow sample experiments/elasticity/ffno/24_layers/config.yaml
+
 fourierflow sample experiments/elasticity/ffno/24_layers/config.yaml
 ```
 
