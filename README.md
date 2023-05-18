@@ -26,11 +26,11 @@ Please cite with the following BibTeX:
 
 ```raw
 @inproceedings{tran2023factorized,
-title={Factorized Fourier Neural Operators},
-author={Alasdair Tran and Alexander Mathews and Lexing Xie and Cheng Soon Ong},
-booktitle={The Eleventh International Conference on Learning Representations },
-year={2023},
-url={https://openreview.net/forum?id=tmIiMPl4IPa}
+  title     = {Factorized Fourier Neural Operators},
+  author    = {Alasdair Tran and Alexander Mathews and Lexing Xie and Cheng Soon Ong},
+  booktitle = {The Eleventh International Conference on Learning Representations},
+  year      = {2023},
+  url       = {https://openreview.net/forum?id=tmIiMPl4IPa}
 }
 ```
 
