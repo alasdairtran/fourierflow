@@ -58,7 +58,7 @@ class SpectralConv2d(nn.Module):
         x_ft = torch.fft.rfft2(x, s=(M, N), norm='ortho')
         # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1]
 
-        out_ft = x_ft.new_zeros(B, I, N, M // 2 + 1)
+        out_ft = x_ft.new_zeros(B, I, M, N // 2 + 1)
         # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
         if self.mode == 'full':

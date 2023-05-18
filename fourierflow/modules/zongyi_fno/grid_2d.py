@@ -54,7 +54,7 @@ class SpectralConv2d(nn.Module):
         x_ft = torch.stack([x_ft.real, x_ft.imag], dim=4)
         # x_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
-        out_ft = torch.zeros(B, I, N, M // 2 + 1, 2, device=x.device)
+        out_ft = torch.zeros(B, I, M, N // 2 + 1, 2, device=x.device)
         # out_ft.shape == [batch_size, in_dim, grid_size, grid_size // 2 + 1, 2]
 
         out_ft[:, :, :self.n_modes, :self.n_modes] = self.complex_matmul_2d(
