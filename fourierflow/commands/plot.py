@@ -615,7 +615,7 @@ def heatmaps():
 
 @app.command()
 def table_torus_li():
-    """Table A.2 in ICLR submission."""
+    """Table A.3 in ICLR submission."""
     dataset = 'torus_li'
     layers_1 = [4, 8, 12, 16, 20]
     layers_2 = [4, 8, 12, 16, 20, 24]
@@ -659,7 +659,7 @@ def table_torus_li():
 
 @app.command()
 def table_airfoil():
-    """Table A.3 in ICLR submission."""
+    """Table A.4 in ICLR submission."""
     dataset = 'airfoil'
     layers_1 = [4, 8, 12]
     layers_2 = [4, 8, 12, 16, 20, 24]
@@ -683,7 +683,7 @@ def table_airfoil():
 
 @app.command()
 def table_elasticity():
-    """Table A.3 in ICLR submission."""
+    """Table A.5 in ICLR submission."""
     dataset = 'elasticity'
     layers_1 = [4, 8, 12]
     layers_2 = [4, 8, 12, 16, 20, 24]
@@ -707,7 +707,7 @@ def table_elasticity():
 
 @app.command()
 def table_plasticity():
-    """Table A.3 in ICLR submission."""
+    """Table A.6 in ICLR submission."""
     dataset = 'plasticity'
     layers_1 = [4, 8, 12]
     layers_2 = [4, 8, 12, 16, 20, 24]
